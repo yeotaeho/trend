@@ -1,0 +1,80 @@
+sources:
+  # --- 기업·재단 기술 블로그 (RSS) ---
+  - name: rss:anthropic
+    type: rss
+    config:
+      url: https://www.anthropic.com/news/rss.xml
+    poll_interval_sec: 900
+    trust_score: 1.0
+
+  - name: rss:openai
+    type: rss
+    config:
+      url: https://openai.com/news/rss.xml
+    poll_interval_sec: 900
+    trust_score: 0.9
+
+  - name: rss:huggingface
+    type: rss
+    config:
+      url: https://huggingface.co/blog/feed.xml
+    poll_interval_sec: 900
+    trust_score: 0.8
+
+  - name: rss:vercel
+    type: rss
+    config:
+      url: https://vercel.com/atom
+    poll_interval_sec: 1800
+    trust_score: 0.7
+
+  # --- arXiv (하루 1회 갱신이라 1시간 주기면 충분) ---
+  - name: rss:arxiv-cs-ai
+    type: rss
+    config:
+      url: https://rss.arxiv.org/rss/cs.AI
+      category_hint: technique
+    poll_interval_sec: 3600
+    trust_score: 0.5
+
+  - name: rss:arxiv-cs-cl
+    type: rss
+    config:
+      url: https://rss.arxiv.org/rss/cs.CL
+      category_hint: technique
+    poll_interval_sec: 3600
+    trust_score: 0.5
+
+  # --- GitHub Releases (웹훅이 주 경로, 이 폴링은 누락 보정) ---
+  - name: github_release:watchlist
+    type: github_release
+    config:
+      repos:
+        - anthropics/anthropic-sdk-python
+        - anthropics/claude-code
+        - modelcontextprotocol/servers
+        - modelcontextprotocol/python-sdk
+        - langchain-ai/langgraph
+        - vercel/next.js
+        - fastapi/fastapi
+        - pydantic/pydantic
+        - astral-sh/uv
+        - astral-sh/ruff
+      per_page: 5
+    poll_interval_sec: 1800
+    trust_score: 1.0
+
+  # --- YouTube 채널 ---
+  - name: youtube:jocoding
+    type: youtube
+    config:
+      channel_id: UCQNE2JmbasNYbjGAcuBiRRg
+    poll_interval_sec: 900
+    trust_score: 0.6
+
+  - name: youtube:codingapple
+    type: youtube
+    config:
+      channel_id: UCSLrpBAzr-ROVGHQ5EmxnUg
+    poll_interval_sec: 900
+    trust_score: 0.6

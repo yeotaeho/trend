@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Example AI Blog</title>
+    <link>https://example.com/blog</link>
+    <item>
+      <title>Introducing Claude X</title>
+      <link>https://example.com/blog/claude-x?utm_source=rss&amp;utm_medium=feed</link>
+      <guid>https://example.com/blog/claude-x</guid>
+      <description>&lt;p&gt;Claude X doubles the context window at the &lt;b&gt;same&lt;/b&gt; price.&lt;/p&gt;</description>
+      <author>research@example.com</author>
+      <pubDate>Sat, 30 Aug 2026 09:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>We are hiring engineers</title>
+      <link>https://example.com/blog/hiring</link>
+      <guid>https://example.com/blog/hiring</guid>
+      <description>Join our team.</description>
+      <pubDate>Fri, 29 Aug 2026 09:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>
