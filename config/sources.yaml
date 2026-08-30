@@ -60,7 +60,7 @@ sources:
         - pydantic/pydantic
         - astral-sh/uv
         - astral-sh/ruff
-      per_page: 5
+      per_page: 20
     poll_interval_sec: 1800
     trust_score: 1.0
 

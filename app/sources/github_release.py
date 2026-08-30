@@ -13,6 +13,7 @@ from app.sources.base import Source, fetch_url, register
 
 API = "https://api.github.com/repos/{repo}/releases?per_page={per_page}"
 BODY_LIMIT = 3000
+DEFAULT_PER_PAGE = 20
 log = get_logger(__name__)
 
 
@@ -53,7 +54,9 @@ class GithubReleaseSource:
     def __init__(self, cfg: SourceConfig) -> None:
         self.name = cfg.name
         self.repos = [str(r) for r in cfg.config.get("repos", [])]
-        self.per_page = int(cfg.config.get("per_page", 5))
+        # ponytail: 첫 페이지만 본다. 폴링이 오래 끊긴 사이 이 개수를 넘는 릴리즈가
+        # 나오면 오래된 쪽을 놓친다. 실제로 놓치면 repo 별 커서를 도입한다.
+        self.per_page = int(cfg.config.get("per_page", DEFAULT_PER_PAGE))
 
     async def _fetch_repo(self, repo: str) -> list[NormalizedItem]:
         response = await fetch_url(

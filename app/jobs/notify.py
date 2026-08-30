@@ -21,20 +21,28 @@ PENDING = (ItemStatus.SCORED.value, ItemStatus.QUEUED.value)
 log = get_logger(__name__)
 
 
-async def _claim_batch(session: AsyncSession) -> list[tuple[Item, Summary, Source]]:
-    """중요한 것부터 보낸다. 같은 중요도면 오래된 것 먼저."""
+async def _claim_one(
+    session: AsyncSession, skip_ids: set[int]
+) -> tuple[Item, Summary, Source] | None:
+    """한 건씩 잠근다. 락은 커밋 때 풀리므로 항목 하나가 곧 트랜잭션 하나여야 한다.
+
+    한 번에 20건을 잠그고 루프 안에서 커밋하면 첫 커밋에서 나머지 19건의 락까지
+    풀려, 워커를 늘렸을 때 같은 항목이 두 번 발송될 수 있다.
+    """
     stmt = (
         select(Item, Summary, Source)
         .join(Summary, Summary.item_id == Item.id)
         .join(Source, Source.id == Item.source_id)
         .where(Item.status.in_(PENDING), Summary.worth_notifying.is_(True))
         .order_by(Summary.importance.desc(), Item.published_at)
-        .limit(BATCH_SIZE)
+        .limit(1)
         .with_for_update(of=Item, skip_locked=True)
     )
-    return [
-        (item, summary, source) for item, summary, source in (await session.execute(stmt)).all()
-    ]
+    if skip_ids:
+        # QUEUED 로 미룬 항목은 여전히 PENDING 이라 그냥 두면 같은 건만 계속 잡는다.
+        stmt = stmt.where(Item.id.notin_(skip_ids))
+    row = (await session.execute(stmt)).first()
+    return (row[0], row[1], row[2]) if row else None
 
 
 async def run_notify(notifier: Notifier | None = None) -> int:
@@ -45,7 +53,14 @@ async def run_notify(notifier: Notifier | None = None) -> int:
     sent = 0
 
     async with session_scope() as session:
-        for item, summary, source in await _claim_batch(session):
+        visited: set[int] = set()
+        for _ in range(BATCH_SIZE):
+            claimed = await _claim_one(session, visited)
+            if claimed is None:
+                break
+            item, summary, source = claimed
+            visited.add(item.id)
+
             verdict = await decide(session, cfg, importance=summary.importance, now=now)
 
             if verdict.level is None:
@@ -88,8 +103,8 @@ async def run_notify(notifier: Notifier | None = None) -> int:
                 )
             )
             item.status = ItemStatus.SENT.value
-            # 항목마다 커밋한다. 배치 전체를 한 트랜잭션으로 묶으면 뒤쪽에서 한 건이
-            # 실패했을 때 이미 발송이 끝난 앞쪽 항목들까지 롤백돼 다시 발송된다.
+            # 발송 직후 커밋한다. 배치를 한 트랜잭션으로 묶으면 뒤쪽 한 건이 실패했을 때
+            # 이미 발송이 끝난 앞쪽 항목까지 롤백돼 다음 잡에서 다시 발송된다.
             await session.commit()
             sent += 1
 

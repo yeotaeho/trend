@@ -152,11 +152,18 @@ async def run_pipeline() -> int:
             # 다음 실행마다 같은 항목을 다시 판정해 decisions 가 계속 쌓인다.
             if budget <= 0:
                 break
+
+            # 항목 하나를 savepoint 로 감싼다. LLM 이 죽어 있으면 rule·score 판정만
+            # 기록된 채 NEW 로 남고, 2분마다 같은 판정이 decisions 에 다시 쌓인다.
+            savepoint = await session.begin_nested()
             try:
                 used = await _process(session, item, source)
             except Exception as exc:
+                await savepoint.rollback()
                 log.warning("pipeline.item_failed", item_id=item.id, error=str(exc))
                 continue
+            await savepoint.commit()
+
             if used:
                 budget -= 1
             if item.status == ItemStatus.SCORED.value:
