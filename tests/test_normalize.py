@@ -27,3 +27,9 @@ def test_same_url_variants_share_hash():
 def test_strip_html():
     assert strip_html("<p>Hello   <b>world</b>&amp;more</p>") == "Hello world &more"
     assert strip_html(None) == ""
+
+
+def test_query_param_order_does_not_change_hash():
+    a = url_hash(normalize_url("https://example.com/x?b=2&a=1"))
+    b = url_hash(normalize_url("https://example.com/x?a=1&b=2"))
+    assert a == b

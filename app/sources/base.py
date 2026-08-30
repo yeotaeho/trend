@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Protocol, runtime_checkable
 
 import httpx
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from app.config import SourceConfig
 from app.schemas import NormalizedItem
@@ -47,14 +47,24 @@ def registered_types() -> list[str]:
     return sorted(_REGISTRY)
 
 
+def retryable(exc: BaseException) -> bool:
+    """네트워크 오류·429·5xx 만 재시도한다. 401·404 는 다시 해도 결과가 같다."""
+    if isinstance(exc, httpx.TransportError):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        status = exc.response.status_code
+        return status == 429 or status >= 500
+    return False
+
+
 @retry(
-    retry=retry_if_exception_type((httpx.TransportError, httpx.HTTPStatusError)),
+    retry=retry_if_exception(retryable),
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, max=10),
     reraise=True,
 )
 async def fetch_url(url: str, *, headers: dict[str, str] | None = None) -> httpx.Response:
-    """GET 한 번 + 지수 백오프 재시도. 4xx 도 재시도하지만 3회면 끝난다."""
+    """GET 한 번 + 지수 백오프 재시도."""
     merged = {"User-Agent": USER_AGENT, **(headers or {})}
     async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
         response = await client.get(url, headers=merged)

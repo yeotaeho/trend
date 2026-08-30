@@ -40,6 +40,11 @@ async def telegram_webhook(
     async with session_scope() as session:
         session.add(Feedback(item_id=item_id, verdict=verdict))
 
-    await answer_callback(query["id"], REPLY[verdict])
+    # 토스트 응답이 실패했다고 500 을 돌려주면 텔레그램이 재전달해 피드백이 중복 기록된다.
+    try:
+        await answer_callback(query["id"], REPLY[verdict])
+    except Exception as exc:
+        log.warning("webhook.telegram_answer_failed", item_id=item_id, error=str(exc))
+
     log.info("webhook.telegram_feedback", item_id=item_id, verdict=verdict)
     return {"item_id": item_id, "verdict": verdict}

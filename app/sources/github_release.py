@@ -55,25 +55,26 @@ class GithubReleaseSource:
         self.repos = [str(r) for r in cfg.config.get("repos", [])]
         self.per_page = int(cfg.config.get("per_page", 5))
 
-    async def _fetch_repo(self, repo: str, since: datetime | None) -> list[NormalizedItem]:
+    async def _fetch_repo(self, repo: str) -> list[NormalizedItem]:
         response = await fetch_url(
             API.format(repo=repo, per_page=self.per_page), headers=auth_headers()
         )
-        items = []
-        for release in response.json():
-            item = release_to_item(self.name, repo, release)
-            if item and not (since and item.published_at <= since):
-                items.append(item)
-        return items
+        items = [release_to_item(self.name, repo, release) for release in response.json()]
+        return [item for item in items if item]
 
     async def fetch(self, since: datetime | None) -> list[NormalizedItem]:
+        """`since` 로 자르지 않고 매번 최근 릴리즈를 다시 본다.
+
+        저장소 하나가 실패해도 나머지는 수집하는데, 이때 last_polled_at 은 전진한다.
+        같은 릴리즈를 다시 가져와야 실패한 저장소가 다음 폴링에서 스스로 복구된다.
+        중복은 url_hash 유니크 제약이 막는다.
+        """
         results = await asyncio.gather(
-            *(self._fetch_repo(repo, since) for repo in self.repos), return_exceptions=True
+            *(self._fetch_repo(repo) for repo in self.repos), return_exceptions=True
         )
         items: list[NormalizedItem] = []
         for repo, result in zip(self.repos, results, strict=True):
             if isinstance(result, BaseException):
-                # 저장소 하나가 실패해도 나머지는 수집한다.
                 log.warning("github_release.repo_failed", repo=repo, error=str(result))
                 continue
             items.extend(result)

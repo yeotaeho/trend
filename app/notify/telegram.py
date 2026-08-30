@@ -54,13 +54,18 @@ def render(item: Item, summary: Summary, source_name: str, *, now: datetime | No
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, max=10), reraise=True)
 async def _call(method: str, payload: dict[str, object]) -> dict[str, object]:
+    """봇 토큰이 URL 에 들어가므로 예외 메시지에 URL 이 새지 않게 갈아끼운다."""
     settings = get_settings()
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        response = await client.post(
-            API.format(token=settings.telegram_bot_token, method=method), json=payload
-        )
-        response.raise_for_status()
-        body: dict[str, object] = response.json()
+    url = API.format(token=settings.telegram_bot_token, method=method)
+    try:
+        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+            response = await client.post(url, json=payload)
+            response.raise_for_status()
+            body: dict[str, object] = response.json()
+    except httpx.HTTPStatusError as exc:
+        raise RuntimeError(f"telegram {method} HTTP {exc.response.status_code}") from None
+    except httpx.HTTPError as exc:
+        raise RuntimeError(f"telegram {method} 요청 실패: {type(exc).__name__}") from None
     if not body.get("ok"):
         raise RuntimeError(f"telegram {method} 실패: {body.get('description')}")
     return body

@@ -20,11 +20,12 @@ def normalize_url(url: str) -> str:
     host = parts.netloc.lower()
     if host.startswith("www."):
         host = host[4:]
-    params = [
+    # 정렬해야 ?a=1&b=2 와 ?b=2&a=1 이 같은 해시가 된다.
+    params = sorted(
         (k, v)
         for k, v in parse_qsl(parts.query, keep_blank_values=True)
         if k.lower() not in TRACKING_PARAMS and not k.lower().startswith(TRACKING_PREFIXES)
-    ]
+    )
     path = parts.path.rstrip("/") or "/"
     return urlunsplit((parts.scheme.lower(), host, path, urlencode(params), ""))
 

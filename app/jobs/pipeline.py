@@ -46,7 +46,7 @@ async def _claim_batch(session: AsyncSession) -> list[tuple[Item, Source]]:
     return [(item, source) for item, source in (await session.execute(stmt)).all()]
 
 
-async def _process(session: AsyncSession, item: Item, source: Source, llm_budget: int) -> bool:
+async def _process(session: AsyncSession, item: Item, source: Source) -> bool:
     """항목 하나를 관문에 통과시킨다. 돌려주는 값은 LLM 을 실제로 호출했는지 여부."""
     rules = get_rules()
 
@@ -93,10 +93,6 @@ async def _process(session: AsyncSession, item: Item, source: Source, llm_budget
     if not score.passed:
         item.status = ItemStatus.DROPPED.value
         return False
-
-    if llm_budget <= 0:
-        log.info("pipeline.llm_cap_reached", item_id=item.id)
-        return False  # NEW 로 남겨 다음 실행에서 다시 시도한다.
 
     body = item.summary_raw
     enrich_failed = False
@@ -147,9 +143,17 @@ async def run_pipeline() -> int:
     passed = 0
     async with session_scope() as session:
         budget = settings.llm_daily_cap - await _llm_calls_today(session)
+        if budget <= 0:
+            log.info("pipeline.llm_cap_reached", cap=settings.llm_daily_cap)
+            return 0
+
         for item, source in await _claim_batch(session):
+            # 예산이 바닥나면 손대지 않고 멈춘다. 판정을 기록해 두고 NEW 로 남기면
+            # 다음 실행마다 같은 항목을 다시 판정해 decisions 가 계속 쌓인다.
+            if budget <= 0:
+                break
             try:
-                used = await _process(session, item, source, budget)
+                used = await _process(session, item, source)
             except Exception as exc:
                 log.warning("pipeline.item_failed", item_id=item.id, error=str(exc))
                 continue

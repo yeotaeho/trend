@@ -41,7 +41,12 @@ async def run_source(source_id: int) -> int:
                 "collect.failed", source=source.name, fail_count=source.fail_count, error=str(exc)
             )
             if source.fail_count == FAIL_ALERT_THRESHOLD:
-                await send_ops_alert(f"{source.name} 수집이 연속 {FAIL_ALERT_THRESHOLD}회 실패")
+                # 알림 채널이 죽었다고 실패 기록까지 롤백되면 안 된다.
+                await session.commit()
+                try:
+                    await send_ops_alert(f"{source.name} 수집이 연속 {FAIL_ALERT_THRESHOLD}회 실패")
+                except Exception as alert_exc:
+                    log.warning("collect.alert_failed", error=str(alert_exc))
             return 0
 
         inserted = await store_items(session, source.id, items)

@@ -60,6 +60,7 @@ async def run_notify(notifier: Notifier | None = None) -> int:
                 else:
                     item.status = ItemStatus.QUEUED.value
                     log.info("notify.deferred", item_id=item.id, reason=verdict.reason)
+                await session.commit()
                 continue
 
             try:
@@ -75,6 +76,7 @@ async def run_notify(notifier: Notifier | None = None) -> int:
                 )
                 item.status = ItemStatus.FAILED.value
                 log.warning("notify.failed", item_id=item.id, error=str(exc))
+                await session.commit()
                 continue
 
             session.add(
@@ -86,6 +88,9 @@ async def run_notify(notifier: Notifier | None = None) -> int:
                 )
             )
             item.status = ItemStatus.SENT.value
+            # 항목마다 커밋한다. 배치 전체를 한 트랜잭션으로 묶으면 뒤쪽에서 한 건이
+            # 실패했을 때 이미 발송이 끝난 앞쪽 항목들까지 롤백돼 다시 발송된다.
+            await session.commit()
             sent += 1
 
     log.info("notify.done", sent=sent)

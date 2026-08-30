@@ -38,13 +38,14 @@ async def test_skips_drafts():
 
 
 @respx.mock
-async def test_since_filter():
+async def test_since_is_ignored_so_failed_repos_recover():
+    """since 로 자르면 폴링이 실패한 사이의 릴리즈를 영구히 놓친다. 매번 다시 본다."""
     respx.get(url__startswith=API).mock(
         return_value=httpx.Response(200, content=fixture("github_release.json"))
     )
     items = await make_source().fetch(datetime(2026, 9, 1, tzinfo=UTC))
 
-    assert items == []
+    assert [item.external_id for item in items] == ["1001"]
 
 
 @respx.mock
