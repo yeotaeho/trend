@@ -1,0 +1,16 @@
+{
+  "projectRoot": "C:/project/trend",
+  "batchFiles": [
+    {"path": "app/api/__init__.py", "language": "python", "sizeLines": 0, "fileCategory": "code"},
+    {"path": "app/api/health.py", "language": "python", "sizeLines": 17, "fileCategory": "code"},
+    {"path": "app/api/telegram.py", "language": "python", "sizeLines": 50, "fileCategory": "code"},
+    {"path": "app/db/session.py", "language": "python", "sizeLines": 69, "fileCategory": "code"},
+    {"path": "app/jobs/collect.py", "language": "python", "sizeLines": 69, "fileCategory": "code"},
+    {"path": "app/jobs/scheduler.py", "language": "python", "sizeLines": 66, "fileCategory": "code"},
+    {"path": "app/log.py", "language": "python", "sizeLines": 29, "fileCategory": "code"},
+    {"path": "app/main.py", "language": "python", "sizeLines": 34, "fileCategory": "code"},
+    {"path": "scripts/run_job.py", "language": "python", "sizeLines": 36, "fileCategory": "script"},
+    {"path": "tests/test_session_url.py", "language": "python", "sizeLines": 58, "fileCategory": "code"}
+  ],
+  "batchImportData": {"app/api/__init__.py":[],"app/api/health.py":["app/db/session.py"],"app/api/telegram.py":["app/config.py","app/db/models.py","app/db/session.py","app/log.py","app/notify/telegram.py"],"app/db/session.py":["app/config.py"],"app/jobs/collect.py":["app/config.py","app/db/models.py","app/db/session.py","app/log.py","app/notify/telegram.py","app/pipeline/ingest.py","app/sources/__init__.py"],"app/jobs/scheduler.py":["app/config.py","app/db/models.py","app/db/session.py","app/jobs/collect.py","app/jobs/notify.py","app/jobs/pipeline.py","app/log.py"],"app/log.py":["app/config.py"],"app/main.py":["app/api/__init__.py","app/api/github.py","app/api/health.py","app/api/telegram.py","app/config.py","app/db/session.py","app/jobs/scheduler.py","app/log.py"],"scripts/run_job.py":["app/db/session.py","app/jobs/collect.py","app/jobs/notify.py","app/jobs/pipeline.py","app/jobs/scheduler.py","app/log.py"],"tests/test_session_url.py":["app/db/session.py"]}
+}

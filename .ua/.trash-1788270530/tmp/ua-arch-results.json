@@ -1,0 +1,637 @@
+{
+  "scriptCompleted": true,
+  "commonPrefix": "",
+  "directoryGroups": {
+    "app": [
+      "file:app/api/github.py",
+      "file:app/db/alembic/env.py",
+      "file:app/db/models.py",
+      "file:app/jobs/notify.py",
+      "file:app/notify/base.py",
+      "file:app/notify/policy.py",
+      "file:app/notify/telegram.py",
+      "file:app/pipeline/ingest.py",
+      "file:app/schemas.py",
+      "file:app/pipeline/normalize.py",
+      "file:app/sources/__init__.py",
+      "file:app/sources/base.py",
+      "file:app/sources/github_release.py",
+      "file:app/sources/rss.py",
+      "file:app/sources/youtube.py",
+      "file:app/api/__init__.py",
+      "file:app/api/health.py",
+      "file:app/api/telegram.py",
+      "file:app/db/session.py",
+      "file:app/jobs/collect.py",
+      "file:app/jobs/scheduler.py",
+      "file:app/log.py",
+      "file:app/main.py",
+      "file:app/config.py",
+      "file:app/jobs/pipeline.py",
+      "file:app/pipeline/__init__.py",
+      "file:app/pipeline/dedupe.py",
+      "file:app/pipeline/llm.py",
+      "file:app/pipeline/rules.py",
+      "file:app/pipeline/scoring.py",
+      "file:app/__init__.py",
+      "file:app/db/__init__.py",
+      "file:app/db/alembic/script.py.mako",
+      "file:app/db/alembic/versions/20260830_0001_initial.py",
+      "file:app/jobs/__init__.py",
+      "file:app/notify/__init__.py",
+      "table:app/db/alembic/versions/20260830_0001_initial.py:sources",
+      "table:app/db/alembic/versions/20260830_0001_initial.py:items",
+      "table:app/db/alembic/versions/20260830_0001_initial.py:decisions",
+      "table:app/db/alembic/versions/20260830_0001_initial.py:summaries",
+      "table:app/db/alembic/versions/20260830_0001_initial.py:notifications",
+      "table:app/db/alembic/versions/20260830_0001_initial.py:feedback"
+    ],
+    "tests": [
+      "file:tests/test_policy.py",
+      "file:tests/test_telegram.py",
+      "file:tests/test_telegram_api.py",
+      "file:tests/conftest.py",
+      "file:tests/sources/test_github_release.py",
+      "file:tests/sources/test_retry.py",
+      "file:tests/sources/test_rss.py",
+      "file:tests/test_normalize.py",
+      "file:tests/test_session_url.py",
+      "file:tests/test_rules.py",
+      "file:tests/test_scoring.py",
+      "file:tests/__init__.py",
+      "config:tests/fixtures/github_release.json",
+      "config:tests/fixtures/rss_blog.xml",
+      "file:tests/sources/__init__.py"
+    ],
+    "scripts": [
+      "file:scripts/run_job.py"
+    ],
+    "(root)": [
+      "config:.dockerignore",
+      "service:Dockerfile",
+      "service:docker-compose.yml",
+      "service:docker-compose.yml:app",
+      "service:docker-compose.yml:caddy",
+      "config:.env.example",
+      "document:CLAUDE.md",
+      "config:alembic.ini",
+      "config:pyproject.toml",
+      "document:구현도.md",
+      "document:기획서.md",
+      "config:Caddyfile"
+    ],
+    ".github": [
+      "pipeline:.github/workflows/ci.yml",
+      "step:.github/workflows/ci.yml:check",
+      "step:.github/workflows/ci.yml:deploy"
+    ],
+    ".serena": [
+      "config:.serena/project.yml"
+    ],
+    "config": [
+      "config:config/rules.yaml",
+      "config:config/sources.yaml"
+    ]
+  },
+  "nodeTypeGroups": {
+    "file": [
+      "file:app/api/github.py",
+      "file:app/db/alembic/env.py",
+      "file:app/db/models.py",
+      "file:app/jobs/notify.py",
+      "file:app/notify/base.py",
+      "file:app/notify/policy.py",
+      "file:app/notify/telegram.py",
+      "file:app/pipeline/ingest.py",
+      "file:app/schemas.py",
+      "file:tests/test_policy.py",
+      "file:tests/test_telegram.py",
+      "file:tests/test_telegram_api.py",
+      "file:app/pipeline/normalize.py",
+      "file:app/sources/__init__.py",
+      "file:app/sources/base.py",
+      "file:app/sources/github_release.py",
+      "file:app/sources/rss.py",
+      "file:app/sources/youtube.py",
+      "file:tests/conftest.py",
+      "file:tests/sources/test_github_release.py",
+      "file:tests/sources/test_retry.py",
+      "file:tests/sources/test_rss.py",
+      "file:tests/test_normalize.py",
+      "file:app/api/__init__.py",
+      "file:app/api/health.py",
+      "file:app/api/telegram.py",
+      "file:app/db/session.py",
+      "file:app/jobs/collect.py",
+      "file:app/jobs/scheduler.py",
+      "file:app/log.py",
+      "file:app/main.py",
+      "file:scripts/run_job.py",
+      "file:tests/test_session_url.py",
+      "file:app/config.py",
+      "file:app/jobs/pipeline.py",
+      "file:app/pipeline/__init__.py",
+      "file:app/pipeline/dedupe.py",
+      "file:app/pipeline/llm.py",
+      "file:app/pipeline/rules.py",
+      "file:app/pipeline/scoring.py",
+      "file:tests/test_rules.py",
+      "file:tests/test_scoring.py",
+      "file:app/__init__.py",
+      "file:app/db/__init__.py",
+      "file:app/db/alembic/script.py.mako",
+      "file:app/db/alembic/versions/20260830_0001_initial.py",
+      "file:app/jobs/__init__.py",
+      "file:app/notify/__init__.py",
+      "file:tests/__init__.py",
+      "file:tests/sources/__init__.py"
+    ],
+    "config": [
+      "config:.dockerignore",
+      "config:.env.example",
+      "config:alembic.ini",
+      "config:pyproject.toml",
+      "config:.serena/project.yml",
+      "config:Caddyfile",
+      "config:config/rules.yaml",
+      "config:config/sources.yaml",
+      "config:tests/fixtures/github_release.json",
+      "config:tests/fixtures/rss_blog.xml"
+    ],
+    "service": [
+      "service:Dockerfile",
+      "service:docker-compose.yml",
+      "service:docker-compose.yml:app",
+      "service:docker-compose.yml:caddy"
+    ],
+    "pipeline": [
+      "pipeline:.github/workflows/ci.yml",
+      "step:.github/workflows/ci.yml:check",
+      "step:.github/workflows/ci.yml:deploy"
+    ],
+    "document": [
+      "document:CLAUDE.md",
+      "document:구현도.md",
+      "document:기획서.md"
+    ],
+    "table": [
+      "table:app/db/alembic/versions/20260830_0001_initial.py:sources",
+      "table:app/db/alembic/versions/20260830_0001_initial.py:items",
+      "table:app/db/alembic/versions/20260830_0001_initial.py:decisions",
+      "table:app/db/alembic/versions/20260830_0001_initial.py:summaries",
+      "table:app/db/alembic/versions/20260830_0001_initial.py:notifications",
+      "table:app/db/alembic/versions/20260830_0001_initial.py:feedback"
+    ]
+  },
+  "crossCategoryEdges": [
+    {
+      "fromType": "document",
+      "toType": "file",
+      "edgeType": "documents",
+      "count": 66
+    },
+    {
+      "fromType": "config",
+      "toType": "file",
+      "edgeType": "configures",
+      "count": 20
+    },
+    {
+      "fromType": "file",
+      "toType": "file",
+      "edgeType": "tested_by",
+      "count": 11
+    },
+    {
+      "fromType": "document",
+      "toType": "config",
+      "edgeType": "documents",
+      "count": 9
+    },
+    {
+      "fromType": "file",
+      "toType": "table",
+      "edgeType": "migrates",
+      "count": 6
+    },
+    {
+      "fromType": "table",
+      "toType": "file",
+      "edgeType": "related",
+      "count": 6
+    },
+    {
+      "fromType": "service",
+      "toType": "config",
+      "edgeType": "depends_on",
+      "count": 5
+    },
+    {
+      "fromType": "document",
+      "toType": "service",
+      "edgeType": "documents",
+      "count": 4
+    },
+    {
+      "fromType": "pipeline",
+      "toType": "service",
+      "edgeType": "triggers",
+      "count": 3
+    },
+    {
+      "fromType": "document",
+      "toType": "document",
+      "edgeType": "related",
+      "count": 3
+    },
+    {
+      "fromType": "service",
+      "toType": "file",
+      "edgeType": "deploys",
+      "count": 2
+    },
+    {
+      "fromType": "service",
+      "toType": "service",
+      "edgeType": "contains",
+      "count": 2
+    },
+    {
+      "fromType": "pipeline",
+      "toType": "pipeline",
+      "edgeType": "contains",
+      "count": 2
+    },
+    {
+      "fromType": "pipeline",
+      "toType": "config",
+      "edgeType": "depends_on",
+      "count": 2
+    },
+    {
+      "fromType": "document",
+      "toType": "pipeline",
+      "edgeType": "documents",
+      "count": 2
+    },
+    {
+      "fromType": "file",
+      "toType": "file",
+      "edgeType": "related",
+      "count": 2
+    },
+    {
+      "fromType": "config",
+      "toType": "file",
+      "edgeType": "related",
+      "count": 2
+    },
+    {
+      "fromType": "config",
+      "toType": "service",
+      "edgeType": "configures",
+      "count": 1
+    },
+    {
+      "fromType": "service",
+      "toType": "service",
+      "edgeType": "depends_on",
+      "count": 1
+    },
+    {
+      "fromType": "service",
+      "toType": "service",
+      "edgeType": "routes",
+      "count": 1
+    },
+    {
+      "fromType": "config",
+      "toType": "service",
+      "edgeType": "routes",
+      "count": 1
+    },
+    {
+      "fromType": "pipeline",
+      "toType": "pipeline",
+      "edgeType": "depends_on",
+      "count": 1
+    },
+    {
+      "fromType": "pipeline",
+      "toType": "service",
+      "edgeType": "depends_on",
+      "count": 1
+    },
+    {
+      "fromType": "pipeline",
+      "toType": "file",
+      "edgeType": "deploys",
+      "count": 1
+    },
+    {
+      "fromType": "file",
+      "toType": "file",
+      "edgeType": "migrates",
+      "count": 1
+    },
+    {
+      "fromType": "config",
+      "toType": "file",
+      "edgeType": "serves",
+      "count": 1
+    },
+    {
+      "fromType": "config",
+      "toType": "service",
+      "edgeType": "related",
+      "count": 1
+    }
+  ],
+  "interGroupImports": [
+    {
+      "from": "tests",
+      "to": "app",
+      "count": 21
+    },
+    {
+      "from": "scripts",
+      "to": "app",
+      "count": 6
+    }
+  ],
+  "intraGroupDensity": {
+    "app": {
+      "internalEdges": 91,
+      "totalEdges": 118,
+      "density": 0.77
+    },
+    "tests": {
+      "internalEdges": 2,
+      "totalEdges": 23,
+      "density": 0.09
+    },
+    "scripts": {
+      "internalEdges": 0,
+      "totalEdges": 6,
+      "density": 0
+    },
+    "(root)": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    },
+    ".github": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    },
+    ".serena": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    },
+    "config": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    }
+  },
+  "patternMatches": {
+    "app": "unknown",
+    "tests": "test",
+    "scripts": "utility",
+    "(root)": "root",
+    ".github": "ci-cd",
+    ".serena": "unknown",
+    "config": "config"
+  },
+  "filePatternMatches": {
+    "file:app/api/github.py": "code",
+    "file:app/db/alembic/env.py": "code",
+    "file:app/db/models.py": "code",
+    "file:app/jobs/notify.py": "code",
+    "file:app/notify/base.py": "code",
+    "file:app/notify/policy.py": "code",
+    "file:app/notify/telegram.py": "code",
+    "file:app/pipeline/ingest.py": "code",
+    "file:app/schemas.py": "code",
+    "file:tests/test_policy.py": "test",
+    "file:tests/test_telegram.py": "test",
+    "file:tests/test_telegram_api.py": "test",
+    "file:app/pipeline/normalize.py": "code",
+    "file:app/sources/__init__.py": "entry",
+    "file:app/sources/base.py": "code",
+    "file:app/sources/github_release.py": "code",
+    "file:app/sources/rss.py": "code",
+    "file:app/sources/youtube.py": "code",
+    "file:tests/conftest.py": "code",
+    "file:tests/sources/test_github_release.py": "test",
+    "file:tests/sources/test_retry.py": "test",
+    "file:tests/sources/test_rss.py": "test",
+    "file:tests/test_normalize.py": "test",
+    "file:app/api/__init__.py": "entry",
+    "file:app/api/health.py": "code",
+    "file:app/api/telegram.py": "code",
+    "file:app/db/session.py": "code",
+    "file:app/jobs/collect.py": "code",
+    "file:app/jobs/scheduler.py": "code",
+    "file:app/log.py": "code",
+    "file:app/main.py": "entry",
+    "file:scripts/run_job.py": "code",
+    "file:tests/test_session_url.py": "test",
+    "file:app/config.py": "code",
+    "file:app/jobs/pipeline.py": "code",
+    "file:app/pipeline/__init__.py": "entry",
+    "file:app/pipeline/dedupe.py": "code",
+    "file:app/pipeline/llm.py": "code",
+    "file:app/pipeline/rules.py": "code",
+    "file:app/pipeline/scoring.py": "code",
+    "file:tests/test_rules.py": "test",
+    "file:tests/test_scoring.py": "test",
+    "config:.dockerignore": "infrastructure",
+    "service:Dockerfile": "infrastructure",
+    "service:docker-compose.yml": "infrastructure",
+    "service:docker-compose.yml:app": "infrastructure",
+    "service:docker-compose.yml:caddy": "infrastructure",
+    "pipeline:.github/workflows/ci.yml": "ci-cd",
+    "step:.github/workflows/ci.yml:check": "ci-cd",
+    "step:.github/workflows/ci.yml:deploy": "ci-cd",
+    "config:.env.example": "config",
+    "document:CLAUDE.md": "documentation",
+    "config:alembic.ini": "config",
+    "config:pyproject.toml": "config",
+    "document:구현도.md": "documentation",
+    "document:기획서.md": "documentation",
+    "config:.serena/project.yml": "config",
+    "config:Caddyfile": "infrastructure",
+    "file:app/__init__.py": "entry",
+    "file:app/db/__init__.py": "entry",
+    "file:app/db/alembic/script.py.mako": "code",
+    "file:app/db/alembic/versions/20260830_0001_initial.py": "code",
+    "file:app/jobs/__init__.py": "entry",
+    "file:app/notify/__init__.py": "entry",
+    "config:config/rules.yaml": "config",
+    "config:config/sources.yaml": "config",
+    "file:tests/__init__.py": "entry",
+    "config:tests/fixtures/github_release.json": "config",
+    "config:tests/fixtures/rss_blog.xml": "config",
+    "file:tests/sources/__init__.py": "entry",
+    "table:app/db/alembic/versions/20260830_0001_initial.py:sources": "table",
+    "table:app/db/alembic/versions/20260830_0001_initial.py:items": "table",
+    "table:app/db/alembic/versions/20260830_0001_initial.py:decisions": "table",
+    "table:app/db/alembic/versions/20260830_0001_initial.py:summaries": "table",
+    "table:app/db/alembic/versions/20260830_0001_initial.py:notifications": "table",
+    "table:app/db/alembic/versions/20260830_0001_initial.py:feedback": "table"
+  },
+  "deploymentTopology": {
+    "hasDockerfile": true,
+    "hasCompose": true,
+    "hasK8s": false,
+    "hasTerraform": false,
+    "hasCI": true,
+    "infraFiles": [
+      ".dockerignore",
+      "Dockerfile",
+      "docker-compose.yml",
+      ".github/workflows/ci.yml",
+      "Caddyfile"
+    ]
+  },
+  "dataPipeline": {
+    "schemaFiles": [
+      "app/schemas.py"
+    ],
+    "migrationFiles": [
+      "app/db/alembic/env.py",
+      "alembic.ini",
+      "app/db/alembic/script.py.mako",
+      "app/db/alembic/versions/20260830_0001_initial.py"
+    ],
+    "dataModelFiles": [
+      "app/db/alembic/env.py",
+      "app/db/models.py",
+      "app/db/session.py",
+      "app/db/__init__.py",
+      "app/db/alembic/script.py.mako",
+      "app/db/alembic/versions/20260830_0001_initial.py"
+    ],
+    "apiHandlerFiles": [
+      "app/api/github.py",
+      "app/api/__init__.py",
+      "app/api/health.py",
+      "app/api/telegram.py"
+    ]
+  },
+  "docCoverage": {
+    "groupsWithDocs": 1,
+    "totalGroups": 7,
+    "coverageRatio": 0.14,
+    "undocumentedGroups": [
+      "app",
+      "tests",
+      "scripts",
+      ".github",
+      ".serena",
+      "config"
+    ]
+  },
+  "dependencyDirection": [
+    {
+      "dependent": "tests",
+      "dependsOn": "app"
+    },
+    {
+      "dependent": "scripts",
+      "dependsOn": "app"
+    }
+  ],
+  "fileStats": {
+    "totalFileNodes": 76,
+    "filesPerGroup": {
+      "app": 42,
+      "tests": 15,
+      "scripts": 1,
+      "(root)": 12,
+      ".github": 3,
+      ".serena": 1,
+      "config": 2
+    },
+    "nodeTypeCounts": {
+      "file": 50,
+      "config": 10,
+      "service": 4,
+      "pipeline": 3,
+      "document": 3,
+      "table": 6
+    }
+  },
+  "fileFanIn": {
+    "file:app/config.py": 24,
+    "file:app/db/models.py": 13,
+    "file:app/db/session.py": 11,
+    "file:app/log.py": 10,
+    "file:app/pipeline/ingest.py": 2,
+    "file:app/sources/github_release.py": 3,
+    "file:app/schemas.py": 14,
+    "file:app/notify/base.py": 1,
+    "file:app/notify/policy.py": 2,
+    "file:app/notify/telegram.py": 5,
+    "file:app/pipeline/normalize.py": 3,
+    "file:app/sources/base.py": 5,
+    "file:app/sources/rss.py": 3,
+    "file:app/sources/youtube.py": 2,
+    "file:tests/conftest.py": 2,
+    "file:app/sources/__init__.py": 1,
+    "file:app/jobs/collect.py": 2,
+    "file:app/jobs/notify.py": 2,
+    "file:app/jobs/pipeline.py": 2,
+    "file:app/api/__init__.py": 1,
+    "file:app/api/github.py": 1,
+    "file:app/api/health.py": 1,
+    "file:app/api/telegram.py": 1,
+    "file:app/jobs/scheduler.py": 2,
+    "file:app/pipeline/__init__.py": 1,
+    "file:app/pipeline/dedupe.py": 1,
+    "file:app/pipeline/llm.py": 1,
+    "file:app/pipeline/rules.py": 2,
+    "file:app/pipeline/scoring.py": 2
+  },
+  "fileFanOut": {
+    "file:app/api/github.py": 6,
+    "file:app/db/alembic/env.py": 2,
+    "file:app/db/models.py": 1,
+    "file:app/jobs/notify.py": 8,
+    "file:app/notify/base.py": 2,
+    "file:app/notify/policy.py": 3,
+    "file:app/notify/telegram.py": 3,
+    "file:app/pipeline/ingest.py": 3,
+    "file:tests/test_policy.py": 3,
+    "file:tests/test_telegram.py": 2,
+    "file:tests/test_telegram_api.py": 2,
+    "file:app/sources/__init__.py": 4,
+    "file:app/sources/base.py": 2,
+    "file:app/sources/github_release.py": 4,
+    "file:app/sources/rss.py": 4,
+    "file:app/sources/youtube.py": 3,
+    "file:tests/sources/test_github_release.py": 4,
+    "file:tests/sources/test_retry.py": 1,
+    "file:tests/sources/test_rss.py": 5,
+    "file:tests/test_normalize.py": 1,
+    "file:app/api/health.py": 1,
+    "file:app/api/telegram.py": 5,
+    "file:app/db/session.py": 1,
+    "file:app/jobs/collect.py": 7,
+    "file:app/jobs/scheduler.py": 7,
+    "file:app/log.py": 1,
+    "file:app/main.py": 8,
+    "file:scripts/run_job.py": 6,
+    "file:tests/test_session_url.py": 1,
+    "file:app/jobs/pipeline.py": 10,
+    "file:app/pipeline/dedupe.py": 1,
+    "file:app/pipeline/llm.py": 3,
+    "file:app/pipeline/rules.py": 1,
+    "file:app/pipeline/scoring.py": 1,
+    "file:tests/test_rules.py": 2,
+    "file:tests/test_scoring.py": 2
+  }
+}

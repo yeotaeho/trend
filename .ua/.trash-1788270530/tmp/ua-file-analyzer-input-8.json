@@ -1,0 +1,20 @@
+{
+  "projectRoot": "C:/project/trend",
+  "batchFiles": [
+    {"path": ".serena/project.yml", "language": "yaml", "sizeLines": 169, "fileCategory": "config"},
+    {"path": "Caddyfile", "language": "unknown", "sizeLines": 3, "fileCategory": "code"},
+    {"path": "app/__init__.py", "language": "python", "sizeLines": 0, "fileCategory": "code"},
+    {"path": "app/db/__init__.py", "language": "python", "sizeLines": 0, "fileCategory": "code"},
+    {"path": "app/db/alembic/script.py.mako", "language": "mako", "sizeLines": 26, "fileCategory": "code"},
+    {"path": "app/db/alembic/versions/20260830_0001_initial.py", "language": "python", "sizeLines": 132, "fileCategory": "code"},
+    {"path": "app/jobs/__init__.py", "language": "python", "sizeLines": 0, "fileCategory": "code"},
+    {"path": "app/notify/__init__.py", "language": "python", "sizeLines": 0, "fileCategory": "code"},
+    {"path": "config/rules.yaml", "language": "yaml", "sizeLines": 84, "fileCategory": "config"},
+    {"path": "config/sources.yaml", "language": "yaml", "sizeLines": 80, "fileCategory": "config"},
+    {"path": "tests/__init__.py", "language": "python", "sizeLines": 0, "fileCategory": "code"},
+    {"path": "tests/fixtures/github_release.json", "language": "json", "sizeLines": 24, "fileCategory": "config"},
+    {"path": "tests/fixtures/rss_blog.xml", "language": "xml", "sizeLines": 22, "fileCategory": "config"},
+    {"path": "tests/sources/__init__.py", "language": "python", "sizeLines": 0, "fileCategory": "code"}
+  ],
+  "batchImportData": {".serena/project.yml":[],"Caddyfile":[],"app/__init__.py":[],"app/db/__init__.py":[],"app/db/alembic/script.py.mako":[],"app/db/alembic/versions/20260830_0001_initial.py":[],"app/jobs/__init__.py":[],"app/notify/__init__.py":[],"config/rules.yaml":[],"config/sources.yaml":[],"tests/__init__.py":[],"tests/fixtures/github_release.json":[],"tests/fixtures/rss_blog.xml":[],"tests/sources/__init__.py":[]}
+}

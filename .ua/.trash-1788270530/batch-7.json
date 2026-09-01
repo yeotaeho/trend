@@ -1,0 +1,771 @@
+{
+  "nodes": [
+    {
+      "id": "config:.env.example",
+      "type": "config",
+      "name": ".env.example",
+      "filePath": ".env.example",
+      "summary": "런타임 시크릿·설정의 안전한 참조본. Neon DATABASE_URL, Anthropic LLM 키·모델·하루 호출 상한, 텔레그램 봇 토큰·챗 ID·웹훅 시크릿, GitHub 토큰·웹훅 시크릿, 스케줄러 활성화 여부와 로그 레벨을 정의한다.",
+      "tags": [
+        "configuration",
+        "environment-variables",
+        "secrets",
+        "template"
+      ],
+      "complexity": "simple",
+      "languageNotes": "실제 값이 담긴 .env 는 gitignore 대상이고, 이 파일만 커밋한다. pydantic-settings 가 이 키들을 그대로 읽어 app/config.py 의 Settings 로 매핑한다."
+    },
+    {
+      "id": "document:CLAUDE.md",
+      "type": "document",
+      "name": "CLAUDE.md",
+      "filePath": "CLAUDE.md",
+      "summary": "Claude Code 용 프로젝트 규약 문서. 코딩 행동 규칙 11가지, tech-radar 개요·스택·파이프라인, 명령어 모음, 폴더 구조와 데이터 모델·상태 전이, 컨벤션, 옵시디언 작업 기록 규칙, Codex 최종 리뷰 규칙을 담는다.",
+      "tags": [
+        "documentation",
+        "convention",
+        "architecture-overview",
+        "agent-instructions"
+      ],
+      "complexity": "complex",
+      "languageNotes": "README 가 없는 이 저장소에서 사실상 개발자 온보딩 문서 역할을 겸한다. 수정 범위 확인 규칙(11번)이 엔트리·공용 모듈을 보호한다."
+    },
+    {
+      "id": "config:alembic.ini",
+      "type": "config",
+      "name": "alembic.ini",
+      "filePath": "alembic.ini",
+      "summary": "Alembic 마이그레이션 설정. 스크립트 위치를 app/db/alembic 으로 지정하고, 리비전 파일명 템플릿(연월일_시분_슬러그)과 root/sqlalchemy/alembic 로거 핸들러를 구성한다.",
+      "tags": [
+        "configuration",
+        "migration",
+        "database",
+        "alembic",
+        "logging"
+      ],
+      "complexity": "simple",
+      "languageNotes": "sqlalchemy.url 을 두지 않아 접속 문자열은 env.py 가 .env 의 DATABASE_URL 에서 읽어 온다. 시크릿이 ini 에 남지 않는 구성이다."
+    },
+    {
+      "id": "config:pyproject.toml",
+      "type": "config",
+      "name": "pyproject.toml",
+      "filePath": "pyproject.toml",
+      "summary": "프로젝트 메타데이터와 의존성 정의. FastAPI·APScheduler·httpx·SQLAlchemy(asyncpg)·Alembic·Pydantic·Anthropic·structlog 런타임 의존성과 dev 그룹(pytest·respx·ruff·mypy), ruff·mypy strict·pytest asyncio 설정, hatchling 빌드 백엔드를 한 파일에 모았다.",
+      "tags": [
+        "configuration",
+        "build-system",
+        "dependencies",
+        "lint",
+        "type-check"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "PEP 735 dependency-groups 로 dev 의존성을 분리해 uv sync 가 그룹 단위로 설치한다. mypy strict 를 켜고 feedparser·trafilatura·apscheduler 만 ignore_missing_imports 로 예외 처리했다."
+    },
+    {
+      "id": "document:구현도.md",
+      "type": "document",
+      "name": "구현도.md",
+      "filePath": "구현도.md",
+      "summary": "구현 설계서 v0.2. 설계 원칙·전체 아키텍처와 대안 비교, 기술 스택, 6개 테이블 데이터 모델, 수집→정규화→규칙→점수→LLM→발송 단계별 워크플로우, 프로젝트 구조, 인프라·CI/CD, 로드맵과 남은 결정 사항을 정리한 최상위 설계 문서다.",
+      "tags": [
+        "documentation",
+        "design-spec",
+        "architecture-overview",
+        "data-model",
+        "roadmap"
+      ],
+      "complexity": "complex",
+      "languageNotes": "README 부재를 대신하는 설계 원문. 2.2절 대안 비교와 10장 남은 결정이 코드에 반영된 선택(Postgres 를 큐로, APScheduler, Neon, pg_trgm)의 근거다."
+    },
+    {
+      "id": "document:기획서.md",
+      "type": "document",
+      "name": "기획서.md",
+      "filePath": "기획서.md",
+      "summary": "제품 기획서 v0.1. 배경·문제 정의와 차별점, 제품·개인 목표와 비목표, 정보 카테고리·수집 소스 후보, 핵심 기능과 금융 앱식 알림 UX 원칙, 파이프라인 개요·실시간성·노이즈 제어, 개발 단계·성공 기준·리스크·오픈 퀘스천을 담는다.",
+      "tags": [
+        "documentation",
+        "product-spec",
+        "requirements",
+        "roadmap"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "코드 구조가 아니라 왜 이 기능이 존재하는지를 설명한다. 7.3 노이즈 제어와 6.2 알림 UX 원칙이 rules/scoring/policy 모듈의 요구사항 출처다."
+    }
+  ],
+  "edges": [
+    {
+      "source": "config:.env.example",
+      "target": "file:app/config.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:.env.example",
+      "target": "file:app/db/session.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:.env.example",
+      "target": "file:app/pipeline/llm.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:.env.example",
+      "target": "file:app/notify/telegram.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:.env.example",
+      "target": "file:app/api/github.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:.env.example",
+      "target": "file:app/api/telegram.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:.env.example",
+      "target": "file:app/jobs/scheduler.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:alembic.ini",
+      "target": "file:app/db/alembic/env.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:alembic.ini",
+      "target": "file:app/db/alembic/versions/20260830_0001_initial.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "file:app/main.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "file:app/config.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "file:app/db/session.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/main.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/config.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/schemas.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/db/models.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/db/session.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/jobs/scheduler.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/jobs/collect.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/jobs/pipeline.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/jobs/notify.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/pipeline/normalize.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/pipeline/dedupe.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/pipeline/rules.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/pipeline/scoring.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/pipeline/llm.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/pipeline/ingest.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/sources/base.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/sources/rss.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/sources/github_release.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/sources/youtube.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/notify/base.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/notify/policy.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/notify/telegram.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/api/github.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/api/telegram.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/api/health.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:app/db/alembic/env.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "config:config/sources.yaml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "config:config/rules.yaml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "service:Dockerfile",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "service:docker-compose.yml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "pipeline:.github/workflows/ci.yml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/main.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/config.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/schemas.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/db/models.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/db/session.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/jobs/scheduler.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/jobs/collect.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/jobs/pipeline.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/jobs/notify.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/pipeline/normalize.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/pipeline/dedupe.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/pipeline/rules.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/pipeline/scoring.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/pipeline/llm.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/pipeline/ingest.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/sources/base.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/sources/rss.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/sources/github_release.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/sources/youtube.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/notify/base.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/notify/policy.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/notify/telegram.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/api/github.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/api/telegram.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/api/health.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/db/alembic/env.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "config:config/sources.yaml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "config:config/rules.yaml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "service:Dockerfile",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "service:docker-compose.yml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "pipeline:.github/workflows/ci.yml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "file:app/db/alembic/versions/20260830_0001_initial.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "file:app/pipeline/normalize.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "file:app/pipeline/dedupe.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "file:app/pipeline/rules.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "file:app/pipeline/scoring.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "file:app/pipeline/llm.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "file:app/sources/base.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "file:app/sources/rss.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "file:app/sources/github_release.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "file:app/sources/youtube.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "file:app/notify/base.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "file:app/notify/policy.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "file:app/notify/telegram.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "file:app/db/models.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "config:config/rules.yaml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "config:config/sources.yaml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:기획서.md",
+      "target": "document:구현도.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "document:구현도.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "document:기획서.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "config:pyproject.toml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "config:.env.example",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:구현도.md",
+      "target": "config:pyproject.toml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

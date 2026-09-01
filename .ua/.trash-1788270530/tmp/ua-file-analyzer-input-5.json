@@ -1,0 +1,9 @@
+{
+  "projectRoot": "C:/project/trend",
+  "batchFiles": [
+    {"path": ".dockerignore", "language": "unknown", "sizeLines": 8, "fileCategory": "infra"},
+    {"path": "Dockerfile", "language": "dockerfile", "sizeLines": 21, "fileCategory": "infra"},
+    {"path": "docker-compose.yml", "language": "yaml", "sizeLines": 27, "fileCategory": "infra"}
+  ],
+  "batchImportData": {".dockerignore": [], "Dockerfile": [], "docker-compose.yml": []}
+}

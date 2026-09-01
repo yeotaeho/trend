@@ -1,0 +1,3808 @@
+{
+  "version": "1.0.0",
+  "gitCommitHash": "dfbdef090716b179e294c1ecc699ebdbf27c17f0",
+  "generatedAt": "2026-09-01T13:48:42.146Z",
+  "files": {
+    ".dockerignore": {
+      "filePath": ".dockerignore",
+      "contentHash": "d0ed0928537c7789a74a3141886810b7f7a8e759f80c0e0a4d8850df228c5d13",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 9,
+      "hasStructuralAnalysis": false
+    },
+    ".env.example": {
+      "filePath": ".env.example",
+      "contentHash": "685ead8e0d561d21bab9aba1dac67e0c10062c4816890532beab20dc060afeb4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": true
+    },
+    ".github/workflows/ci.yml": {
+      "filePath": ".github/workflows/ci.yml",
+      "contentHash": "0848f9eca75bdfaf25647906284a3d399a1a17396131aaa6cb7589072f8b11e5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 51,
+      "hasStructuralAnalysis": true
+    },
+    ".serena/project.yml": {
+      "filePath": ".serena/project.yml",
+      "contentHash": "1303cc378584f498bd162c329bae34047e9781a8b98482ba09b3e68e2f5d9971",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 170,
+      "hasStructuralAnalysis": true
+    },
+    "CLAUDE.md": {
+      "filePath": "CLAUDE.md",
+      "contentHash": "62e2d6d9381fb7339e7f2462d368a75a00a84efdadef6e9e465edcb149c23093",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 343,
+      "hasStructuralAnalysis": true
+    },
+    "Caddyfile": {
+      "filePath": "Caddyfile",
+      "contentHash": "9bb7232237370df9addb9782927cef924e7cfdaf57cb68f3f6e6b28621147522",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 4,
+      "hasStructuralAnalysis": false
+    },
+    "Dockerfile": {
+      "filePath": "Dockerfile",
+      "contentHash": "112be8379edd9f1e6cf5d565dc9c45a4a9e46fba6fb6b227927187da79c88c05",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 22,
+      "hasStructuralAnalysis": true
+    },
+    "alembic.ini": {
+      "filePath": "alembic.ini",
+      "contentHash": "52868f5b7ac48ff4315ea5b07b8f737febf0e4af930e49fd56bc1a291e1837bf",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 39,
+      "hasStructuralAnalysis": false
+    },
+    "app/__init__.py": {
+      "filePath": "app/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "app/api/__init__.py": {
+      "filePath": "app/api/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "app/api/github.py": {
+      "filePath": "app/api/github.py",
+      "contentHash": "2a2ed2df245c157726990ea08a8fa53cdc71ca26318170966cfc21e7f798e555",
+      "functions": [
+        {
+          "name": "verify_signature",
+          "params": [
+            "body",
+            "signature"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "github_webhook",
+          "params": [
+            "request",
+            "x_hub_signature_256",
+            "x_github_event"
+          ],
+          "returnType": "dict[str, object]",
+          "exported": true,
+          "lineCount": 38
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "hashlib",
+          "specifiers": [
+            "hashlib"
+          ]
+        },
+        {
+          "source": "hmac",
+          "specifiers": [
+            "hmac"
+          ]
+        },
+        {
+          "source": "fastapi",
+          "specifiers": [
+            "APIRouter",
+            "Header",
+            "HTTPException",
+            "Request"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "select"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Source"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "session_scope"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "get_logger"
+          ]
+        },
+        {
+          "source": "app.pipeline.ingest",
+          "specifiers": [
+            "store_items"
+          ]
+        },
+        {
+          "source": "app.sources.github_release",
+          "specifiers": [
+            "release_to_item"
+          ]
+        }
+      ],
+      "exports": [
+        "verify_signature",
+        "github_webhook"
+      ],
+      "totalLines": 69,
+      "hasStructuralAnalysis": true
+    },
+    "app/api/health.py": {
+      "filePath": "app/api/health.py",
+      "contentHash": "303247b8fb032d7684e4ad7c6dac0feba1629b53184a80acd8a9a59816f1dde1",
+      "functions": [
+        {
+          "name": "health",
+          "params": [],
+          "returnType": "dict[str, str]",
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "fastapi",
+          "specifiers": [
+            "APIRouter"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "select"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "session_scope"
+          ]
+        }
+      ],
+      "exports": [
+        "health"
+      ],
+      "totalLines": 18,
+      "hasStructuralAnalysis": true
+    },
+    "app/api/telegram.py": {
+      "filePath": "app/api/telegram.py",
+      "contentHash": "9fdd6b237dabb50b8d109d5f14ad8c4695c8956e974398c27a5892edede96550",
+      "functions": [
+        {
+          "name": "telegram_webhook",
+          "params": [
+            "request",
+            "x_telegram_bot_api_secret_token"
+          ],
+          "returnType": "dict[str, object]",
+          "exported": true,
+          "lineCount": 29
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "hmac",
+          "specifiers": [
+            "hmac"
+          ]
+        },
+        {
+          "source": "fastapi",
+          "specifiers": [
+            "APIRouter",
+            "Header",
+            "HTTPException",
+            "Request"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Feedback"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "session_scope"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "get_logger"
+          ]
+        },
+        {
+          "source": "app.notify.telegram",
+          "specifiers": [
+            "answer_callback",
+            "parse_feedback_callback"
+          ]
+        }
+      ],
+      "exports": [
+        "telegram_webhook"
+      ],
+      "totalLines": 51,
+      "hasStructuralAnalysis": true
+    },
+    "app/config.py": {
+      "filePath": "app/config.py",
+      "contentHash": "7e2d3dd443d85d02a5b6fea48b7fbeff65d0691990b4dcc30d7b9251f4c346d2",
+      "functions": [
+        {
+          "name": "_read_yaml",
+          "params": [
+            "path"
+          ],
+          "returnType": "dict[str, Any]",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "get_settings",
+          "params": [],
+          "returnType": "Settings",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "get_rules",
+          "params": [],
+          "returnType": "Rules",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "get_source_configs",
+          "params": [],
+          "returnType": "list[SourceConfig]",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "reload_configs",
+          "params": [],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [
+        {
+          "name": "Settings",
+          "methods": [],
+          "properties": [
+            "database_url",
+            "anthropic_api_key",
+            "llm_model",
+            "llm_daily_cap",
+            "telegram_bot_token",
+            "telegram_chat_id",
+            "telegram_webhook_secret",
+            "github_token",
+            "github_webhook_secret",
+            "scheduler_enabled",
+            "log_level"
+          ],
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "SourceConfig",
+          "methods": [],
+          "properties": [
+            "name",
+            "type",
+            "config",
+            "poll_interval_sec",
+            "trust_score",
+            "enabled"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "ScoringConfig",
+          "methods": [],
+          "properties": [
+            "w_src",
+            "w_kw",
+            "w_hot",
+            "w_multi",
+            "w_fresh",
+            "threshold"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "NotifyConfig",
+          "methods": [],
+          "properties": [
+            "daily_push_cap",
+            "quiet_start_hour",
+            "quiet_end_hour",
+            "timezone"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "Rules",
+          "methods": [],
+          "properties": [
+            "include_keywords",
+            "include_repos",
+            "exclude_keywords",
+            "exclude_domains",
+            "always_pass_sources",
+            "interests",
+            "scoring",
+            "notify"
+          ],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "imports": [
+        {
+          "source": "functools",
+          "specifiers": [
+            "functools"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Any"
+          ]
+        },
+        {
+          "source": "yaml",
+          "specifiers": [
+            "yaml"
+          ]
+        },
+        {
+          "source": "pydantic",
+          "specifiers": [
+            "BaseModel",
+            "Field"
+          ]
+        },
+        {
+          "source": "pydantic_settings",
+          "specifiers": [
+            "BaseSettings",
+            "SettingsConfigDict"
+          ]
+        }
+      ],
+      "exports": [
+        "Settings",
+        "SourceConfig",
+        "ScoringConfig",
+        "NotifyConfig",
+        "Rules",
+        "_read_yaml",
+        "get_settings",
+        "get_rules",
+        "get_source_configs",
+        "reload_configs"
+      ],
+      "totalLines": 104,
+      "hasStructuralAnalysis": true
+    },
+    "app/db/__init__.py": {
+      "filePath": "app/db/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "app/db/alembic/env.py": {
+      "filePath": "app/db/alembic/env.py",
+      "contentHash": "dc502cab117046d163cefe77212fac4917976aed799bf7014a00126454a127ea",
+      "functions": [
+        {
+          "name": "run_migrations_offline",
+          "params": [],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "_do_run_migrations",
+          "params": [
+            "connection"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "run_migrations_online",
+          "params": [],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "asyncio",
+          "specifiers": [
+            "asyncio"
+          ]
+        },
+        {
+          "source": "alembic",
+          "specifiers": [
+            "context"
+          ]
+        },
+        {
+          "source": "sqlalchemy.engine",
+          "specifiers": [
+            "Connection"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Base"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "engine"
+          ]
+        }
+      ],
+      "exports": [
+        "run_migrations_offline",
+        "_do_run_migrations",
+        "run_migrations_online"
+      ],
+      "totalLines": 44,
+      "hasStructuralAnalysis": true
+    },
+    "app/db/alembic/script.py.mako": {
+      "filePath": "app/db/alembic/script.py.mako",
+      "contentHash": "714e932cdf0d788e6e50e43431526113c4e543bc2d7869ac5effaac7cf53043f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 27,
+      "hasStructuralAnalysis": false
+    },
+    "app/db/alembic/versions/20260830_0001_initial.py": {
+      "filePath": "app/db/alembic/versions/20260830_0001_initial.py",
+      "contentHash": "5cb6284ae2d7b7ebc7952111d92989b3d4597ca97b5504560552c0c4d93b5598",
+      "functions": [
+        {
+          "name": "upgrade",
+          "params": [],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 102
+        },
+        {
+          "name": "downgrade",
+          "params": [],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "collections.abc",
+          "specifiers": [
+            "Sequence"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "sa"
+          ]
+        },
+        {
+          "source": "alembic",
+          "specifiers": [
+            "op"
+          ]
+        },
+        {
+          "source": "sqlalchemy.dialects",
+          "specifiers": [
+            "postgresql"
+          ]
+        }
+      ],
+      "exports": [
+        "upgrade",
+        "downgrade"
+      ],
+      "totalLines": 133,
+      "hasStructuralAnalysis": true
+    },
+    "app/db/models.py": {
+      "filePath": "app/db/models.py",
+      "contentHash": "e81668daf5729136319f9f3c3b2aebd95963ec4148884bad525528d640176746",
+      "functions": [],
+      "classes": [
+        {
+          "name": "Base",
+          "methods": [],
+          "properties": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "Source",
+          "methods": [],
+          "properties": [
+            "id",
+            "name",
+            "type",
+            "config",
+            "poll_interval_sec",
+            "trust_score",
+            "enabled",
+            "last_polled_at",
+            "last_error",
+            "fail_count"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "Item",
+          "methods": [],
+          "properties": [
+            "id",
+            "source_id",
+            "external_id",
+            "url",
+            "url_normalized",
+            "url_hash",
+            "title",
+            "summary_raw",
+            "author",
+            "published_at",
+            "fetched_at",
+            "category",
+            "status",
+            "cluster_id",
+            "score",
+            "raw"
+          ],
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "Decision",
+          "methods": [],
+          "properties": [
+            "id",
+            "item_id",
+            "stage",
+            "passed",
+            "score",
+            "details",
+            "created_at"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "Summary",
+          "methods": [],
+          "properties": [
+            "item_id",
+            "title_ko",
+            "summary_ko",
+            "tags",
+            "importance",
+            "worth_notifying",
+            "model",
+            "tokens_in",
+            "tokens_out",
+            "created_at"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "Notification",
+          "methods": [],
+          "properties": [
+            "id",
+            "item_id",
+            "channel",
+            "level",
+            "sent_at",
+            "message_id",
+            "error"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "Feedback",
+          "methods": [],
+          "properties": [
+            "id",
+            "item_id",
+            "verdict",
+            "created_at"
+          ],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "datetime"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Any"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "JSON",
+            "Boolean",
+            "DateTime",
+            "Float",
+            "ForeignKey",
+            "Integer",
+            "String",
+            "Text",
+            "UniqueConstraint",
+            "func"
+          ]
+        },
+        {
+          "source": "sqlalchemy.dialects.postgresql",
+          "specifiers": [
+            "ARRAY",
+            "JSONB"
+          ]
+        },
+        {
+          "source": "sqlalchemy.orm",
+          "specifiers": [
+            "DeclarativeBase",
+            "Mapped",
+            "mapped_column"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "Category",
+            "ItemStatus"
+          ]
+        }
+      ],
+      "exports": [
+        "Base",
+        "Source",
+        "Item",
+        "Decision",
+        "Summary",
+        "Notification",
+        "Feedback"
+      ],
+      "totalLines": 118,
+      "hasStructuralAnalysis": true
+    },
+    "app/db/session.py": {
+      "filePath": "app/db/session.py",
+      "contentHash": "10de4cf55a281af214e9de79d148264e5f23b0eb63f0e4a428f5d5c23eea4063",
+      "functions": [
+        {
+          "name": "to_asyncpg_url",
+          "params": [
+            "url"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "requires_tls",
+          "params": [
+            "url"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "connect_args",
+          "params": [
+            "url"
+          ],
+          "returnType": "dict[str, Any]",
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "session_scope",
+          "params": [],
+          "returnType": "AsyncIterator[AsyncSession]",
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "ssl",
+          "specifiers": [
+            "ssl"
+          ]
+        },
+        {
+          "source": "collections.abc",
+          "specifiers": [
+            "AsyncIterator"
+          ]
+        },
+        {
+          "source": "contextlib",
+          "specifiers": [
+            "asynccontextmanager"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Any"
+          ]
+        },
+        {
+          "source": "urllib.parse",
+          "specifiers": [
+            "parse_qsl",
+            "urlencode",
+            "urlsplit",
+            "urlunsplit"
+          ]
+        },
+        {
+          "source": "sqlalchemy.ext.asyncio",
+          "specifiers": [
+            "AsyncSession",
+            "async_sessionmaker",
+            "create_async_engine"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_settings"
+          ]
+        }
+      ],
+      "exports": [
+        "to_asyncpg_url",
+        "requires_tls",
+        "connect_args",
+        "session_scope"
+      ],
+      "totalLines": 70,
+      "hasStructuralAnalysis": true
+    },
+    "app/jobs/__init__.py": {
+      "filePath": "app/jobs/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "app/jobs/collect.py": {
+      "filePath": "app/jobs/collect.py",
+      "contentHash": "afc663c35e3c2caf521f88cb613a5c0949defc447de56e767948c5142bacb55c",
+      "functions": [
+        {
+          "name": "run_source",
+          "params": [
+            "source_id"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 37
+        },
+        {
+          "name": "run_all_sources",
+          "params": [],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 10
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "select"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "SourceConfig"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Source"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "session_scope"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "get_logger"
+          ]
+        },
+        {
+          "source": "app.notify.telegram",
+          "specifiers": [
+            "send_ops_alert"
+          ]
+        },
+        {
+          "source": "app.pipeline.ingest",
+          "specifiers": [
+            "store_items"
+          ]
+        },
+        {
+          "source": "app.sources",
+          "specifiers": [
+            "build_source"
+          ]
+        }
+      ],
+      "exports": [
+        "run_source",
+        "run_all_sources"
+      ],
+      "totalLines": 70,
+      "hasStructuralAnalysis": true
+    },
+    "app/jobs/notify.py": {
+      "filePath": "app/jobs/notify.py",
+      "contentHash": "837091ffb20f186d6ec424807087f274d1a6ebfe32ceea38d88409dbc54956d9",
+      "functions": [
+        {
+          "name": "_claim_one",
+          "params": [
+            "session",
+            "skip_ids"
+          ],
+          "returnType": "tuple[Item, Summary, Source] | None",
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "run_notify",
+          "params": [
+            "notifier"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 65
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "select"
+          ]
+        },
+        {
+          "source": "sqlalchemy.ext.asyncio",
+          "specifiers": [
+            "AsyncSession"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_rules"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Item",
+            "Notification",
+            "Source",
+            "Summary"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "session_scope"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "get_logger"
+          ]
+        },
+        {
+          "source": "app.notify.base",
+          "specifiers": [
+            "Notifier"
+          ]
+        },
+        {
+          "source": "app.notify.policy",
+          "specifiers": [
+            "decide"
+          ]
+        },
+        {
+          "source": "app.notify.telegram",
+          "specifiers": [
+            "TelegramNotifier"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "ItemStatus",
+            "Level"
+          ]
+        }
+      ],
+      "exports": [
+        "_claim_one",
+        "run_notify"
+      ],
+      "totalLines": 113,
+      "hasStructuralAnalysis": true
+    },
+    "app/jobs/pipeline.py": {
+      "filePath": "app/jobs/pipeline.py",
+      "contentHash": "ef179f78080a6e4272956a7d195893564ed219d895dda2a1b800cfb5fb867385",
+      "functions": [
+        {
+          "name": "_record",
+          "params": [
+            "item",
+            "stage",
+            "passed",
+            "details"
+          ],
+          "returnType": "Decision",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "_llm_calls_today",
+          "params": [
+            "session"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "_claim_batch",
+          "params": [
+            "session"
+          ],
+          "returnType": "list[tuple[Item, Source]]",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "_process",
+          "params": [
+            "session",
+            "item",
+            "source"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 89
+        },
+        {
+          "name": "run_pipeline",
+          "params": [],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 33
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime",
+            "timedelta"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "func",
+            "select"
+          ]
+        },
+        {
+          "source": "sqlalchemy.ext.asyncio",
+          "specifiers": [
+            "AsyncSession"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_rules",
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Decision",
+            "Item",
+            "Source",
+            "Summary"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "session_scope"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "get_logger"
+          ]
+        },
+        {
+          "source": "app.pipeline",
+          "specifiers": [
+            "llm"
+          ]
+        },
+        {
+          "source": "app.pipeline.dedupe",
+          "specifiers": [
+            "find_cluster",
+            "mention_count"
+          ]
+        },
+        {
+          "source": "app.pipeline.rules",
+          "specifiers": [
+            "apply_rules"
+          ]
+        },
+        {
+          "source": "app.pipeline.scoring",
+          "specifiers": [
+            "score_item"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "ItemStatus",
+            "Stage"
+          ]
+        }
+      ],
+      "exports": [
+        "_record",
+        "_llm_calls_today",
+        "_claim_batch",
+        "_process",
+        "run_pipeline"
+      ],
+      "totalLines": 173,
+      "hasStructuralAnalysis": true
+    },
+    "app/jobs/scheduler.py": {
+      "filePath": "app/jobs/scheduler.py",
+      "contentHash": "e7c8731418fbf986926a912d0f276a3b81e6fcec31433c6c47b7c9a7aef592f9",
+      "functions": [
+        {
+          "name": "sync_sources",
+          "params": [],
+          "returnType": "list[Source]",
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "start_scheduler",
+          "params": [],
+          "returnType": "AsyncIOScheduler",
+          "exported": true,
+          "lineCount": 21
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "apscheduler.schedulers.asyncio",
+          "specifiers": [
+            "AsyncIOScheduler"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "select"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_source_configs"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Source"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "session_scope"
+          ]
+        },
+        {
+          "source": "app.jobs.collect",
+          "specifiers": [
+            "run_source"
+          ]
+        },
+        {
+          "source": "app.jobs.notify",
+          "specifiers": [
+            "run_notify"
+          ]
+        },
+        {
+          "source": "app.jobs.pipeline",
+          "specifiers": [
+            "run_pipeline"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "get_logger"
+          ]
+        }
+      ],
+      "exports": [
+        "sync_sources",
+        "start_scheduler"
+      ],
+      "totalLines": 67,
+      "hasStructuralAnalysis": true
+    },
+    "app/log.py": {
+      "filePath": "app/log.py",
+      "contentHash": "0d9d7d834d3c3e0fb455d014503e461bf75ce9ea8f6c632ae30f9a776844f308",
+      "functions": [
+        {
+          "name": "configure_logging",
+          "params": [],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "get_logger",
+          "params": [
+            "name"
+          ],
+          "returnType": "structlog.stdlib.BoundLogger",
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "logging",
+          "specifiers": [
+            "logging"
+          ]
+        },
+        {
+          "source": "structlog",
+          "specifiers": [
+            "structlog"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_settings"
+          ]
+        }
+      ],
+      "exports": [
+        "configure_logging",
+        "get_logger"
+      ],
+      "totalLines": 30,
+      "hasStructuralAnalysis": true
+    },
+    "app/main.py": {
+      "filePath": "app/main.py",
+      "contentHash": "e876f8cbb9c2575237c410d7aedc1d81a9a550ea1ce665314cfe0b1dcd7ade9b",
+      "functions": [
+        {
+          "name": "lifespan",
+          "params": [
+            "app"
+          ],
+          "returnType": "AsyncIterator[None]",
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "collections.abc",
+          "specifiers": [
+            "AsyncIterator"
+          ]
+        },
+        {
+          "source": "contextlib",
+          "specifiers": [
+            "asynccontextmanager"
+          ]
+        },
+        {
+          "source": "fastapi",
+          "specifiers": [
+            "FastAPI"
+          ]
+        },
+        {
+          "source": "app.api",
+          "specifiers": [
+            "github",
+            "health",
+            "telegram"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "engine"
+          ]
+        },
+        {
+          "source": "app.jobs.scheduler",
+          "specifiers": [
+            "start_scheduler"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "configure_logging",
+            "get_logger"
+          ]
+        }
+      ],
+      "exports": [
+        "lifespan"
+      ],
+      "totalLines": 35,
+      "hasStructuralAnalysis": true
+    },
+    "app/notify/__init__.py": {
+      "filePath": "app/notify/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "app/notify/base.py": {
+      "filePath": "app/notify/base.py",
+      "contentHash": "e4be5c1cf0b9354792c281573cf63e17b577cfb258112b5c78c277eee20458d0",
+      "functions": [],
+      "classes": [
+        {
+          "name": "Notifier",
+          "methods": [
+            "send"
+          ],
+          "properties": [
+            "channel"
+          ],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "typing",
+          "specifiers": [
+            "Protocol",
+            "runtime_checkable"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Item",
+            "Summary"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "Level"
+          ]
+        }
+      ],
+      "exports": [
+        "Notifier"
+      ],
+      "totalLines": 18,
+      "hasStructuralAnalysis": true
+    },
+    "app/notify/policy.py": {
+      "filePath": "app/notify/policy.py",
+      "contentHash": "49dd606f84186a78fc58267743d326fcfda1389cfee9d9c4d84f411a9326f55a",
+      "functions": [
+        {
+          "name": "level_for",
+          "params": [
+            "importance"
+          ],
+          "returnType": "Level",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "in_quiet_hours",
+          "params": [
+            "cfg",
+            "now"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "push_count_today",
+          "params": [
+            "session",
+            "cfg",
+            "now"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "decide",
+          "params": [
+            "session",
+            "cfg",
+            "importance",
+            "now"
+          ],
+          "returnType": "Verdict",
+          "exported": true,
+          "lineCount": 13
+        }
+      ],
+      "classes": [
+        {
+          "name": "Verdict",
+          "methods": [],
+          "properties": [
+            "level",
+            "reason"
+          ],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "dataclasses",
+          "specifiers": [
+            "dataclass"
+          ]
+        },
+        {
+          "source": "datetime",
+          "specifiers": [
+            "datetime"
+          ]
+        },
+        {
+          "source": "zoneinfo",
+          "specifiers": [
+            "ZoneInfo"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "func",
+            "select"
+          ]
+        },
+        {
+          "source": "sqlalchemy.ext.asyncio",
+          "specifiers": [
+            "AsyncSession"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "NotifyConfig"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Notification"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "Level"
+          ]
+        }
+      ],
+      "exports": [
+        "Verdict",
+        "level_for",
+        "in_quiet_hours",
+        "push_count_today",
+        "decide"
+      ],
+      "totalLines": 69,
+      "hasStructuralAnalysis": true
+    },
+    "app/notify/telegram.py": {
+      "filePath": "app/notify/telegram.py",
+      "contentHash": "40decbbd4b6e8a86f0ca61a556ff9f33ce7e582eddb248f0537cab545fd966d1",
+      "functions": [
+        {
+          "name": "feedback_callback_data",
+          "params": [
+            "verdict",
+            "item_id"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "parse_feedback_callback",
+          "params": [
+            "data"
+          ],
+          "returnType": "tuple[str, int] | None",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "relative_time",
+          "params": [
+            "published_at",
+            "now"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "render",
+          "params": [
+            "item",
+            "summary",
+            "source_name",
+            "now"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "_call",
+          "params": [
+            "method",
+            "payload"
+          ],
+          "returnType": "dict[str, object]",
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "answer_callback",
+          "params": [
+            "callback_query_id",
+            "text"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "send_ops_alert",
+          "params": [
+            "text"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [
+        {
+          "name": "TelegramNotifier",
+          "methods": [
+            "send"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 30
+        }
+      ],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
+        {
+          "source": "html",
+          "specifiers": [
+            "escape"
+          ]
+        },
+        {
+          "source": "httpx",
+          "specifiers": [
+            "httpx"
+          ]
+        },
+        {
+          "source": "tenacity",
+          "specifiers": [
+            "retry",
+            "stop_after_attempt",
+            "wait_exponential"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Item",
+            "Summary"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "Level"
+          ]
+        }
+      ],
+      "exports": [
+        "feedback_callback_data",
+        "parse_feedback_callback",
+        "relative_time",
+        "render",
+        "_call",
+        "TelegramNotifier",
+        "answer_callback",
+        "send_ops_alert"
+      ],
+      "totalLines": 114,
+      "hasStructuralAnalysis": true
+    },
+    "app/pipeline/__init__.py": {
+      "filePath": "app/pipeline/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "app/pipeline/dedupe.py": {
+      "filePath": "app/pipeline/dedupe.py",
+      "contentHash": "70a6179e7bfad28bbf2453aca9e351f2741184831d43cc8ca724e0acdc630179",
+      "functions": [
+        {
+          "name": "find_cluster",
+          "params": [
+            "session",
+            "title",
+            "exclude_item_id"
+          ],
+          "returnType": "int | None",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "mention_count",
+          "params": [
+            "session",
+            "item_id"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime",
+            "timedelta"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "func",
+            "select"
+          ]
+        },
+        {
+          "source": "sqlalchemy.ext.asyncio",
+          "specifiers": [
+            "AsyncSession"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Item"
+          ]
+        }
+      ],
+      "exports": [
+        "find_cluster",
+        "mention_count"
+      ],
+      "totalLines": 37,
+      "hasStructuralAnalysis": true
+    },
+    "app/pipeline/ingest.py": {
+      "filePath": "app/pipeline/ingest.py",
+      "contentHash": "69bd7e06dc3a6486827106cec435242b898428862a3c7b1dac8479a7f0c1ae78",
+      "functions": [
+        {
+          "name": "to_row",
+          "params": [
+            "source_id",
+            "item"
+          ],
+          "returnType": "dict[str, object]",
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "store_items",
+          "params": [
+            "session",
+            "source_id",
+            "items"
+          ],
+          "returnType": "list[int]",
+          "exported": true,
+          "lineCount": 19
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "sqlalchemy.dialects.postgresql",
+          "specifiers": [
+            "insert"
+          ]
+        },
+        {
+          "source": "sqlalchemy.ext.asyncio",
+          "specifiers": [
+            "AsyncSession"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Item"
+          ]
+        },
+        {
+          "source": "app.pipeline.normalize",
+          "specifiers": [
+            "normalize_url",
+            "url_hash"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "Category",
+            "ItemStatus",
+            "NormalizedItem"
+          ]
+        }
+      ],
+      "exports": [
+        "to_row",
+        "store_items"
+      ],
+      "totalLines": 52,
+      "hasStructuralAnalysis": true
+    },
+    "app/pipeline/llm.py": {
+      "filePath": "app/pipeline/llm.py",
+      "contentHash": "fdb78bcf114432bbe3b93670a79034c100686713f734bc164cb8a0526351befd",
+      "functions": [
+        {
+          "name": "enrich_body",
+          "params": [
+            "url"
+          ],
+          "returnType": "str | None",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "_client",
+          "params": [],
+          "returnType": "AsyncAnthropic",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "judge",
+          "params": [
+            "rules",
+            "source",
+            "title",
+            "body"
+          ],
+          "returnType": "LLMResult",
+          "exported": true,
+          "lineCount": 25
+        }
+      ],
+      "classes": [
+        {
+          "name": "LLMResult",
+          "methods": [],
+          "properties": [
+            "verdict",
+            "model",
+            "tokens_in",
+            "tokens_out"
+          ],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "imports": [
+        {
+          "source": "dataclasses",
+          "specifiers": [
+            "dataclass"
+          ]
+        },
+        {
+          "source": "httpx",
+          "specifiers": [
+            "httpx"
+          ]
+        },
+        {
+          "source": "trafilatura",
+          "specifiers": [
+            "trafilatura"
+          ]
+        },
+        {
+          "source": "anthropic",
+          "specifiers": [
+            "AsyncAnthropic"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "Rules",
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "get_logger"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "LLMVerdict"
+          ]
+        }
+      ],
+      "exports": [
+        "LLMResult",
+        "enrich_body",
+        "_client",
+        "judge"
+      ],
+      "totalLines": 95,
+      "hasStructuralAnalysis": true
+    },
+    "app/pipeline/normalize.py": {
+      "filePath": "app/pipeline/normalize.py",
+      "contentHash": "91e5df83820e6cd6669cf19f931506ec460d8bf320e0be538324e0f561875a3e",
+      "functions": [
+        {
+          "name": "normalize_url",
+          "params": [
+            "url"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "url_hash",
+          "params": [
+            "normalized"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "strip_html",
+          "params": [
+            "text"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "hashlib",
+          "specifiers": [
+            "hashlib"
+          ]
+        },
+        {
+          "source": "re",
+          "specifiers": [
+            "re"
+          ]
+        },
+        {
+          "source": "html",
+          "specifiers": [
+            "unescape"
+          ]
+        },
+        {
+          "source": "urllib.parse",
+          "specifiers": [
+            "parse_qsl",
+            "urlencode",
+            "urlsplit",
+            "urlunsplit"
+          ]
+        }
+      ],
+      "exports": [
+        "normalize_url",
+        "url_hash",
+        "strip_html"
+      ],
+      "totalLines": 42,
+      "hasStructuralAnalysis": true
+    },
+    "app/pipeline/rules.py": {
+      "filePath": "app/pipeline/rules.py",
+      "contentHash": "bbe29f5658e2c097e869b97eba44ee555c0505efb9a64b168f922ef1fc10e376",
+      "functions": [
+        {
+          "name": "_keyword_pattern",
+          "params": [
+            "keyword"
+          ],
+          "returnType": "re.Pattern[str]",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "find_keywords",
+          "params": [
+            "text",
+            "keywords"
+          ],
+          "returnType": "list[str]",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "_matches_any",
+          "params": [
+            "value",
+            "patterns"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "_excluded_domain",
+          "params": [
+            "url",
+            "patterns"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "apply_rules",
+          "params": [
+            "rules",
+            "source",
+            "title",
+            "body",
+            "url",
+            "repo"
+          ],
+          "returnType": "RuleResult",
+          "exported": true,
+          "lineCount": 30
+        }
+      ],
+      "classes": [
+        {
+          "name": "RuleResult",
+          "methods": [],
+          "properties": [
+            "passed",
+            "reason",
+            "matched_keywords"
+          ],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "re",
+          "specifiers": [
+            "re"
+          ]
+        },
+        {
+          "source": "dataclasses",
+          "specifiers": [
+            "dataclass",
+            "field"
+          ]
+        },
+        {
+          "source": "fnmatch",
+          "specifiers": [
+            "fnmatch"
+          ]
+        },
+        {
+          "source": "urllib.parse",
+          "specifiers": [
+            "urlsplit"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "Rules"
+          ]
+        }
+      ],
+      "exports": [
+        "RuleResult",
+        "_keyword_pattern",
+        "find_keywords",
+        "_matches_any",
+        "_excluded_domain",
+        "apply_rules"
+      ],
+      "totalLines": 79,
+      "hasStructuralAnalysis": true
+    },
+    "app/pipeline/scoring.py": {
+      "filePath": "app/pipeline/scoring.py",
+      "contentHash": "8592f7836ce494f5cb040f98e2e7b466abc6aef08fa1938d520471cb1ab373b0",
+      "functions": [
+        {
+          "name": "freshness",
+          "params": [
+            "published_at",
+            "now"
+          ],
+          "returnType": "float",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "hotness",
+          "params": [
+            "metrics"
+          ],
+          "returnType": "float",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "score_item",
+          "params": [
+            "cfg",
+            "trust",
+            "keyword_hits",
+            "metrics",
+            "mention_count",
+            "published_at",
+            "now"
+          ],
+          "returnType": "ScoreResult",
+          "exported": true,
+          "lineCount": 19
+        }
+      ],
+      "classes": [
+        {
+          "name": "ScoreResult",
+          "methods": [],
+          "properties": [
+            "score",
+            "passed",
+            "breakdown"
+          ],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "math",
+          "specifiers": [
+            "math"
+          ]
+        },
+        {
+          "source": "dataclasses",
+          "specifiers": [
+            "dataclass"
+          ]
+        },
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "ScoringConfig"
+          ]
+        }
+      ],
+      "exports": [
+        "ScoreResult",
+        "freshness",
+        "hotness",
+        "score_item"
+      ],
+      "totalLines": 59,
+      "hasStructuralAnalysis": true
+    },
+    "app/schemas.py": {
+      "filePath": "app/schemas.py",
+      "contentHash": "d6abadc41cd9d31148c6cdc2f4bfbcc7454aeb051b0fb3e3bebecf02fcf17fe1",
+      "functions": [],
+      "classes": [
+        {
+          "name": "Category",
+          "methods": [],
+          "properties": [],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "ItemStatus",
+          "methods": [],
+          "properties": [],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "Stage",
+          "methods": [],
+          "properties": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "Level",
+          "methods": [],
+          "properties": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "NormalizedItem",
+          "methods": [],
+          "properties": [
+            "source",
+            "external_id",
+            "url",
+            "title",
+            "body",
+            "author",
+            "published_at",
+            "category_hint",
+            "metrics",
+            "raw"
+          ],
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "LLMVerdict",
+          "methods": [],
+          "properties": [
+            "worth_notifying",
+            "importance",
+            "category",
+            "title_ko",
+            "summary_ko",
+            "tags"
+          ],
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "datetime"
+          ]
+        },
+        {
+          "source": "enum",
+          "specifiers": [
+            "StrEnum"
+          ]
+        },
+        {
+          "source": "pydantic",
+          "specifiers": [
+            "BaseModel",
+            "Field"
+          ]
+        }
+      ],
+      "exports": [
+        "Category",
+        "ItemStatus",
+        "Stage",
+        "Level",
+        "NormalizedItem",
+        "LLMVerdict"
+      ],
+      "totalLines": 67,
+      "hasStructuralAnalysis": true
+    },
+    "app/sources/__init__.py": {
+      "filePath": "app/sources/__init__.py",
+      "contentHash": "5a54852d748fdbfe4337e000d8e90ebfb54a987a1e4b23e5e7cb58c52a1c8bd7",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "app.sources",
+          "specifiers": [
+            "github_release",
+            "rss",
+            "youtube"
+          ]
+        },
+        {
+          "source": "app.sources.base",
+          "specifiers": [
+            "Source",
+            "build_source",
+            "register",
+            "registered_types"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 7,
+      "hasStructuralAnalysis": true
+    },
+    "app/sources/base.py": {
+      "filePath": "app/sources/base.py",
+      "contentHash": "657dcc7cef813e15a166baa28645dd8701b2d512fd6c02363cc2bb9f8b9361c1",
+      "functions": [
+        {
+          "name": "register",
+          "params": [
+            "type_name"
+          ],
+          "returnType": "Callable[[SourceFactory], SourceFactory]",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "build_source",
+          "params": [
+            "cfg"
+          ],
+          "returnType": "Source",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "registered_types",
+          "params": [],
+          "returnType": "list[str]",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "retryable",
+          "params": [
+            "exc"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "fetch_url",
+          "params": [
+            "url",
+            "headers"
+          ],
+          "returnType": "httpx.Response",
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [
+        {
+          "name": "Source",
+          "methods": [
+            "fetch"
+          ],
+          "properties": [
+            "name"
+          ],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "collections.abc",
+          "specifiers": [
+            "Callable"
+          ]
+        },
+        {
+          "source": "datetime",
+          "specifiers": [
+            "datetime"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Protocol",
+            "runtime_checkable"
+          ]
+        },
+        {
+          "source": "httpx",
+          "specifiers": [
+            "httpx"
+          ]
+        },
+        {
+          "source": "tenacity",
+          "specifiers": [
+            "retry",
+            "retry_if_exception",
+            "stop_after_attempt",
+            "wait_exponential"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "SourceConfig"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "NormalizedItem"
+          ]
+        }
+      ],
+      "exports": [
+        "Source",
+        "register",
+        "build_source",
+        "registered_types",
+        "retryable",
+        "fetch_url"
+      ],
+      "totalLines": 73,
+      "hasStructuralAnalysis": true
+    },
+    "app/sources/github_release.py": {
+      "filePath": "app/sources/github_release.py",
+      "contentHash": "5d54be2a9f1b37a67605bd2f6d15aaae63bc5e93a6aeda64a5a3029e98a70ba3",
+      "functions": [
+        {
+          "name": "auth_headers",
+          "params": [],
+          "returnType": "dict[str, str]",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "release_to_item",
+          "params": [
+            "source_name",
+            "repo",
+            "release"
+          ],
+          "returnType": "NormalizedItem | None",
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "_build",
+          "params": [
+            "cfg"
+          ],
+          "returnType": "Source",
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
+      "classes": [
+        {
+          "name": "GithubReleaseSource",
+          "methods": [
+            "__init__",
+            "_fetch_repo",
+            "fetch"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 34
+        }
+      ],
+      "imports": [
+        {
+          "source": "asyncio",
+          "specifiers": [
+            "asyncio"
+          ]
+        },
+        {
+          "source": "datetime",
+          "specifiers": [
+            "datetime"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Any"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "SourceConfig",
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "get_logger"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "Category",
+            "NormalizedItem"
+          ]
+        },
+        {
+          "source": "app.sources.base",
+          "specifiers": [
+            "Source",
+            "fetch_url",
+            "register"
+          ]
+        }
+      ],
+      "exports": [
+        "auth_headers",
+        "release_to_item",
+        "GithubReleaseSource",
+        "_build"
+      ],
+      "totalLines": 90,
+      "hasStructuralAnalysis": true
+    },
+    "app/sources/rss.py": {
+      "filePath": "app/sources/rss.py",
+      "contentHash": "ecc0e8390b820809f8403aac714bcef3a965cf89e31e99c00277cfff55570756",
+      "functions": [
+        {
+          "name": "entry_published",
+          "params": [
+            "entry"
+          ],
+          "returnType": "datetime | None",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "entry_body",
+          "params": [
+            "entry"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "_build",
+          "params": [
+            "cfg"
+          ],
+          "returnType": "Source",
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
+      "classes": [
+        {
+          "name": "RssSource",
+          "methods": [
+            "__init__",
+            "fetch"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 36
+        }
+      ],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Any"
+          ]
+        },
+        {
+          "source": "feedparser",
+          "specifiers": [
+            "feedparser"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "SourceConfig"
+          ]
+        },
+        {
+          "source": "app.pipeline.normalize",
+          "specifiers": [
+            "strip_html"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "Category",
+            "NormalizedItem"
+          ]
+        },
+        {
+          "source": "app.sources.base",
+          "specifiers": [
+            "Source",
+            "fetch_url",
+            "register"
+          ]
+        }
+      ],
+      "exports": [
+        "entry_published",
+        "entry_body",
+        "RssSource",
+        "_build"
+      ],
+      "totalLines": 77,
+      "hasStructuralAnalysis": true
+    },
+    "app/sources/youtube.py": {
+      "filePath": "app/sources/youtube.py",
+      "contentHash": "877364d42c50241c35fe5ebfd44f30529931edc623f6033967b64d87862cec0b",
+      "functions": [
+        {
+          "name": "_build",
+          "params": [
+            "cfg"
+          ],
+          "returnType": "Source",
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "app.config",
+          "specifiers": [
+            "SourceConfig"
+          ]
+        },
+        {
+          "source": "app.sources.base",
+          "specifiers": [
+            "Source",
+            "register"
+          ]
+        },
+        {
+          "source": "app.sources.rss",
+          "specifiers": [
+            "RssSource"
+          ]
+        }
+      ],
+      "exports": [
+        "_build"
+      ],
+      "totalLines": 19,
+      "hasStructuralAnalysis": true
+    },
+    "config/rules.yaml": {
+      "filePath": "config/rules.yaml",
+      "contentHash": "d039353e51ce1d8cf3d44d9e8c5c8649a6630b389a13c7ba6f6f2b82a1fb2793",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 85,
+      "hasStructuralAnalysis": true
+    },
+    "config/sources.yaml": {
+      "filePath": "config/sources.yaml",
+      "contentHash": "5227b57797d1bbb9a9982112507c5a317a040b85b021b0afb410cd88920831b4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 81,
+      "hasStructuralAnalysis": true
+    },
+    "docker-compose.yml": {
+      "filePath": "docker-compose.yml",
+      "contentHash": "de5d9fe3d6d9fa6962feaff76039082ba8b0ebc5ad470ba3f6f4309464270a6c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 28,
+      "hasStructuralAnalysis": true
+    },
+    "pyproject.toml": {
+      "filePath": "pyproject.toml",
+      "contentHash": "c582c85befec90a8efbb68468057de946edd3760c61eb05f54762a051d59f6e4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 60,
+      "hasStructuralAnalysis": true
+    },
+    "scripts/run_job.py": {
+      "filePath": "scripts/run_job.py",
+      "contentHash": "55fb55d71c619ec076b3e2fe780b6de513e57f4849a2ee86bea6062cfa036253",
+      "functions": [
+        {
+          "name": "main",
+          "params": [
+            "names"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "argparse",
+          "specifiers": [
+            "argparse"
+          ]
+        },
+        {
+          "source": "asyncio",
+          "specifiers": [
+            "asyncio"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "engine"
+          ]
+        },
+        {
+          "source": "app.jobs.collect",
+          "specifiers": [
+            "run_all_sources"
+          ]
+        },
+        {
+          "source": "app.jobs.notify",
+          "specifiers": [
+            "run_notify"
+          ]
+        },
+        {
+          "source": "app.jobs.pipeline",
+          "specifiers": [
+            "run_pipeline"
+          ]
+        },
+        {
+          "source": "app.jobs.scheduler",
+          "specifiers": [
+            "sync_sources"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "configure_logging"
+          ]
+        }
+      ],
+      "exports": [
+        "main"
+      ],
+      "totalLines": 37,
+      "hasStructuralAnalysis": true
+    },
+    "tests/__init__.py": {
+      "filePath": "tests/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "tests/conftest.py": {
+      "filePath": "tests/conftest.py",
+      "contentHash": "631ef9ace32ccc1ecc9c30267ad8df973fbdaa7eb126a8408bc2836ff937b22f",
+      "functions": [
+        {
+          "name": "fixture",
+          "params": [
+            "name"
+          ],
+          "returnType": "bytes",
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        }
+      ],
+      "exports": [
+        "fixture"
+      ],
+      "totalLines": 18,
+      "hasStructuralAnalysis": true
+    },
+    "tests/fixtures/github_release.json": {
+      "filePath": "tests/fixtures/github_release.json",
+      "contentHash": "302c95794315f029933cd95b9cd852e001fa9d3ee3ae2f143633e22f24446381",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 25,
+      "hasStructuralAnalysis": true
+    },
+    "tests/fixtures/rss_blog.xml": {
+      "filePath": "tests/fixtures/rss_blog.xml",
+      "contentHash": "260789174b31034b0004f6483d75ecbed6adaad3f3d6ef9c5322feede95bbc27",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 23,
+      "hasStructuralAnalysis": false
+    },
+    "tests/sources/__init__.py": {
+      "filePath": "tests/sources/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "tests/sources/test_github_release.py": {
+      "filePath": "tests/sources/test_github_release.py",
+      "contentHash": "15f6f666809613dc31399e246f89140ff27187d9d6116626e78b905f2ff93bc7",
+      "functions": [
+        {
+          "name": "make_source",
+          "params": [],
+          "returnType": "GithubReleaseSource",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "test_skips_drafts",
+          "params": [],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "test_since_is_ignored_so_failed_repos_recover",
+          "params": [],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "test_one_failing_repo_does_not_break_the_rest",
+          "params": [],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "test_release_to_item_drops_draft",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
+        {
+          "source": "httpx",
+          "specifiers": [
+            "httpx"
+          ]
+        },
+        {
+          "source": "respx",
+          "specifiers": [
+            "respx"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "SourceConfig"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "Category"
+          ]
+        },
+        {
+          "source": "app.sources.github_release",
+          "specifiers": [
+            "GithubReleaseSource",
+            "release_to_item"
+          ]
+        },
+        {
+          "source": "tests.conftest",
+          "specifiers": [
+            "fixture"
+          ]
+        }
+      ],
+      "exports": [
+        "make_source",
+        "test_skips_drafts",
+        "test_since_is_ignored_so_failed_repos_recover",
+        "test_one_failing_repo_does_not_break_the_rest",
+        "test_release_to_item_drops_draft"
+      ],
+      "totalLines": 63,
+      "hasStructuralAnalysis": true
+    },
+    "tests/sources/test_retry.py": {
+      "filePath": "tests/sources/test_retry.py",
+      "contentHash": "f0f4de1950be13a3b5b3b1fd00f9a4f4e181795c1212a00ec4a78d34c885ecae",
+      "functions": [
+        {
+          "name": "status_error",
+          "params": [
+            "code"
+          ],
+          "returnType": "httpx.HTTPStatusError",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "test_transport_error_is_retried",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_server_error_and_rate_limit_are_retried",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "test_permanent_client_errors_are_not_retried",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_unrelated_exception_is_not_retried",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "httpx",
+          "specifiers": [
+            "httpx"
+          ]
+        },
+        {
+          "source": "app.sources.base",
+          "specifiers": [
+            "retryable"
+          ]
+        }
+      ],
+      "exports": [
+        "status_error",
+        "test_transport_error_is_retried",
+        "test_server_error_and_rate_limit_are_retried",
+        "test_permanent_client_errors_are_not_retried",
+        "test_unrelated_exception_is_not_retried"
+      ],
+      "totalLines": 32,
+      "hasStructuralAnalysis": true
+    },
+    "tests/sources/test_rss.py": {
+      "filePath": "tests/sources/test_rss.py",
+      "contentHash": "afabed0196e6812ff31ee8957bf5f35d94c34d3c5cd17c8ec16aaeafee422efa",
+      "functions": [
+        {
+          "name": "make_source",
+          "params": [
+            "**config"
+          ],
+          "returnType": "RssSource",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_parses_entries",
+          "params": [],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "test_since_filters_older_entries",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "test_category_hint_from_config",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "test_youtube_feed_url_shape",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
+        {
+          "source": "httpx",
+          "specifiers": [
+            "httpx"
+          ]
+        },
+        {
+          "source": "respx",
+          "specifiers": [
+            "respx"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "SourceConfig"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "Category"
+          ]
+        },
+        {
+          "source": "app.sources.rss",
+          "specifiers": [
+            "RssSource"
+          ]
+        },
+        {
+          "source": "app.sources.youtube",
+          "specifiers": [
+            "FEED_URL"
+          ]
+        },
+        {
+          "source": "tests.conftest",
+          "specifiers": [
+            "fixture"
+          ]
+        }
+      ],
+      "exports": [
+        "make_source",
+        "test_parses_entries",
+        "test_since_filters_older_entries",
+        "test_category_hint_from_config",
+        "test_youtube_feed_url_shape"
+      ],
+      "totalLines": 53,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_normalize.py": {
+      "filePath": "tests/test_normalize.py",
+      "contentHash": "c324928322c7d0777d241a3fa9ee9a8290cc1c3a32c794d5665d5dfd1949b5af",
+      "functions": [
+        {
+          "name": "test_tracking_params_removed",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "test_trailing_slash_and_fragment",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_root_path_kept",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_same_url_variants_share_hash",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "test_strip_html",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_query_param_order_does_not_change_hash",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "app.pipeline.normalize",
+          "specifiers": [
+            "normalize_url",
+            "strip_html",
+            "url_hash"
+          ]
+        }
+      ],
+      "exports": [
+        "test_tracking_params_removed",
+        "test_trailing_slash_and_fragment",
+        "test_root_path_kept",
+        "test_same_url_variants_share_hash",
+        "test_strip_html",
+        "test_query_param_order_does_not_change_hash"
+      ],
+      "totalLines": 36,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_policy.py": {
+      "filePath": "tests/test_policy.py",
+      "contentHash": "b7328f536b98637406ca9f313d94d9482916f6fb180de2513a3e4e4225b86f91",
+      "functions": [
+        {
+          "name": "kst",
+          "params": [
+            "hour"
+          ],
+          "returnType": "datetime",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_levels",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "test_quiet_hours_wraps_midnight",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "test_daytime_is_not_quiet",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "test_disabled_when_start_equals_end",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "NotifyConfig"
+          ]
+        },
+        {
+          "source": "app.notify.policy",
+          "specifiers": [
+            "in_quiet_hours",
+            "level_for"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "Level"
+          ]
+        }
+      ],
+      "exports": [
+        "kst",
+        "test_levels",
+        "test_quiet_hours_wraps_midnight",
+        "test_daytime_is_not_quiet",
+        "test_disabled_when_start_equals_end"
+      ],
+      "totalLines": 39,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_rules.py": {
+      "filePath": "tests/test_rules.py",
+      "contentHash": "e1395e3fcbf78a43f3bd5380507b69fa77e23d601aa137fada33fab2bcbc18e0",
+      "functions": [
+        {
+          "name": "call",
+          "params": [
+            "**kwargs"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_include_keyword_passes",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_no_keyword_fails",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_exclude_beats_include",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_excluded_domain",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_excluded_domain_path_prefix",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_always_pass_source_skips_keywords",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_include_repo",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_word_boundary_avoids_substring_match",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_symbol_keyword_matches",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_body_is_searched",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "app.config",
+          "specifiers": [
+            "Rules"
+          ]
+        },
+        {
+          "source": "app.pipeline.rules",
+          "specifiers": [
+            "apply_rules"
+          ]
+        }
+      ],
+      "exports": [
+        "call",
+        "test_include_keyword_passes",
+        "test_no_keyword_fails",
+        "test_exclude_beats_include",
+        "test_excluded_domain",
+        "test_excluded_domain_path_prefix",
+        "test_always_pass_source_skips_keywords",
+        "test_include_repo",
+        "test_word_boundary_avoids_substring_match",
+        "test_symbol_keyword_matches",
+        "test_body_is_searched"
+      ],
+      "totalLines": 63,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_scoring.py": {
+      "filePath": "tests/test_scoring.py",
+      "contentHash": "f347900da1be11cb5b157ec627ee5eb76ba96b08ddfefdad0767271eb4041ebb",
+      "functions": [
+        {
+          "name": "test_freshness_full_within_a_day",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_freshness_halves_after_two_days",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_hotness_zero_without_metrics",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_hotness_monotonic_and_bounded",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_trusted_fresh_keyworded_item_passes",
+          "params": [],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "test_weak_item_drops",
+          "params": [],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "test_multi_source_mentions_lift_score",
+          "params": [],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime",
+            "timedelta"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "ScoringConfig"
+          ]
+        },
+        {
+          "source": "app.pipeline.scoring",
+          "specifiers": [
+            "freshness",
+            "hotness",
+            "score_item"
+          ]
+        }
+      ],
+      "exports": [
+        "test_freshness_full_within_a_day",
+        "test_freshness_halves_after_two_days",
+        "test_hotness_zero_without_metrics",
+        "test_hotness_monotonic_and_bounded",
+        "test_trusted_fresh_keyworded_item_passes",
+        "test_weak_item_drops",
+        "test_multi_source_mentions_lift_score"
+      ],
+      "totalLines": 66,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_session_url.py": {
+      "filePath": "tests/test_session_url.py",
+      "contentHash": "20da2216419848500ddbd716ebdfed8ec863f03eca298c4ff7298e4bf5a85f00",
+      "functions": [
+        {
+          "name": "test_driver_prefix_is_rewritten",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_already_asyncpg_url_is_kept",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_libpq_only_params_are_dropped",
+          "params": [],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "test_non_libpq_params_survive",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_requires_tls",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "test_connect_args_for_neon",
+          "params": [],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "test_connect_args_without_tls_has_no_ssl",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_connect_args_for_non_postgres_is_empty",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "ssl",
+          "specifiers": [
+            "ssl"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "connect_args",
+            "requires_tls",
+            "to_asyncpg_url"
+          ]
+        }
+      ],
+      "exports": [
+        "test_driver_prefix_is_rewritten",
+        "test_already_asyncpg_url_is_kept",
+        "test_libpq_only_params_are_dropped",
+        "test_non_libpq_params_survive",
+        "test_requires_tls",
+        "test_connect_args_for_neon",
+        "test_connect_args_without_tls_has_no_ssl",
+        "test_connect_args_for_non_postgres_is_empty"
+      ],
+      "totalLines": 59,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_telegram.py": {
+      "filePath": "tests/test_telegram.py",
+      "contentHash": "5b3e11afb8a777b29f5b759c07dac7c24227cbebf265858e132ba7c8eecca919",
+      "functions": [
+        {
+          "name": "make_pair",
+          "params": [
+            "title_ko"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "test_render_escapes_and_includes_source",
+          "params": [],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "test_relative_time_units",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "test_callback_roundtrip",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_callback_rejects_garbage",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime",
+            "timedelta"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Item",
+            "Summary"
+          ]
+        },
+        {
+          "source": "app.notify.telegram",
+          "specifiers": [
+            "feedback_callback_data",
+            "parse_feedback_callback",
+            "relative_time",
+            "render"
+          ]
+        }
+      ],
+      "exports": [
+        "make_pair",
+        "test_render_escapes_and_includes_source",
+        "test_relative_time_units",
+        "test_callback_roundtrip",
+        "test_callback_rejects_garbage"
+      ],
+      "totalLines": 58,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_telegram_api.py": {
+      "filePath": "tests/test_telegram_api.py",
+      "contentHash": "35f6d36b1adbfb1a3e9367ab8c2a8985210f36d3fedc08e997f01d3ad510a34c",
+      "functions": [
+        {
+          "name": "test_http_error_does_not_leak_token",
+          "params": [],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "test_transport_error_does_not_leak_token",
+          "params": [],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "test_api_level_error_is_reported",
+          "params": [],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "httpx",
+          "specifiers": [
+            "httpx"
+          ]
+        },
+        {
+          "source": "pytest",
+          "specifiers": [
+            "pytest"
+          ]
+        },
+        {
+          "source": "respx",
+          "specifiers": [
+            "respx"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.notify.telegram",
+          "specifiers": [
+            "_call"
+          ]
+        }
+      ],
+      "exports": [
+        "test_http_error_does_not_leak_token",
+        "test_transport_error_does_not_leak_token",
+        "test_api_level_error_is_reported"
+      ],
+      "totalLines": 43,
+      "hasStructuralAnalysis": true
+    },
+    "구현도.md": {
+      "filePath": "구현도.md",
+      "contentHash": "202c5d8ca665ff4f9b18d9b2ea8f3cdfffae1b9422de98b33d098a678aa0f77b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 382,
+      "hasStructuralAnalysis": true
+    },
+    "기획서.md": {
+      "filePath": "기획서.md",
+      "contentHash": "c2c017508fafa99ef2103e90d28cb4ce2729b19ec6e8554d480dad66e99169d1",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 184,
+      "hasStructuralAnalysis": true
+    }
+  }
+}

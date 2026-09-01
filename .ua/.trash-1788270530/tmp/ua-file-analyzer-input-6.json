@@ -1,0 +1,7 @@
+{
+  "projectRoot": "C:/project/trend",
+  "batchFiles": [
+    {"path": ".github/workflows/ci.yml", "language": "yaml", "sizeLines": 50, "fileCategory": "infra"}
+  ],
+  "batchImportData": {".github/workflows/ci.yml": []}
+}

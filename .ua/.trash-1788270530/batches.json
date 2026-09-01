@@ -1,0 +1,2085 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "louvain",
+  "totalFiles": 66,
+  "totalBatches": 8,
+  "exportsByPath": {
+    "Caddyfile": [],
+    "app/__init__.py": [],
+    "app/api/__init__.py": [],
+    "app/api/github.py": [
+      "verify_signature",
+      "github_webhook"
+    ],
+    "app/api/health.py": [
+      "health"
+    ],
+    "app/api/telegram.py": [
+      "telegram_webhook"
+    ],
+    "app/config.py": [
+      "Settings",
+      "SourceConfig",
+      "ScoringConfig",
+      "NotifyConfig",
+      "Rules",
+      "_read_yaml",
+      "get_settings",
+      "get_rules",
+      "get_source_configs",
+      "reload_configs"
+    ],
+    "app/db/__init__.py": [],
+    "app/db/alembic/env.py": [
+      "run_migrations_offline",
+      "_do_run_migrations",
+      "run_migrations_online"
+    ],
+    "app/db/alembic/script.py.mako": [],
+    "app/db/alembic/versions/20260830_0001_initial.py": [
+      "upgrade",
+      "downgrade"
+    ],
+    "app/db/models.py": [
+      "Base",
+      "Source",
+      "Item",
+      "Decision",
+      "Summary",
+      "Notification",
+      "Feedback"
+    ],
+    "app/db/session.py": [
+      "to_asyncpg_url",
+      "requires_tls",
+      "connect_args",
+      "session_scope"
+    ],
+    "app/jobs/__init__.py": [],
+    "app/jobs/collect.py": [
+      "run_source",
+      "run_all_sources"
+    ],
+    "app/jobs/notify.py": [
+      "_claim_one",
+      "run_notify"
+    ],
+    "app/jobs/pipeline.py": [
+      "_record",
+      "_llm_calls_today",
+      "_claim_batch",
+      "_process",
+      "run_pipeline"
+    ],
+    "app/jobs/scheduler.py": [
+      "sync_sources",
+      "start_scheduler"
+    ],
+    "app/log.py": [
+      "configure_logging",
+      "get_logger"
+    ],
+    "app/main.py": [
+      "lifespan"
+    ],
+    "app/notify/__init__.py": [],
+    "app/notify/base.py": [
+      "Notifier"
+    ],
+    "app/notify/policy.py": [
+      "Verdict",
+      "level_for",
+      "in_quiet_hours",
+      "push_count_today",
+      "decide"
+    ],
+    "app/notify/telegram.py": [
+      "feedback_callback_data",
+      "parse_feedback_callback",
+      "relative_time",
+      "render",
+      "_call",
+      "TelegramNotifier",
+      "answer_callback",
+      "send_ops_alert"
+    ],
+    "app/pipeline/__init__.py": [],
+    "app/pipeline/dedupe.py": [
+      "find_cluster",
+      "mention_count"
+    ],
+    "app/pipeline/ingest.py": [
+      "to_row",
+      "store_items"
+    ],
+    "app/pipeline/llm.py": [
+      "LLMResult",
+      "enrich_body",
+      "_client",
+      "judge"
+    ],
+    "app/pipeline/normalize.py": [
+      "normalize_url",
+      "url_hash",
+      "strip_html"
+    ],
+    "app/pipeline/rules.py": [
+      "RuleResult",
+      "_keyword_pattern",
+      "find_keywords",
+      "_matches_any",
+      "_excluded_domain",
+      "apply_rules"
+    ],
+    "app/pipeline/scoring.py": [
+      "ScoreResult",
+      "freshness",
+      "hotness",
+      "score_item"
+    ],
+    "app/schemas.py": [
+      "Category",
+      "ItemStatus",
+      "Stage",
+      "Level",
+      "NormalizedItem",
+      "LLMVerdict"
+    ],
+    "app/sources/__init__.py": [],
+    "app/sources/base.py": [
+      "Source",
+      "register",
+      "build_source",
+      "registered_types",
+      "retryable",
+      "fetch_url"
+    ],
+    "app/sources/github_release.py": [
+      "auth_headers",
+      "release_to_item",
+      "GithubReleaseSource",
+      "_build"
+    ],
+    "app/sources/rss.py": [
+      "entry_published",
+      "entry_body",
+      "RssSource",
+      "_build"
+    ],
+    "app/sources/youtube.py": [
+      "_build"
+    ],
+    "scripts/run_job.py": [
+      "main"
+    ],
+    "tests/__init__.py": [],
+    "tests/conftest.py": [
+      "fixture"
+    ],
+    "tests/sources/__init__.py": [],
+    "tests/sources/test_github_release.py": [
+      "make_source",
+      "test_skips_drafts",
+      "test_since_is_ignored_so_failed_repos_recover",
+      "test_one_failing_repo_does_not_break_the_rest",
+      "test_release_to_item_drops_draft"
+    ],
+    "tests/sources/test_retry.py": [
+      "status_error",
+      "test_transport_error_is_retried",
+      "test_server_error_and_rate_limit_are_retried",
+      "test_permanent_client_errors_are_not_retried",
+      "test_unrelated_exception_is_not_retried"
+    ],
+    "tests/sources/test_rss.py": [
+      "make_source",
+      "test_parses_entries",
+      "test_since_filters_older_entries",
+      "test_category_hint_from_config",
+      "test_youtube_feed_url_shape"
+    ],
+    "tests/test_normalize.py": [
+      "test_tracking_params_removed",
+      "test_trailing_slash_and_fragment",
+      "test_root_path_kept",
+      "test_same_url_variants_share_hash",
+      "test_strip_html",
+      "test_query_param_order_does_not_change_hash"
+    ],
+    "tests/test_policy.py": [
+      "kst",
+      "test_levels",
+      "test_quiet_hours_wraps_midnight",
+      "test_daytime_is_not_quiet",
+      "test_disabled_when_start_equals_end"
+    ],
+    "tests/test_rules.py": [
+      "call",
+      "test_include_keyword_passes",
+      "test_no_keyword_fails",
+      "test_exclude_beats_include",
+      "test_excluded_domain",
+      "test_excluded_domain_path_prefix",
+      "test_always_pass_source_skips_keywords",
+      "test_include_repo",
+      "test_word_boundary_avoids_substring_match",
+      "test_symbol_keyword_matches",
+      "test_body_is_searched"
+    ],
+    "tests/test_scoring.py": [
+      "test_freshness_full_within_a_day",
+      "test_freshness_halves_after_two_days",
+      "test_hotness_zero_without_metrics",
+      "test_hotness_monotonic_and_bounded",
+      "test_trusted_fresh_keyworded_item_passes",
+      "test_weak_item_drops",
+      "test_multi_source_mentions_lift_score"
+    ],
+    "tests/test_session_url.py": [
+      "test_driver_prefix_is_rewritten",
+      "test_already_asyncpg_url_is_kept",
+      "test_libpq_only_params_are_dropped",
+      "test_non_libpq_params_survive",
+      "test_requires_tls",
+      "test_connect_args_for_neon",
+      "test_connect_args_without_tls_has_no_ssl",
+      "test_connect_args_for_non_postgres_is_empty"
+    ],
+    "tests/test_telegram.py": [
+      "make_pair",
+      "test_render_escapes_and_includes_source",
+      "test_relative_time_units",
+      "test_callback_roundtrip",
+      "test_callback_rejects_garbage"
+    ],
+    "tests/test_telegram_api.py": [
+      "test_http_error_does_not_leak_token",
+      "test_transport_error_does_not_leak_token",
+      "test_api_level_error_is_reported"
+    ]
+  },
+  "batches": [
+    {
+      "batchIndex": 1,
+      "files": [
+        {
+          "path": "app/api/github.py",
+          "language": "python",
+          "sizeLines": 68,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/db/alembic/env.py",
+          "language": "python",
+          "sizeLines": 43,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/db/models.py",
+          "language": "python",
+          "sizeLines": 117,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/jobs/notify.py",
+          "language": "python",
+          "sizeLines": 112,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/notify/base.py",
+          "language": "python",
+          "sizeLines": 17,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/notify/policy.py",
+          "language": "python",
+          "sizeLines": 68,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/notify/telegram.py",
+          "language": "python",
+          "sizeLines": 113,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/pipeline/ingest.py",
+          "language": "python",
+          "sizeLines": 51,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/schemas.py",
+          "language": "python",
+          "sizeLines": 66,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_policy.py",
+          "language": "python",
+          "sizeLines": 38,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_telegram.py",
+          "language": "python",
+          "sizeLines": 57,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_telegram_api.py",
+          "language": "python",
+          "sizeLines": 42,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "app/api/github.py": [
+          "app/config.py",
+          "app/db/models.py",
+          "app/db/session.py",
+          "app/log.py",
+          "app/pipeline/ingest.py",
+          "app/sources/github_release.py"
+        ],
+        "app/db/alembic/env.py": [
+          "app/db/models.py",
+          "app/db/session.py"
+        ],
+        "app/db/models.py": [
+          "app/schemas.py"
+        ],
+        "app/jobs/notify.py": [
+          "app/config.py",
+          "app/db/models.py",
+          "app/db/session.py",
+          "app/log.py",
+          "app/notify/base.py",
+          "app/notify/policy.py",
+          "app/notify/telegram.py",
+          "app/schemas.py"
+        ],
+        "app/notify/base.py": [
+          "app/db/models.py",
+          "app/schemas.py"
+        ],
+        "app/notify/policy.py": [
+          "app/config.py",
+          "app/db/models.py",
+          "app/schemas.py"
+        ],
+        "app/notify/telegram.py": [
+          "app/config.py",
+          "app/db/models.py",
+          "app/schemas.py"
+        ],
+        "app/pipeline/ingest.py": [
+          "app/db/models.py",
+          "app/pipeline/normalize.py",
+          "app/schemas.py"
+        ],
+        "app/schemas.py": [],
+        "tests/test_policy.py": [
+          "app/config.py",
+          "app/notify/policy.py",
+          "app/schemas.py"
+        ],
+        "tests/test_telegram.py": [
+          "app/db/models.py",
+          "app/notify/telegram.py"
+        ],
+        "tests/test_telegram_api.py": [
+          "app/config.py",
+          "app/notify/telegram.py"
+        ]
+      },
+      "neighborMap": {
+        "app/api/github.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          },
+          {
+            "path": "app/db/session.py",
+            "batchIndex": 3,
+            "symbols": [
+              "to_asyncpg_url",
+              "requires_tls",
+              "connect_args",
+              "session_scope"
+            ]
+          },
+          {
+            "path": "app/log.py",
+            "batchIndex": 3,
+            "symbols": [
+              "configure_logging",
+              "get_logger"
+            ]
+          },
+          {
+            "path": "app/sources/github_release.py",
+            "batchIndex": 2,
+            "symbols": [
+              "auth_headers",
+              "release_to_item",
+              "GithubReleaseSource",
+              "_build"
+            ]
+          },
+          {
+            "path": "app/main.py",
+            "batchIndex": 3,
+            "symbols": [
+              "lifespan"
+            ]
+          }
+        ],
+        "app/db/alembic/env.py": [
+          {
+            "path": "app/db/session.py",
+            "batchIndex": 3,
+            "symbols": [
+              "to_asyncpg_url",
+              "requires_tls",
+              "connect_args",
+              "session_scope"
+            ]
+          }
+        ],
+        "app/db/models.py": [
+          {
+            "path": "app/api/telegram.py",
+            "batchIndex": 3,
+            "symbols": [
+              "telegram_webhook"
+            ]
+          },
+          {
+            "path": "app/jobs/collect.py",
+            "batchIndex": 3,
+            "symbols": [
+              "run_source",
+              "run_all_sources"
+            ]
+          },
+          {
+            "path": "app/jobs/pipeline.py",
+            "batchIndex": 4,
+            "symbols": [
+              "_record",
+              "_llm_calls_today",
+              "_claim_batch",
+              "_process",
+              "run_pipeline"
+            ]
+          },
+          {
+            "path": "app/jobs/scheduler.py",
+            "batchIndex": 3,
+            "symbols": [
+              "sync_sources",
+              "start_scheduler"
+            ]
+          },
+          {
+            "path": "app/pipeline/dedupe.py",
+            "batchIndex": 4,
+            "symbols": [
+              "find_cluster",
+              "mention_count"
+            ]
+          }
+        ],
+        "app/jobs/notify.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          },
+          {
+            "path": "app/db/session.py",
+            "batchIndex": 3,
+            "symbols": [
+              "to_asyncpg_url",
+              "requires_tls",
+              "connect_args",
+              "session_scope"
+            ]
+          },
+          {
+            "path": "app/log.py",
+            "batchIndex": 3,
+            "symbols": [
+              "configure_logging",
+              "get_logger"
+            ]
+          },
+          {
+            "path": "app/jobs/scheduler.py",
+            "batchIndex": 3,
+            "symbols": [
+              "sync_sources",
+              "start_scheduler"
+            ]
+          },
+          {
+            "path": "scripts/run_job.py",
+            "batchIndex": 3,
+            "symbols": [
+              "main"
+            ]
+          }
+        ],
+        "app/notify/policy.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          }
+        ],
+        "app/notify/telegram.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          },
+          {
+            "path": "app/api/telegram.py",
+            "batchIndex": 3,
+            "symbols": [
+              "telegram_webhook"
+            ]
+          },
+          {
+            "path": "app/jobs/collect.py",
+            "batchIndex": 3,
+            "symbols": [
+              "run_source",
+              "run_all_sources"
+            ]
+          }
+        ],
+        "app/pipeline/ingest.py": [
+          {
+            "path": "app/pipeline/normalize.py",
+            "batchIndex": 2,
+            "symbols": [
+              "normalize_url",
+              "url_hash",
+              "strip_html"
+            ]
+          },
+          {
+            "path": "app/jobs/collect.py",
+            "batchIndex": 3,
+            "symbols": [
+              "run_source",
+              "run_all_sources"
+            ]
+          }
+        ],
+        "app/schemas.py": [
+          {
+            "path": "app/jobs/pipeline.py",
+            "batchIndex": 4,
+            "symbols": [
+              "_record",
+              "_llm_calls_today",
+              "_claim_batch",
+              "_process",
+              "run_pipeline"
+            ]
+          },
+          {
+            "path": "app/pipeline/llm.py",
+            "batchIndex": 4,
+            "symbols": [
+              "LLMResult",
+              "enrich_body",
+              "_client",
+              "judge"
+            ]
+          },
+          {
+            "path": "app/sources/base.py",
+            "batchIndex": 2,
+            "symbols": [
+              "Source",
+              "register",
+              "build_source",
+              "registered_types",
+              "retryable",
+              "fetch_url"
+            ]
+          },
+          {
+            "path": "app/sources/github_release.py",
+            "batchIndex": 2,
+            "symbols": [
+              "auth_headers",
+              "release_to_item",
+              "GithubReleaseSource",
+              "_build"
+            ]
+          },
+          {
+            "path": "app/sources/rss.py",
+            "batchIndex": 2,
+            "symbols": [
+              "entry_published",
+              "entry_body",
+              "RssSource",
+              "_build"
+            ]
+          },
+          {
+            "path": "tests/sources/test_github_release.py",
+            "batchIndex": 2,
+            "symbols": [
+              "make_source",
+              "test_skips_drafts",
+              "test_since_is_ignored_so_failed_repos_recover",
+              "test_one_failing_repo_does_not_break_the_rest",
+              "test_release_to_item_drops_draft"
+            ]
+          },
+          {
+            "path": "tests/sources/test_rss.py",
+            "batchIndex": 2,
+            "symbols": [
+              "make_source",
+              "test_parses_entries",
+              "test_since_filters_older_entries",
+              "test_category_hint_from_config",
+              "test_youtube_feed_url_shape"
+            ]
+          }
+        ],
+        "tests/test_policy.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          }
+        ],
+        "tests/test_telegram_api.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 2,
+      "files": [
+        {
+          "path": "app/pipeline/normalize.py",
+          "language": "python",
+          "sizeLines": 41,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/sources/__init__.py",
+          "language": "python",
+          "sizeLines": 6,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/sources/base.py",
+          "language": "python",
+          "sizeLines": 72,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/sources/github_release.py",
+          "language": "python",
+          "sizeLines": 89,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/sources/rss.py",
+          "language": "python",
+          "sizeLines": 76,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/sources/youtube.py",
+          "language": "python",
+          "sizeLines": 18,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/conftest.py",
+          "language": "python",
+          "sizeLines": 17,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/sources/test_github_release.py",
+          "language": "python",
+          "sizeLines": 62,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/sources/test_retry.py",
+          "language": "python",
+          "sizeLines": 31,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/sources/test_rss.py",
+          "language": "python",
+          "sizeLines": 52,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_normalize.py",
+          "language": "python",
+          "sizeLines": 35,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "app/pipeline/normalize.py": [],
+        "app/sources/__init__.py": [
+          "app/sources/__init__.py",
+          "app/sources/base.py",
+          "app/sources/github_release.py",
+          "app/sources/rss.py",
+          "app/sources/youtube.py"
+        ],
+        "app/sources/base.py": [
+          "app/config.py",
+          "app/schemas.py"
+        ],
+        "app/sources/github_release.py": [
+          "app/config.py",
+          "app/log.py",
+          "app/schemas.py",
+          "app/sources/base.py"
+        ],
+        "app/sources/rss.py": [
+          "app/config.py",
+          "app/pipeline/normalize.py",
+          "app/schemas.py",
+          "app/sources/base.py"
+        ],
+        "app/sources/youtube.py": [
+          "app/config.py",
+          "app/sources/base.py",
+          "app/sources/rss.py"
+        ],
+        "tests/conftest.py": [],
+        "tests/sources/test_github_release.py": [
+          "app/config.py",
+          "app/schemas.py",
+          "app/sources/github_release.py",
+          "tests/conftest.py"
+        ],
+        "tests/sources/test_retry.py": [
+          "app/sources/base.py"
+        ],
+        "tests/sources/test_rss.py": [
+          "app/config.py",
+          "app/schemas.py",
+          "app/sources/rss.py",
+          "app/sources/youtube.py",
+          "tests/conftest.py"
+        ],
+        "tests/test_normalize.py": [
+          "app/pipeline/normalize.py"
+        ]
+      },
+      "neighborMap": {
+        "app/pipeline/normalize.py": [
+          {
+            "path": "app/pipeline/ingest.py",
+            "batchIndex": 1,
+            "symbols": [
+              "to_row",
+              "store_items"
+            ]
+          }
+        ],
+        "app/sources/__init__.py": [
+          {
+            "path": "app/jobs/collect.py",
+            "batchIndex": 3,
+            "symbols": [
+              "run_source",
+              "run_all_sources"
+            ]
+          }
+        ],
+        "app/sources/base.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          },
+          {
+            "path": "app/schemas.py",
+            "batchIndex": 1,
+            "symbols": [
+              "Category",
+              "ItemStatus",
+              "Stage",
+              "Level",
+              "NormalizedItem",
+              "LLMVerdict"
+            ]
+          }
+        ],
+        "app/sources/github_release.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          },
+          {
+            "path": "app/log.py",
+            "batchIndex": 3,
+            "symbols": [
+              "configure_logging",
+              "get_logger"
+            ]
+          },
+          {
+            "path": "app/schemas.py",
+            "batchIndex": 1,
+            "symbols": [
+              "Category",
+              "ItemStatus",
+              "Stage",
+              "Level",
+              "NormalizedItem",
+              "LLMVerdict"
+            ]
+          },
+          {
+            "path": "app/api/github.py",
+            "batchIndex": 1,
+            "symbols": [
+              "verify_signature",
+              "github_webhook"
+            ]
+          }
+        ],
+        "app/sources/rss.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          },
+          {
+            "path": "app/schemas.py",
+            "batchIndex": 1,
+            "symbols": [
+              "Category",
+              "ItemStatus",
+              "Stage",
+              "Level",
+              "NormalizedItem",
+              "LLMVerdict"
+            ]
+          }
+        ],
+        "app/sources/youtube.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          }
+        ],
+        "tests/sources/test_github_release.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          },
+          {
+            "path": "app/schemas.py",
+            "batchIndex": 1,
+            "symbols": [
+              "Category",
+              "ItemStatus",
+              "Stage",
+              "Level",
+              "NormalizedItem",
+              "LLMVerdict"
+            ]
+          }
+        ],
+        "tests/sources/test_rss.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          },
+          {
+            "path": "app/schemas.py",
+            "batchIndex": 1,
+            "symbols": [
+              "Category",
+              "ItemStatus",
+              "Stage",
+              "Level",
+              "NormalizedItem",
+              "LLMVerdict"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 3,
+      "files": [
+        {
+          "path": "app/api/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/api/health.py",
+          "language": "python",
+          "sizeLines": 17,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/api/telegram.py",
+          "language": "python",
+          "sizeLines": 50,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/db/session.py",
+          "language": "python",
+          "sizeLines": 69,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/jobs/collect.py",
+          "language": "python",
+          "sizeLines": 69,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/jobs/scheduler.py",
+          "language": "python",
+          "sizeLines": 66,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/log.py",
+          "language": "python",
+          "sizeLines": 29,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/main.py",
+          "language": "python",
+          "sizeLines": 34,
+          "fileCategory": "code"
+        },
+        {
+          "path": "scripts/run_job.py",
+          "language": "python",
+          "sizeLines": 36,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_session_url.py",
+          "language": "python",
+          "sizeLines": 58,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "app/api/__init__.py": [],
+        "app/api/health.py": [
+          "app/db/session.py"
+        ],
+        "app/api/telegram.py": [
+          "app/config.py",
+          "app/db/models.py",
+          "app/db/session.py",
+          "app/log.py",
+          "app/notify/telegram.py"
+        ],
+        "app/db/session.py": [
+          "app/config.py"
+        ],
+        "app/jobs/collect.py": [
+          "app/config.py",
+          "app/db/models.py",
+          "app/db/session.py",
+          "app/log.py",
+          "app/notify/telegram.py",
+          "app/pipeline/ingest.py",
+          "app/sources/__init__.py"
+        ],
+        "app/jobs/scheduler.py": [
+          "app/config.py",
+          "app/db/models.py",
+          "app/db/session.py",
+          "app/jobs/collect.py",
+          "app/jobs/notify.py",
+          "app/jobs/pipeline.py",
+          "app/log.py"
+        ],
+        "app/log.py": [
+          "app/config.py"
+        ],
+        "app/main.py": [
+          "app/api/__init__.py",
+          "app/api/github.py",
+          "app/api/health.py",
+          "app/api/telegram.py",
+          "app/config.py",
+          "app/db/session.py",
+          "app/jobs/scheduler.py",
+          "app/log.py"
+        ],
+        "scripts/run_job.py": [
+          "app/db/session.py",
+          "app/jobs/collect.py",
+          "app/jobs/notify.py",
+          "app/jobs/pipeline.py",
+          "app/jobs/scheduler.py",
+          "app/log.py"
+        ],
+        "tests/test_session_url.py": [
+          "app/db/session.py"
+        ]
+      },
+      "neighborMap": {
+        "app/api/telegram.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          },
+          {
+            "path": "app/db/models.py",
+            "batchIndex": 1,
+            "symbols": [
+              "Base",
+              "Source",
+              "Item",
+              "Decision",
+              "Summary",
+              "Notification",
+              "Feedback"
+            ]
+          },
+          {
+            "path": "app/notify/telegram.py",
+            "batchIndex": 1,
+            "symbols": [
+              "feedback_callback_data",
+              "parse_feedback_callback",
+              "relative_time",
+              "render",
+              "_call",
+              "TelegramNotifier",
+              "answer_callback",
+              "send_ops_alert"
+            ]
+          }
+        ],
+        "app/db/session.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          },
+          {
+            "path": "app/api/github.py",
+            "batchIndex": 1,
+            "symbols": [
+              "verify_signature",
+              "github_webhook"
+            ]
+          },
+          {
+            "path": "app/db/alembic/env.py",
+            "batchIndex": 1,
+            "symbols": [
+              "run_migrations_offline",
+              "_do_run_migrations",
+              "run_migrations_online"
+            ]
+          },
+          {
+            "path": "app/jobs/notify.py",
+            "batchIndex": 1,
+            "symbols": [
+              "_claim_one",
+              "run_notify"
+            ]
+          },
+          {
+            "path": "app/jobs/pipeline.py",
+            "batchIndex": 4,
+            "symbols": [
+              "_record",
+              "_llm_calls_today",
+              "_claim_batch",
+              "_process",
+              "run_pipeline"
+            ]
+          }
+        ],
+        "app/jobs/collect.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          },
+          {
+            "path": "app/db/models.py",
+            "batchIndex": 1,
+            "symbols": [
+              "Base",
+              "Source",
+              "Item",
+              "Decision",
+              "Summary",
+              "Notification",
+              "Feedback"
+            ]
+          },
+          {
+            "path": "app/notify/telegram.py",
+            "batchIndex": 1,
+            "symbols": [
+              "feedback_callback_data",
+              "parse_feedback_callback",
+              "relative_time",
+              "render",
+              "_call",
+              "TelegramNotifier",
+              "answer_callback",
+              "send_ops_alert"
+            ]
+          },
+          {
+            "path": "app/pipeline/ingest.py",
+            "batchIndex": 1,
+            "symbols": [
+              "to_row",
+              "store_items"
+            ]
+          },
+          {
+            "path": "app/sources/__init__.py",
+            "batchIndex": 2,
+            "symbols": []
+          }
+        ],
+        "app/jobs/scheduler.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          },
+          {
+            "path": "app/db/models.py",
+            "batchIndex": 1,
+            "symbols": [
+              "Base",
+              "Source",
+              "Item",
+              "Decision",
+              "Summary",
+              "Notification",
+              "Feedback"
+            ]
+          },
+          {
+            "path": "app/jobs/notify.py",
+            "batchIndex": 1,
+            "symbols": [
+              "_claim_one",
+              "run_notify"
+            ]
+          },
+          {
+            "path": "app/jobs/pipeline.py",
+            "batchIndex": 4,
+            "symbols": [
+              "_record",
+              "_llm_calls_today",
+              "_claim_batch",
+              "_process",
+              "run_pipeline"
+            ]
+          }
+        ],
+        "app/log.py": [
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          },
+          {
+            "path": "app/api/github.py",
+            "batchIndex": 1,
+            "symbols": [
+              "verify_signature",
+              "github_webhook"
+            ]
+          },
+          {
+            "path": "app/jobs/notify.py",
+            "batchIndex": 1,
+            "symbols": [
+              "_claim_one",
+              "run_notify"
+            ]
+          },
+          {
+            "path": "app/jobs/pipeline.py",
+            "batchIndex": 4,
+            "symbols": [
+              "_record",
+              "_llm_calls_today",
+              "_claim_batch",
+              "_process",
+              "run_pipeline"
+            ]
+          },
+          {
+            "path": "app/pipeline/llm.py",
+            "batchIndex": 4,
+            "symbols": [
+              "LLMResult",
+              "enrich_body",
+              "_client",
+              "judge"
+            ]
+          },
+          {
+            "path": "app/sources/github_release.py",
+            "batchIndex": 2,
+            "symbols": [
+              "auth_headers",
+              "release_to_item",
+              "GithubReleaseSource",
+              "_build"
+            ]
+          }
+        ],
+        "app/main.py": [
+          {
+            "path": "app/api/github.py",
+            "batchIndex": 1,
+            "symbols": [
+              "verify_signature",
+              "github_webhook"
+            ]
+          },
+          {
+            "path": "app/config.py",
+            "batchIndex": 4,
+            "symbols": [
+              "Settings",
+              "SourceConfig",
+              "ScoringConfig",
+              "NotifyConfig",
+              "Rules",
+              "_read_yaml",
+              "get_settings",
+              "get_rules",
+              "get_source_configs",
+              "reload_configs"
+            ]
+          }
+        ],
+        "scripts/run_job.py": [
+          {
+            "path": "app/jobs/notify.py",
+            "batchIndex": 1,
+            "symbols": [
+              "_claim_one",
+              "run_notify"
+            ]
+          },
+          {
+            "path": "app/jobs/pipeline.py",
+            "batchIndex": 4,
+            "symbols": [
+              "_record",
+              "_llm_calls_today",
+              "_claim_batch",
+              "_process",
+              "run_pipeline"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 4,
+      "files": [
+        {
+          "path": "app/config.py",
+          "language": "python",
+          "sizeLines": 103,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/jobs/pipeline.py",
+          "language": "python",
+          "sizeLines": 172,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/pipeline/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/pipeline/dedupe.py",
+          "language": "python",
+          "sizeLines": 36,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/pipeline/llm.py",
+          "language": "python",
+          "sizeLines": 94,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/pipeline/rules.py",
+          "language": "python",
+          "sizeLines": 78,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/pipeline/scoring.py",
+          "language": "python",
+          "sizeLines": 58,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_rules.py",
+          "language": "python",
+          "sizeLines": 62,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/test_scoring.py",
+          "language": "python",
+          "sizeLines": 65,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "app/config.py": [],
+        "app/jobs/pipeline.py": [
+          "app/config.py",
+          "app/db/models.py",
+          "app/db/session.py",
+          "app/log.py",
+          "app/pipeline/__init__.py",
+          "app/pipeline/dedupe.py",
+          "app/pipeline/llm.py",
+          "app/pipeline/rules.py",
+          "app/pipeline/scoring.py",
+          "app/schemas.py"
+        ],
+        "app/pipeline/__init__.py": [],
+        "app/pipeline/dedupe.py": [
+          "app/db/models.py"
+        ],
+        "app/pipeline/llm.py": [
+          "app/config.py",
+          "app/log.py",
+          "app/schemas.py"
+        ],
+        "app/pipeline/rules.py": [
+          "app/config.py"
+        ],
+        "app/pipeline/scoring.py": [
+          "app/config.py"
+        ],
+        "tests/test_rules.py": [
+          "app/config.py",
+          "app/pipeline/rules.py"
+        ],
+        "tests/test_scoring.py": [
+          "app/config.py",
+          "app/pipeline/scoring.py"
+        ]
+      },
+      "neighborMap": {
+        "app/config.py": [
+          {
+            "path": "app/api/github.py",
+            "batchIndex": 1,
+            "symbols": [
+              "verify_signature",
+              "github_webhook"
+            ]
+          },
+          {
+            "path": "app/api/telegram.py",
+            "batchIndex": 3,
+            "symbols": [
+              "telegram_webhook"
+            ]
+          },
+          {
+            "path": "app/db/session.py",
+            "batchIndex": 3,
+            "symbols": [
+              "to_asyncpg_url",
+              "requires_tls",
+              "connect_args",
+              "session_scope"
+            ]
+          },
+          {
+            "path": "app/jobs/collect.py",
+            "batchIndex": 3,
+            "symbols": [
+              "run_source",
+              "run_all_sources"
+            ]
+          },
+          {
+            "path": "app/jobs/notify.py",
+            "batchIndex": 1,
+            "symbols": [
+              "_claim_one",
+              "run_notify"
+            ]
+          },
+          {
+            "path": "app/jobs/scheduler.py",
+            "batchIndex": 3,
+            "symbols": [
+              "sync_sources",
+              "start_scheduler"
+            ]
+          },
+          {
+            "path": "app/log.py",
+            "batchIndex": 3,
+            "symbols": [
+              "configure_logging",
+              "get_logger"
+            ]
+          },
+          {
+            "path": "app/main.py",
+            "batchIndex": 3,
+            "symbols": [
+              "lifespan"
+            ]
+          },
+          {
+            "path": "app/notify/policy.py",
+            "batchIndex": 1,
+            "symbols": [
+              "Verdict",
+              "level_for",
+              "in_quiet_hours",
+              "push_count_today",
+              "decide"
+            ]
+          },
+          {
+            "path": "app/notify/telegram.py",
+            "batchIndex": 1,
+            "symbols": [
+              "feedback_callback_data",
+              "parse_feedback_callback",
+              "relative_time",
+              "render",
+              "_call",
+              "TelegramNotifier",
+              "answer_callback",
+              "send_ops_alert"
+            ]
+          },
+          {
+            "path": "app/sources/base.py",
+            "batchIndex": 2,
+            "symbols": [
+              "Source",
+              "register",
+              "build_source",
+              "registered_types",
+              "retryable",
+              "fetch_url"
+            ]
+          },
+          {
+            "path": "app/sources/github_release.py",
+            "batchIndex": 2,
+            "symbols": [
+              "auth_headers",
+              "release_to_item",
+              "GithubReleaseSource",
+              "_build"
+            ]
+          },
+          {
+            "path": "app/sources/rss.py",
+            "batchIndex": 2,
+            "symbols": [
+              "entry_published",
+              "entry_body",
+              "RssSource",
+              "_build"
+            ]
+          },
+          {
+            "path": "app/sources/youtube.py",
+            "batchIndex": 2,
+            "symbols": [
+              "_build"
+            ]
+          },
+          {
+            "path": "tests/sources/test_github_release.py",
+            "batchIndex": 2,
+            "symbols": [
+              "make_source",
+              "test_skips_drafts",
+              "test_since_is_ignored_so_failed_repos_recover",
+              "test_one_failing_repo_does_not_break_the_rest",
+              "test_release_to_item_drops_draft"
+            ]
+          },
+          {
+            "path": "tests/sources/test_rss.py",
+            "batchIndex": 2,
+            "symbols": [
+              "make_source",
+              "test_parses_entries",
+              "test_since_filters_older_entries",
+              "test_category_hint_from_config",
+              "test_youtube_feed_url_shape"
+            ]
+          },
+          {
+            "path": "tests/test_policy.py",
+            "batchIndex": 1,
+            "symbols": [
+              "kst",
+              "test_levels",
+              "test_quiet_hours_wraps_midnight",
+              "test_daytime_is_not_quiet",
+              "test_disabled_when_start_equals_end"
+            ]
+          },
+          {
+            "path": "tests/test_telegram_api.py",
+            "batchIndex": 1,
+            "symbols": [
+              "test_http_error_does_not_leak_token",
+              "test_transport_error_does_not_leak_token",
+              "test_api_level_error_is_reported"
+            ]
+          }
+        ],
+        "app/jobs/pipeline.py": [
+          {
+            "path": "app/db/models.py",
+            "batchIndex": 1,
+            "symbols": [
+              "Base",
+              "Source",
+              "Item",
+              "Decision",
+              "Summary",
+              "Notification",
+              "Feedback"
+            ]
+          },
+          {
+            "path": "app/db/session.py",
+            "batchIndex": 3,
+            "symbols": [
+              "to_asyncpg_url",
+              "requires_tls",
+              "connect_args",
+              "session_scope"
+            ]
+          },
+          {
+            "path": "app/log.py",
+            "batchIndex": 3,
+            "symbols": [
+              "configure_logging",
+              "get_logger"
+            ]
+          },
+          {
+            "path": "app/schemas.py",
+            "batchIndex": 1,
+            "symbols": [
+              "Category",
+              "ItemStatus",
+              "Stage",
+              "Level",
+              "NormalizedItem",
+              "LLMVerdict"
+            ]
+          },
+          {
+            "path": "app/jobs/scheduler.py",
+            "batchIndex": 3,
+            "symbols": [
+              "sync_sources",
+              "start_scheduler"
+            ]
+          },
+          {
+            "path": "scripts/run_job.py",
+            "batchIndex": 3,
+            "symbols": [
+              "main"
+            ]
+          }
+        ],
+        "app/pipeline/dedupe.py": [
+          {
+            "path": "app/db/models.py",
+            "batchIndex": 1,
+            "symbols": [
+              "Base",
+              "Source",
+              "Item",
+              "Decision",
+              "Summary",
+              "Notification",
+              "Feedback"
+            ]
+          }
+        ],
+        "app/pipeline/llm.py": [
+          {
+            "path": "app/log.py",
+            "batchIndex": 3,
+            "symbols": [
+              "configure_logging",
+              "get_logger"
+            ]
+          },
+          {
+            "path": "app/schemas.py",
+            "batchIndex": 1,
+            "symbols": [
+              "Category",
+              "ItemStatus",
+              "Stage",
+              "Level",
+              "NormalizedItem",
+              "LLMVerdict"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 5,
+      "files": [
+        {
+          "path": ".dockerignore",
+          "language": "unknown",
+          "sizeLines": 8,
+          "fileCategory": "infra"
+        },
+        {
+          "path": "Dockerfile",
+          "language": "dockerfile",
+          "sizeLines": 21,
+          "fileCategory": "infra"
+        },
+        {
+          "path": "docker-compose.yml",
+          "language": "yaml",
+          "sizeLines": 27,
+          "fileCategory": "infra"
+        }
+      ],
+      "batchImportData": {
+        ".dockerignore": [],
+        "Dockerfile": [],
+        "docker-compose.yml": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 6,
+      "files": [
+        {
+          "path": ".github/workflows/ci.yml",
+          "language": "yaml",
+          "sizeLines": 50,
+          "fileCategory": "infra"
+        }
+      ],
+      "batchImportData": {
+        ".github/workflows/ci.yml": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 7,
+      "files": [
+        {
+          "path": ".env.example",
+          "language": "config",
+          "sizeLines": 20,
+          "fileCategory": "config"
+        },
+        {
+          "path": "CLAUDE.md",
+          "language": "markdown",
+          "sizeLines": 342,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "alembic.ini",
+          "language": "config",
+          "sizeLines": 38,
+          "fileCategory": "config"
+        },
+        {
+          "path": "pyproject.toml",
+          "language": "toml",
+          "sizeLines": 59,
+          "fileCategory": "config"
+        },
+        {
+          "path": "구현도.md",
+          "language": "markdown",
+          "sizeLines": 381,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "기획서.md",
+          "language": "markdown",
+          "sizeLines": 183,
+          "fileCategory": "docs"
+        }
+      ],
+      "batchImportData": {
+        ".env.example": [],
+        "CLAUDE.md": [],
+        "alembic.ini": [],
+        "pyproject.toml": [],
+        "구현도.md": [],
+        "기획서.md": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 8,
+      "files": [
+        {
+          "path": ".serena/project.yml",
+          "language": "yaml",
+          "sizeLines": 169,
+          "fileCategory": "config"
+        },
+        {
+          "path": "Caddyfile",
+          "language": "unknown",
+          "sizeLines": 3,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/db/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/db/alembic/script.py.mako",
+          "language": "mako",
+          "sizeLines": 26,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/db/alembic/versions/20260830_0001_initial.py",
+          "language": "python",
+          "sizeLines": 132,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/jobs/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "app/notify/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "config/rules.yaml",
+          "language": "yaml",
+          "sizeLines": 84,
+          "fileCategory": "config"
+        },
+        {
+          "path": "config/sources.yaml",
+          "language": "yaml",
+          "sizeLines": 80,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/fixtures/github_release.json",
+          "language": "json",
+          "sizeLines": 24,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/fixtures/rss_blog.xml",
+          "language": "xml",
+          "sizeLines": 22,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tests/sources/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        ".serena/project.yml": [],
+        "Caddyfile": [],
+        "app/__init__.py": [],
+        "app/db/__init__.py": [],
+        "app/db/alembic/script.py.mako": [],
+        "app/db/alembic/versions/20260830_0001_initial.py": [],
+        "app/jobs/__init__.py": [],
+        "app/notify/__init__.py": [],
+        "config/rules.yaml": [],
+        "config/sources.yaml": [],
+        "tests/__init__.py": [],
+        "tests/fixtures/github_release.json": [],
+        "tests/fixtures/rss_blog.xml": [],
+        "tests/sources/__init__.py": []
+      },
+      "neighborMap": {}
+    }
+  ]
+}

@@ -1,0 +1,1561 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 11,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 11,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 11,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "app/pipeline/normalize.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 41,
+      "nonEmptyLines": 31,
+      "functions": [
+        {
+          "name": "normalize_url",
+          "startLine": 17,
+          "endLine": 30,
+          "params": [
+            "url"
+          ]
+        },
+        {
+          "name": "url_hash",
+          "startLine": 33,
+          "endLine": 34,
+          "params": [
+            "normalized"
+          ]
+        },
+        {
+          "name": "strip_html",
+          "startLine": 37,
+          "endLine": 41,
+          "params": [
+            "text"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "normalize_url",
+          "line": 17,
+          "isDefault": false
+        },
+        {
+          "name": "url_hash",
+          "line": 33,
+          "isDefault": false
+        },
+        {
+          "name": "strip_html",
+          "line": 37,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "normalize_url",
+          "callee": "urlsplit",
+          "lineNumber": 19
+        },
+        {
+          "caller": "normalize_url",
+          "callee": "url.strip",
+          "lineNumber": 19
+        },
+        {
+          "caller": "normalize_url",
+          "callee": "parts.netloc.lower",
+          "lineNumber": 20
+        },
+        {
+          "caller": "normalize_url",
+          "callee": "host.startswith",
+          "lineNumber": 21
+        },
+        {
+          "caller": "normalize_url",
+          "callee": "sorted",
+          "lineNumber": 24
+        },
+        {
+          "caller": "normalize_url",
+          "callee": "parse_qsl",
+          "lineNumber": 26
+        },
+        {
+          "caller": "normalize_url",
+          "callee": "k.lower",
+          "lineNumber": 27
+        },
+        {
+          "caller": "normalize_url",
+          "callee": "k.lower().startswith",
+          "lineNumber": 27
+        },
+        {
+          "caller": "normalize_url",
+          "callee": "k.lower",
+          "lineNumber": 27
+        },
+        {
+          "caller": "normalize_url",
+          "callee": "parts.path.rstrip",
+          "lineNumber": 29
+        },
+        {
+          "caller": "normalize_url",
+          "callee": "urlunsplit",
+          "lineNumber": 30
+        },
+        {
+          "caller": "normalize_url",
+          "callee": "parts.scheme.lower",
+          "lineNumber": 30
+        },
+        {
+          "caller": "normalize_url",
+          "callee": "urlencode",
+          "lineNumber": 30
+        },
+        {
+          "caller": "url_hash",
+          "callee": "hashlib.sha256(normalized.encode(\"utf-8\")).hexdigest",
+          "lineNumber": 34
+        },
+        {
+          "caller": "url_hash",
+          "callee": "hashlib.sha256",
+          "lineNumber": 34
+        },
+        {
+          "caller": "url_hash",
+          "callee": "normalized.encode",
+          "lineNumber": 34
+        },
+        {
+          "caller": "strip_html",
+          "callee": "_WS_RE.sub(\" \", unescape(_TAG_RE.sub(\" \", text))).strip",
+          "lineNumber": 41
+        },
+        {
+          "caller": "strip_html",
+          "callee": "_WS_RE.sub",
+          "lineNumber": 41
+        },
+        {
+          "caller": "strip_html",
+          "callee": "unescape",
+          "lineNumber": 41
+        },
+        {
+          "caller": "strip_html",
+          "callee": "_TAG_RE.sub",
+          "lineNumber": 41
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 3,
+        "functionCount": 3,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "app/sources/__init__.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 6,
+      "nonEmptyLines": 4,
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "app/sources/base.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 72,
+      "nonEmptyLines": 50,
+      "functions": [
+        {
+          "name": "register",
+          "startLine": 32,
+          "endLine": 37,
+          "params": [
+            "type_name"
+          ]
+        },
+        {
+          "name": "build_source",
+          "startLine": 40,
+          "endLine": 43,
+          "params": [
+            "cfg"
+          ]
+        },
+        {
+          "name": "registered_types",
+          "startLine": 46,
+          "endLine": 47,
+          "params": []
+        },
+        {
+          "name": "retryable",
+          "startLine": 50,
+          "endLine": 57,
+          "params": [
+            "exc"
+          ]
+        },
+        {
+          "name": "fetch_url",
+          "startLine": 66,
+          "endLine": 72,
+          "params": [
+            "url",
+            "headers"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "Source",
+          "startLine": 20,
+          "endLine": 25,
+          "methods": [
+            "fetch"
+          ],
+          "properties": [
+            "name"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "Source",
+          "line": 19,
+          "isDefault": false
+        },
+        {
+          "name": "register",
+          "line": 32,
+          "isDefault": false
+        },
+        {
+          "name": "build_source",
+          "line": 40,
+          "isDefault": false
+        },
+        {
+          "name": "registered_types",
+          "line": 46,
+          "isDefault": false
+        },
+        {
+          "name": "retryable",
+          "line": 50,
+          "isDefault": false
+        },
+        {
+          "name": "fetch_url",
+          "line": 60,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "build_source",
+          "callee": "KeyError",
+          "lineNumber": 42
+        },
+        {
+          "caller": "registered_types",
+          "callee": "sorted",
+          "lineNumber": 47
+        },
+        {
+          "caller": "retryable",
+          "callee": "isinstance",
+          "lineNumber": 52
+        },
+        {
+          "caller": "retryable",
+          "callee": "isinstance",
+          "lineNumber": 54
+        },
+        {
+          "caller": "fetch_url",
+          "callee": "httpx.AsyncClient",
+          "lineNumber": 69
+        },
+        {
+          "caller": "fetch_url",
+          "callee": "client.get",
+          "lineNumber": 70
+        },
+        {
+          "caller": "fetch_url",
+          "callee": "response.raise_for_status",
+          "lineNumber": 71
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 6,
+        "functionCount": 5,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "app/sources/github_release.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 89,
+      "nonEmptyLines": 73,
+      "functions": [
+        {
+          "name": "auth_headers",
+          "startLine": 20,
+          "endLine": 25,
+          "params": []
+        },
+        {
+          "name": "release_to_item",
+          "startLine": 28,
+          "endLine": 48,
+          "params": [
+            "source_name",
+            "repo",
+            "release"
+          ]
+        },
+        {
+          "name": "_build",
+          "startLine": 88,
+          "endLine": 89,
+          "params": [
+            "cfg"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "GithubReleaseSource",
+          "startLine": 51,
+          "endLine": 84,
+          "methods": [
+            "__init__",
+            "_fetch_repo",
+            "fetch"
+          ],
+          "properties": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "auth_headers",
+          "line": 20,
+          "isDefault": false
+        },
+        {
+          "name": "release_to_item",
+          "line": 28,
+          "isDefault": false
+        },
+        {
+          "name": "GithubReleaseSource",
+          "line": 51,
+          "isDefault": false
+        },
+        {
+          "name": "_build",
+          "line": 87,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "auth_headers",
+          "callee": "get_settings",
+          "lineNumber": 22
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "release.get",
+          "lineNumber": 30
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "release.get",
+          "lineNumber": 32
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "release.get",
+          "lineNumber": 33
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "release.get",
+          "lineNumber": 36
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "release.get",
+          "lineNumber": 36
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "NormalizedItem",
+          "lineNumber": 37
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "str",
+          "lineNumber": 39
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "f\"{repo} {name}\".strip",
+          "lineNumber": 41
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "release.get",
+          "lineNumber": 42
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "(release.get(\"author\") or {}).get",
+          "lineNumber": 43
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "release.get",
+          "lineNumber": 43
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "datetime.fromisoformat",
+          "lineNumber": 44
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "float",
+          "lineNumber": 46
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "bool",
+          "lineNumber": 46
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "release.get",
+          "lineNumber": 46
+        },
+        {
+          "caller": "release_to_item",
+          "callee": "release.get",
+          "lineNumber": 47
+        },
+        {
+          "caller": "__init__",
+          "callee": "str",
+          "lineNumber": 56
+        },
+        {
+          "caller": "__init__",
+          "callee": "cfg.config.get",
+          "lineNumber": 56
+        },
+        {
+          "caller": "__init__",
+          "callee": "int",
+          "lineNumber": 59
+        },
+        {
+          "caller": "__init__",
+          "callee": "cfg.config.get",
+          "lineNumber": 59
+        },
+        {
+          "caller": "_fetch_repo",
+          "callee": "fetch_url",
+          "lineNumber": 62
+        },
+        {
+          "caller": "_fetch_repo",
+          "callee": "API.format",
+          "lineNumber": 63
+        },
+        {
+          "caller": "_fetch_repo",
+          "callee": "auth_headers",
+          "lineNumber": 63
+        },
+        {
+          "caller": "_fetch_repo",
+          "callee": "release_to_item",
+          "lineNumber": 65
+        },
+        {
+          "caller": "_fetch_repo",
+          "callee": "response.json",
+          "lineNumber": 65
+        },
+        {
+          "caller": "fetch",
+          "callee": "asyncio.gather",
+          "lineNumber": 75
+        },
+        {
+          "caller": "fetch",
+          "callee": "self._fetch_repo",
+          "lineNumber": 76
+        },
+        {
+          "caller": "fetch",
+          "callee": "zip",
+          "lineNumber": 79
+        },
+        {
+          "caller": "fetch",
+          "callee": "isinstance",
+          "lineNumber": 80
+        },
+        {
+          "caller": "fetch",
+          "callee": "log.warning",
+          "lineNumber": 81
+        },
+        {
+          "caller": "fetch",
+          "callee": "str",
+          "lineNumber": 81
+        },
+        {
+          "caller": "fetch",
+          "callee": "items.extend",
+          "lineNumber": 83
+        },
+        {
+          "caller": "_build",
+          "callee": "GithubReleaseSource",
+          "lineNumber": 89
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 4,
+        "functionCount": 3,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "app/sources/rss.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 76,
+      "nonEmptyLines": 61,
+      "functions": [
+        {
+          "name": "entry_published",
+          "startLine": 18,
+          "endLine": 24,
+          "params": [
+            "entry"
+          ]
+        },
+        {
+          "name": "entry_body",
+          "startLine": 27,
+          "endLine": 33,
+          "params": [
+            "entry"
+          ]
+        },
+        {
+          "name": "_build",
+          "startLine": 75,
+          "endLine": 76,
+          "params": [
+            "cfg"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "RssSource",
+          "startLine": 36,
+          "endLine": 71,
+          "methods": [
+            "__init__",
+            "fetch"
+          ],
+          "properties": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "entry_published",
+          "line": 18,
+          "isDefault": false
+        },
+        {
+          "name": "entry_body",
+          "line": 27,
+          "isDefault": false
+        },
+        {
+          "name": "RssSource",
+          "line": 36,
+          "isDefault": false
+        },
+        {
+          "name": "_build",
+          "line": 74,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "entry_published",
+          "callee": "getattr",
+          "lineNumber": 20
+        },
+        {
+          "caller": "entry_published",
+          "callee": "datetime",
+          "lineNumber": 23
+        },
+        {
+          "caller": "entry_body",
+          "callee": "getattr",
+          "lineNumber": 28
+        },
+        {
+          "caller": "entry_body",
+          "callee": "strip_html",
+          "lineNumber": 30
+        },
+        {
+          "caller": "entry_body",
+          "callee": "contents[0].get",
+          "lineNumber": 30
+        },
+        {
+          "caller": "entry_body",
+          "callee": "getattr",
+          "lineNumber": 32
+        },
+        {
+          "caller": "entry_body",
+          "callee": "getattr",
+          "lineNumber": 32
+        },
+        {
+          "caller": "entry_body",
+          "callee": "strip_html",
+          "lineNumber": 33
+        },
+        {
+          "caller": "__init__",
+          "callee": "str",
+          "lineNumber": 41
+        },
+        {
+          "caller": "__init__",
+          "callee": "cfg.config.get",
+          "lineNumber": 42
+        },
+        {
+          "caller": "__init__",
+          "callee": "Category",
+          "lineNumber": 43
+        },
+        {
+          "caller": "fetch",
+          "callee": "fetch_url",
+          "lineNumber": 46
+        },
+        {
+          "caller": "fetch",
+          "callee": "feedparser.parse",
+          "lineNumber": 47
+        },
+        {
+          "caller": "fetch",
+          "callee": "getattr",
+          "lineNumber": 50
+        },
+        {
+          "caller": "fetch",
+          "callee": "getattr",
+          "lineNumber": 51
+        },
+        {
+          "caller": "fetch",
+          "callee": "entry_published",
+          "lineNumber": 54
+        },
+        {
+          "caller": "fetch",
+          "callee": "items.append",
+          "lineNumber": 59
+        },
+        {
+          "caller": "fetch",
+          "callee": "NormalizedItem",
+          "lineNumber": 60
+        },
+        {
+          "caller": "fetch",
+          "callee": "str",
+          "lineNumber": 62
+        },
+        {
+          "caller": "fetch",
+          "callee": "getattr",
+          "lineNumber": 62
+        },
+        {
+          "caller": "fetch",
+          "callee": "title.strip",
+          "lineNumber": 64
+        },
+        {
+          "caller": "fetch",
+          "callee": "entry_body",
+          "lineNumber": 65
+        },
+        {
+          "caller": "fetch",
+          "callee": "getattr",
+          "lineNumber": 66
+        },
+        {
+          "caller": "_build",
+          "callee": "RssSource",
+          "lineNumber": 76
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 4,
+        "functionCount": 3,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "app/sources/youtube.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 18,
+      "nonEmptyLines": 13,
+      "functions": [
+        {
+          "name": "_build",
+          "startLine": 13,
+          "endLine": 18,
+          "params": [
+            "cfg"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "_build",
+          "line": 12,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "_build",
+          "callee": "cfg.model_copy",
+          "lineNumber": 15
+        },
+        {
+          "caller": "_build",
+          "callee": "FEED_URL.format",
+          "lineNumber": 16
+        },
+        {
+          "caller": "_build",
+          "callee": "RssSource",
+          "lineNumber": 18
+        }
+      ],
+      "metrics": {
+        "importCount": 3,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "tests/conftest.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 17,
+      "nonEmptyLines": 11,
+      "functions": [
+        {
+          "name": "fixture",
+          "startLine": 16,
+          "endLine": 17,
+          "params": [
+            "name"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "fixture",
+          "line": 16,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "fixture",
+          "callee": "(FIXTURES / name).read_bytes",
+          "lineNumber": 17
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "tests/sources/test_github_release.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 62,
+      "nonEmptyLines": 45,
+      "functions": [
+        {
+          "name": "make_source",
+          "startLine": 17,
+          "endLine": 24,
+          "params": []
+        },
+        {
+          "name": "test_skips_drafts",
+          "startLine": 28,
+          "endLine": 37,
+          "params": []
+        },
+        {
+          "name": "test_since_is_ignored_so_failed_repos_recover",
+          "startLine": 41,
+          "endLine": 48,
+          "params": []
+        },
+        {
+          "name": "test_one_failing_repo_does_not_break_the_rest",
+          "startLine": 52,
+          "endLine": 57,
+          "params": []
+        },
+        {
+          "name": "test_release_to_item_drops_draft",
+          "startLine": 60,
+          "endLine": 62,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "make_source",
+          "line": 17,
+          "isDefault": false
+        },
+        {
+          "name": "test_skips_drafts",
+          "line": 27,
+          "isDefault": false
+        },
+        {
+          "name": "test_since_is_ignored_so_failed_repos_recover",
+          "line": 40,
+          "isDefault": false
+        },
+        {
+          "name": "test_one_failing_repo_does_not_break_the_rest",
+          "line": 51,
+          "isDefault": false
+        },
+        {
+          "name": "test_release_to_item_drops_draft",
+          "line": 60,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "make_source",
+          "callee": "GithubReleaseSource",
+          "lineNumber": 18
+        },
+        {
+          "caller": "make_source",
+          "callee": "SourceConfig",
+          "lineNumber": 19
+        },
+        {
+          "caller": "test_skips_drafts",
+          "callee": "respx.get(url__startswith=API).mock",
+          "lineNumber": 29
+        },
+        {
+          "caller": "test_skips_drafts",
+          "callee": "respx.get",
+          "lineNumber": 29
+        },
+        {
+          "caller": "test_skips_drafts",
+          "callee": "httpx.Response",
+          "lineNumber": 30
+        },
+        {
+          "caller": "test_skips_drafts",
+          "callee": "fixture",
+          "lineNumber": 30
+        },
+        {
+          "caller": "test_skips_drafts",
+          "callee": "make_source().fetch",
+          "lineNumber": 32
+        },
+        {
+          "caller": "test_skips_drafts",
+          "callee": "make_source",
+          "lineNumber": 32
+        },
+        {
+          "caller": "test_since_is_ignored_so_failed_repos_recover",
+          "callee": "respx.get(url__startswith=API).mock",
+          "lineNumber": 43
+        },
+        {
+          "caller": "test_since_is_ignored_so_failed_repos_recover",
+          "callee": "respx.get",
+          "lineNumber": 43
+        },
+        {
+          "caller": "test_since_is_ignored_so_failed_repos_recover",
+          "callee": "httpx.Response",
+          "lineNumber": 44
+        },
+        {
+          "caller": "test_since_is_ignored_so_failed_repos_recover",
+          "callee": "fixture",
+          "lineNumber": 44
+        },
+        {
+          "caller": "test_since_is_ignored_so_failed_repos_recover",
+          "callee": "make_source().fetch",
+          "lineNumber": 46
+        },
+        {
+          "caller": "test_since_is_ignored_so_failed_repos_recover",
+          "callee": "make_source",
+          "lineNumber": 46
+        },
+        {
+          "caller": "test_since_is_ignored_so_failed_repos_recover",
+          "callee": "datetime",
+          "lineNumber": 46
+        },
+        {
+          "caller": "test_one_failing_repo_does_not_break_the_rest",
+          "callee": "respx.get(url__startswith=API).mock",
+          "lineNumber": 53
+        },
+        {
+          "caller": "test_one_failing_repo_does_not_break_the_rest",
+          "callee": "respx.get",
+          "lineNumber": 53
+        },
+        {
+          "caller": "test_one_failing_repo_does_not_break_the_rest",
+          "callee": "httpx.Response",
+          "lineNumber": 53
+        },
+        {
+          "caller": "test_one_failing_repo_does_not_break_the_rest",
+          "callee": "make_source",
+          "lineNumber": 54
+        },
+        {
+          "caller": "test_one_failing_repo_does_not_break_the_rest",
+          "callee": "source.fetch",
+          "lineNumber": 57
+        },
+        {
+          "caller": "test_release_to_item_drops_draft",
+          "callee": "json.loads",
+          "lineNumber": 61
+        },
+        {
+          "caller": "test_release_to_item_drops_draft",
+          "callee": "fixture",
+          "lineNumber": 61
+        },
+        {
+          "caller": "test_release_to_item_drops_draft",
+          "callee": "release_to_item",
+          "lineNumber": 62
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 5,
+        "functionCount": 5,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "tests/sources/test_retry.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 31,
+      "nonEmptyLines": 19,
+      "functions": [
+        {
+          "name": "status_error",
+          "startLine": 8,
+          "endLine": 12,
+          "params": [
+            "code"
+          ]
+        },
+        {
+          "name": "test_transport_error_is_retried",
+          "startLine": 15,
+          "endLine": 16,
+          "params": []
+        },
+        {
+          "name": "test_server_error_and_rate_limit_are_retried",
+          "startLine": 19,
+          "endLine": 22,
+          "params": []
+        },
+        {
+          "name": "test_permanent_client_errors_are_not_retried",
+          "startLine": 25,
+          "endLine": 27,
+          "params": []
+        },
+        {
+          "name": "test_unrelated_exception_is_not_retried",
+          "startLine": 30,
+          "endLine": 31,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "status_error",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "test_transport_error_is_retried",
+          "line": 15,
+          "isDefault": false
+        },
+        {
+          "name": "test_server_error_and_rate_limit_are_retried",
+          "line": 19,
+          "isDefault": false
+        },
+        {
+          "name": "test_permanent_client_errors_are_not_retried",
+          "line": 25,
+          "isDefault": false
+        },
+        {
+          "name": "test_unrelated_exception_is_not_retried",
+          "line": 30,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "status_error",
+          "callee": "httpx.Request",
+          "lineNumber": 9
+        },
+        {
+          "caller": "status_error",
+          "callee": "httpx.HTTPStatusError",
+          "lineNumber": 10
+        },
+        {
+          "caller": "status_error",
+          "callee": "httpx.Response",
+          "lineNumber": 11
+        },
+        {
+          "caller": "test_transport_error_is_retried",
+          "callee": "retryable",
+          "lineNumber": 16
+        },
+        {
+          "caller": "test_transport_error_is_retried",
+          "callee": "httpx.ConnectError",
+          "lineNumber": 16
+        },
+        {
+          "caller": "test_server_error_and_rate_limit_are_retried",
+          "callee": "retryable",
+          "lineNumber": 20
+        },
+        {
+          "caller": "test_server_error_and_rate_limit_are_retried",
+          "callee": "status_error",
+          "lineNumber": 20
+        },
+        {
+          "caller": "test_server_error_and_rate_limit_are_retried",
+          "callee": "retryable",
+          "lineNumber": 21
+        },
+        {
+          "caller": "test_server_error_and_rate_limit_are_retried",
+          "callee": "status_error",
+          "lineNumber": 21
+        },
+        {
+          "caller": "test_server_error_and_rate_limit_are_retried",
+          "callee": "retryable",
+          "lineNumber": 22
+        },
+        {
+          "caller": "test_server_error_and_rate_limit_are_retried",
+          "callee": "status_error",
+          "lineNumber": 22
+        },
+        {
+          "caller": "test_permanent_client_errors_are_not_retried",
+          "callee": "retryable",
+          "lineNumber": 26
+        },
+        {
+          "caller": "test_permanent_client_errors_are_not_retried",
+          "callee": "status_error",
+          "lineNumber": 26
+        },
+        {
+          "caller": "test_permanent_client_errors_are_not_retried",
+          "callee": "retryable",
+          "lineNumber": 27
+        },
+        {
+          "caller": "test_permanent_client_errors_are_not_retried",
+          "callee": "status_error",
+          "lineNumber": 27
+        },
+        {
+          "caller": "test_unrelated_exception_is_not_retried",
+          "callee": "retryable",
+          "lineNumber": 31
+        },
+        {
+          "caller": "test_unrelated_exception_is_not_retried",
+          "callee": "ValueError",
+          "lineNumber": 31
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 5,
+        "functionCount": 5,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "tests/sources/test_rss.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 52,
+      "nonEmptyLines": 35,
+      "functions": [
+        {
+          "name": "make_source",
+          "startLine": 17,
+          "endLine": 18,
+          "params": [
+            "**config"
+          ]
+        },
+        {
+          "name": "test_parses_entries",
+          "startLine": 22,
+          "endLine": 32,
+          "params": []
+        },
+        {
+          "name": "test_since_filters_older_entries",
+          "startLine": 36,
+          "endLine": 40,
+          "params": []
+        },
+        {
+          "name": "test_category_hint_from_config",
+          "startLine": 44,
+          "endLine": 48,
+          "params": []
+        },
+        {
+          "name": "test_youtube_feed_url_shape",
+          "startLine": 51,
+          "endLine": 52,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "make_source",
+          "line": 17,
+          "isDefault": false
+        },
+        {
+          "name": "test_parses_entries",
+          "line": 21,
+          "isDefault": false
+        },
+        {
+          "name": "test_since_filters_older_entries",
+          "line": 35,
+          "isDefault": false
+        },
+        {
+          "name": "test_category_hint_from_config",
+          "line": 43,
+          "isDefault": false
+        },
+        {
+          "name": "test_youtube_feed_url_shape",
+          "line": 51,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "make_source",
+          "callee": "RssSource",
+          "lineNumber": 18
+        },
+        {
+          "caller": "make_source",
+          "callee": "SourceConfig",
+          "lineNumber": 18
+        },
+        {
+          "caller": "test_parses_entries",
+          "callee": "respx.get(FEED).mock",
+          "lineNumber": 23
+        },
+        {
+          "caller": "test_parses_entries",
+          "callee": "respx.get",
+          "lineNumber": 23
+        },
+        {
+          "caller": "test_parses_entries",
+          "callee": "httpx.Response",
+          "lineNumber": 23
+        },
+        {
+          "caller": "test_parses_entries",
+          "callee": "fixture",
+          "lineNumber": 23
+        },
+        {
+          "caller": "test_parses_entries",
+          "callee": "make_source().fetch",
+          "lineNumber": 24
+        },
+        {
+          "caller": "test_parses_entries",
+          "callee": "make_source",
+          "lineNumber": 24
+        },
+        {
+          "caller": "test_parses_entries",
+          "callee": "len",
+          "lineNumber": 26
+        },
+        {
+          "caller": "test_parses_entries",
+          "callee": "first.url.startswith",
+          "lineNumber": 29
+        },
+        {
+          "caller": "test_parses_entries",
+          "callee": "datetime",
+          "lineNumber": 31
+        },
+        {
+          "caller": "test_since_filters_older_entries",
+          "callee": "respx.get(FEED).mock",
+          "lineNumber": 37
+        },
+        {
+          "caller": "test_since_filters_older_entries",
+          "callee": "respx.get",
+          "lineNumber": 37
+        },
+        {
+          "caller": "test_since_filters_older_entries",
+          "callee": "httpx.Response",
+          "lineNumber": 37
+        },
+        {
+          "caller": "test_since_filters_older_entries",
+          "callee": "fixture",
+          "lineNumber": 37
+        },
+        {
+          "caller": "test_since_filters_older_entries",
+          "callee": "make_source().fetch",
+          "lineNumber": 38
+        },
+        {
+          "caller": "test_since_filters_older_entries",
+          "callee": "make_source",
+          "lineNumber": 38
+        },
+        {
+          "caller": "test_since_filters_older_entries",
+          "callee": "datetime",
+          "lineNumber": 38
+        },
+        {
+          "caller": "test_category_hint_from_config",
+          "callee": "respx.get(FEED).mock",
+          "lineNumber": 45
+        },
+        {
+          "caller": "test_category_hint_from_config",
+          "callee": "respx.get",
+          "lineNumber": 45
+        },
+        {
+          "caller": "test_category_hint_from_config",
+          "callee": "httpx.Response",
+          "lineNumber": 45
+        },
+        {
+          "caller": "test_category_hint_from_config",
+          "callee": "fixture",
+          "lineNumber": 45
+        },
+        {
+          "caller": "test_category_hint_from_config",
+          "callee": "make_source(category_hint=\"technique\").fetch",
+          "lineNumber": 46
+        },
+        {
+          "caller": "test_category_hint_from_config",
+          "callee": "make_source",
+          "lineNumber": 46
+        },
+        {
+          "caller": "test_category_hint_from_config",
+          "callee": "all",
+          "lineNumber": 48
+        },
+        {
+          "caller": "test_youtube_feed_url_shape",
+          "callee": "FEED_URL.format(channel_id=\"ABC\").endswith",
+          "lineNumber": 52
+        },
+        {
+          "caller": "test_youtube_feed_url_shape",
+          "callee": "FEED_URL.format",
+          "lineNumber": 52
+        }
+      ],
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 5,
+        "functionCount": 5,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "tests/test_normalize.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 35,
+      "nonEmptyLines": 22,
+      "functions": [
+        {
+          "name": "test_tracking_params_removed",
+          "startLine": 6,
+          "endLine": 10,
+          "params": []
+        },
+        {
+          "name": "test_trailing_slash_and_fragment",
+          "startLine": 13,
+          "endLine": 14,
+          "params": []
+        },
+        {
+          "name": "test_root_path_kept",
+          "startLine": 17,
+          "endLine": 18,
+          "params": []
+        },
+        {
+          "name": "test_same_url_variants_share_hash",
+          "startLine": 21,
+          "endLine": 24,
+          "params": []
+        },
+        {
+          "name": "test_strip_html",
+          "startLine": 27,
+          "endLine": 29,
+          "params": []
+        },
+        {
+          "name": "test_query_param_order_does_not_change_hash",
+          "startLine": 32,
+          "endLine": 35,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "test_tracking_params_removed",
+          "line": 6,
+          "isDefault": false
+        },
+        {
+          "name": "test_trailing_slash_and_fragment",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "test_root_path_kept",
+          "line": 17,
+          "isDefault": false
+        },
+        {
+          "name": "test_same_url_variants_share_hash",
+          "line": 21,
+          "isDefault": false
+        },
+        {
+          "name": "test_strip_html",
+          "line": 27,
+          "isDefault": false
+        },
+        {
+          "name": "test_query_param_order_does_not_change_hash",
+          "line": 32,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "test_tracking_params_removed",
+          "callee": "normalize_url",
+          "lineNumber": 8
+        },
+        {
+          "caller": "test_trailing_slash_and_fragment",
+          "callee": "normalize_url",
+          "lineNumber": 14
+        },
+        {
+          "caller": "test_root_path_kept",
+          "callee": "normalize_url",
+          "lineNumber": 18
+        },
+        {
+          "caller": "test_same_url_variants_share_hash",
+          "callee": "url_hash",
+          "lineNumber": 22
+        },
+        {
+          "caller": "test_same_url_variants_share_hash",
+          "callee": "normalize_url",
+          "lineNumber": 22
+        },
+        {
+          "caller": "test_same_url_variants_share_hash",
+          "callee": "url_hash",
+          "lineNumber": 23
+        },
+        {
+          "caller": "test_same_url_variants_share_hash",
+          "callee": "normalize_url",
+          "lineNumber": 23
+        },
+        {
+          "caller": "test_strip_html",
+          "callee": "strip_html",
+          "lineNumber": 28
+        },
+        {
+          "caller": "test_strip_html",
+          "callee": "strip_html",
+          "lineNumber": 29
+        },
+        {
+          "caller": "test_query_param_order_does_not_change_hash",
+          "callee": "url_hash",
+          "lineNumber": 33
+        },
+        {
+          "caller": "test_query_param_order_does_not_change_hash",
+          "callee": "normalize_url",
+          "lineNumber": 33
+        },
+        {
+          "caller": "test_query_param_order_does_not_change_hash",
+          "callee": "url_hash",
+          "lineNumber": 34
+        },
+        {
+          "caller": "test_query_param_order_does_not_change_hash",
+          "callee": "normalize_url",
+          "lineNumber": 34
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 6,
+        "functionCount": 6,
+        "classCount": 0
+      }
+    }
+  ]
+}

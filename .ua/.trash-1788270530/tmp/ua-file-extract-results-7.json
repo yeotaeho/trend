@@ -1,0 +1,532 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 5,
+  "filesSkipped": [
+    "alembic.ini"
+  ],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 5,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 0,
+      "failed": 0,
+      "skipped": 5
+    }
+  },
+  "results": [
+    {
+      "path": ".env.example",
+      "language": "config",
+      "fileCategory": "config",
+      "totalLines": 20,
+      "nonEmptyLines": 16,
+      "definitions": [
+        {
+          "name": "DATABASE_URL",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 2,
+          "endLine": 2
+        },
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 5,
+          "endLine": 5
+        },
+        {
+          "name": "LLM_MODEL",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 6,
+          "endLine": 6
+        },
+        {
+          "name": "LLM_DAILY_CAP",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 7,
+          "endLine": 7
+        },
+        {
+          "name": "TELEGRAM_BOT_TOKEN",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 10,
+          "endLine": 10
+        },
+        {
+          "name": "TELEGRAM_CHAT_ID",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 11,
+          "endLine": 11
+        },
+        {
+          "name": "TELEGRAM_WEBHOOK_SECRET",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 12,
+          "endLine": 12
+        },
+        {
+          "name": "GITHUB_TOKEN",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 15,
+          "endLine": 15
+        },
+        {
+          "name": "GITHUB_WEBHOOK_SECRET",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 16,
+          "endLine": 16
+        },
+        {
+          "name": "SCHEDULER_ENABLED",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 19,
+          "endLine": 19
+        },
+        {
+          "name": "LOG_LEVEL",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 20,
+          "endLine": 20
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 11
+      }
+    },
+    {
+      "path": "CLAUDE.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 342,
+      "nonEmptyLines": 239,
+      "sections": [
+        {
+          "heading": "CLAUDE.md",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "Coding Behavior",
+          "level": 2,
+          "line": 3
+        },
+        {
+          "heading": "Project Overview",
+          "level": 2,
+          "line": 22
+        },
+        {
+          "heading": "Commands",
+          "level": 2,
+          "line": 49
+        },
+        {
+          "heading": "Architecture (간단 구조)",
+          "level": 2,
+          "line": 81
+        },
+        {
+          "heading": "데이터 모델",
+          "level": 3,
+          "line": 133
+        },
+        {
+          "heading": "Conventions",
+          "level": 2,
+          "line": 159
+        },
+        {
+          "heading": "작업 기록 규칙 (Obsidian)",
+          "level": 2,
+          "line": 174
+        },
+        {
+          "heading": "작성 스타일 — 학습노트 양식 준수",
+          "level": 3,
+          "line": 184
+        },
+        {
+          "heading": "① 프로젝트 노트 — `여태호-project/프로젝트/<서비스명>-Hub/` (허브 + spoke)",
+          "level": 3,
+          "line": 196
+        },
+        {
+          "heading": "② 일일 노트 — `여태호-project/일일작업내역/YYYY-MM-DD(N일차)/<서비스명> - <작업 제목>.md`",
+          "level": 3,
+          "line": 294
+        },
+        {
+          "heading": "Codex 리뷰 규칙",
+          "level": 2,
+          "line": 332
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 12
+      }
+    },
+    {
+      "path": "pyproject.toml",
+      "language": "toml",
+      "fileCategory": "config",
+      "totalLines": 59,
+      "nonEmptyLines": 51,
+      "sections": [
+        {
+          "heading": "project",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "dependency-groups",
+          "level": 1,
+          "line": 24
+        },
+        {
+          "heading": "tool.ruff",
+          "level": 2,
+          "line": 34
+        },
+        {
+          "heading": "tool.ruff.lint",
+          "level": 3,
+          "line": 38
+        },
+        {
+          "heading": "tool.mypy",
+          "level": 2,
+          "line": 41
+        },
+        {
+          "heading": "[[tool.mypy.overrides]]",
+          "level": 3,
+          "line": 46
+        },
+        {
+          "heading": "tool.pytest.ini_options",
+          "level": 3,
+          "line": 50
+        },
+        {
+          "heading": "build-system",
+          "level": 1,
+          "line": 54
+        },
+        {
+          "heading": "tool.hatch.build.targets.wheel",
+          "level": 5,
+          "line": 58
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 9
+      }
+    },
+    {
+      "path": "구현도.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 381,
+      "nonEmptyLines": 306,
+      "sections": [
+        {
+          "heading": "기술 파악 — 구현 설계서 (v0.2)",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "1. 설계 원칙",
+          "level": 2,
+          "line": 11
+        },
+        {
+          "heading": "2. 전체 아키텍처",
+          "level": 2,
+          "line": 21
+        },
+        {
+          "heading": "2.1 구성 요소",
+          "level": 3,
+          "line": 54
+        },
+        {
+          "heading": "2.2 왜 이 구성인가 (대안 비교)",
+          "level": 3,
+          "line": 68
+        },
+        {
+          "heading": "3. 기술 스택",
+          "level": 2,
+          "line": 79
+        },
+        {
+          "heading": "4. 데이터 모델",
+          "level": 2,
+          "line": 111
+        },
+        {
+          "heading": "5. 워크플로우 (단계별 상세)",
+          "level": 2,
+          "line": 163
+        },
+        {
+          "heading": "5.1 수집 (Collector)",
+          "level": 3,
+          "line": 165
+        },
+        {
+          "heading": "5.2 정규화 · 중복 제거",
+          "level": 3,
+          "line": 191
+        },
+        {
+          "heading": "5.3 규칙 필터 (1단계 관문)",
+          "level": 3,
+          "line": 197
+        },
+        {
+          "heading": "5.4 점수화 (2단계 관문)",
+          "level": 3,
+          "line": 213
+        },
+        {
+          "heading": "5.5 본문 보강 → LLM 요약·태깅·판단 (3단계 관문)",
+          "level": 3,
+          "line": 226
+        },
+        {
+          "heading": "5.6 발송 (Notifier)",
+          "level": 3,
+          "line": 248
+        },
+        {
+          "heading": "5.7 상태 전이 요약",
+          "level": 3,
+          "line": 269
+        },
+        {
+          "heading": "6. 프로젝트 구조",
+          "level": 2,
+          "line": 281
+        },
+        {
+          "heading": "7. 인프라 · 배포 · 운영",
+          "level": 2,
+          "line": 325
+        },
+        {
+          "heading": "7.1 실행 환경",
+          "level": 3,
+          "line": 327
+        },
+        {
+          "heading": "7.2 CI/CD",
+          "level": 3,
+          "line": 334
+        },
+        {
+          "heading": "7.3 운영·관측",
+          "level": 3,
+          "line": 340
+        },
+        {
+          "heading": "8. 단계별 개발 로드맵",
+          "level": 2,
+          "line": 350
+        },
+        {
+          "heading": "9. 리스크 대응 (기획서 10장 → 구현 관점)",
+          "level": 2,
+          "line": 362
+        },
+        {
+          "heading": "10. 남은 결정 사항",
+          "level": 2,
+          "line": 374
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 23
+      }
+    },
+    {
+      "path": "기획서.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 183,
+      "nonEmptyLines": 133,
+      "sections": [
+        {
+          "heading": "개발 트렌드 알림 앱 기획서 (v0.1)",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "1. 프로젝트 한 줄 정의",
+          "level": 2,
+          "line": 10
+        },
+        {
+          "heading": "2. 배경 및 문제 정의",
+          "level": 2,
+          "line": 14
+        },
+        {
+          "heading": "2.1 배경",
+          "level": 3,
+          "line": 16
+        },
+        {
+          "heading": "2.2 해결하려는 문제",
+          "level": 3,
+          "line": 22
+        },
+        {
+          "heading": "2.3 기존 서비스와의 차별점",
+          "level": 3,
+          "line": 31
+        },
+        {
+          "heading": "3. 목표",
+          "level": 2,
+          "line": 36
+        },
+        {
+          "heading": "3.1 제품 목표",
+          "level": 3,
+          "line": 38
+        },
+        {
+          "heading": "3.2 개인 목표",
+          "level": 3,
+          "line": 44
+        },
+        {
+          "heading": "3.3 비목표 (이번 범위에서 제외)",
+          "level": 3,
+          "line": 49
+        },
+        {
+          "heading": "4. 대상 사용자",
+          "level": 2,
+          "line": 55
+        },
+        {
+          "heading": "5. 다루는 정보의 범위",
+          "level": 2,
+          "line": 60
+        },
+        {
+          "heading": "5.1 정보 카테고리",
+          "level": 3,
+          "line": 62
+        },
+        {
+          "heading": "5.2 수집 대상 소스 (1차 후보)",
+          "level": 3,
+          "line": 73
+        },
+        {
+          "heading": "6. 핵심 기능",
+          "level": 2,
+          "line": 84
+        },
+        {
+          "heading": "6.1 기능 목록",
+          "level": 3,
+          "line": 86
+        },
+        {
+          "heading": "6.2 알림 UX 원칙 (금융 앱 알림 벤치마킹)",
+          "level": 3,
+          "line": 101
+        },
+        {
+          "heading": "7. 시스템 개요",
+          "level": 2,
+          "line": 111
+        },
+        {
+          "heading": "7.1 파이프라인",
+          "level": 3,
+          "line": 113
+        },
+        {
+          "heading": "7.2 실시간성 확보 방안",
+          "level": 3,
+          "line": 122
+        },
+        {
+          "heading": "7.3 노이즈 제어 방안",
+          "level": 3,
+          "line": 128
+        },
+        {
+          "heading": "7.4 푸시 채널 (미확정, 결정 필요)",
+          "level": 3,
+          "line": 135
+        },
+        {
+          "heading": "8. 개발 범위 및 단계",
+          "level": 2,
+          "line": 145
+        },
+        {
+          "heading": "9. 성공 기준 (MVP 기준)",
+          "level": 2,
+          "line": 154
+        },
+        {
+          "heading": "10. 리스크 및 고려사항",
+          "level": 2,
+          "line": 161
+        },
+        {
+          "heading": "11. 결정이 필요한 사항 (Open Questions)",
+          "level": 2,
+          "line": 171
+        },
+        {
+          "heading": "12. 참고",
+          "level": 2,
+          "line": 179
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 27
+      }
+    }
+  ]
+}

@@ -1,0 +1,1056 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 10,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 10,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 10,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "app/api/__init__.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 1,
+      "nonEmptyLines": 0,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "app/api/health.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 17,
+      "nonEmptyLines": 11,
+      "functions": [
+        {
+          "name": "health",
+          "startLine": 14,
+          "endLine": 17,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "health",
+          "line": 13,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "health",
+          "callee": "session_scope",
+          "lineNumber": 15
+        },
+        {
+          "caller": "health",
+          "callee": "session.execute",
+          "lineNumber": 16
+        },
+        {
+          "caller": "health",
+          "callee": "select",
+          "lineNumber": 16
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "app/api/telegram.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 50,
+      "nonEmptyLines": 37,
+      "functions": [
+        {
+          "name": "telegram_webhook",
+          "startLine": 22,
+          "endLine": 50,
+          "params": [
+            "request",
+            "x_telegram_bot_api_secret_token"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "telegram_webhook",
+          "line": 21,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "telegram_webhook",
+          "callee": "Header",
+          "lineNumber": 24
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "get_settings",
+          "lineNumber": 26
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "hmac.compare_digest",
+          "lineNumber": 27
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "HTTPException",
+          "lineNumber": 28
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "request.json",
+          "lineNumber": 30
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "update.get",
+          "lineNumber": 31
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "parse_feedback_callback",
+          "lineNumber": 35
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "query.get",
+          "lineNumber": 35
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "session_scope",
+          "lineNumber": 40
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "session.add",
+          "lineNumber": 41
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "Feedback",
+          "lineNumber": 41
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "answer_callback",
+          "lineNumber": 45
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "log.warning",
+          "lineNumber": 47
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "str",
+          "lineNumber": 47
+        },
+        {
+          "caller": "telegram_webhook",
+          "callee": "log.info",
+          "lineNumber": 49
+        }
+      ],
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "app/db/session.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 69,
+      "nonEmptyLines": 53,
+      "functions": [
+        {
+          "name": "to_asyncpg_url",
+          "startLine": 21,
+          "endLine": 32,
+          "params": [
+            "url"
+          ]
+        },
+        {
+          "name": "requires_tls",
+          "startLine": 35,
+          "endLine": 36,
+          "params": [
+            "url"
+          ]
+        },
+        {
+          "name": "connect_args",
+          "startLine": 39,
+          "endLine": 50,
+          "params": [
+            "url"
+          ]
+        },
+        {
+          "name": "session_scope",
+          "startLine": 61,
+          "endLine": 69,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "to_asyncpg_url",
+          "line": 21,
+          "isDefault": false
+        },
+        {
+          "name": "requires_tls",
+          "line": 35,
+          "isDefault": false
+        },
+        {
+          "name": "connect_args",
+          "line": 39,
+          "isDefault": false
+        },
+        {
+          "name": "session_scope",
+          "line": 60,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "to_asyncpg_url",
+          "callee": "url.startswith",
+          "lineNumber": 24
+        },
+        {
+          "caller": "to_asyncpg_url",
+          "callee": "len",
+          "lineNumber": 25
+        },
+        {
+          "caller": "to_asyncpg_url",
+          "callee": "urlsplit",
+          "lineNumber": 30
+        },
+        {
+          "caller": "to_asyncpg_url",
+          "callee": "parse_qsl",
+          "lineNumber": 31
+        },
+        {
+          "caller": "to_asyncpg_url",
+          "callee": "urlunsplit",
+          "lineNumber": 32
+        },
+        {
+          "caller": "to_asyncpg_url",
+          "callee": "parts._replace",
+          "lineNumber": 32
+        },
+        {
+          "caller": "to_asyncpg_url",
+          "callee": "urlencode",
+          "lineNumber": 32
+        },
+        {
+          "caller": "requires_tls",
+          "callee": "dict(parse_qsl(urlsplit(url).query)).get",
+          "lineNumber": 36
+        },
+        {
+          "caller": "requires_tls",
+          "callee": "dict",
+          "lineNumber": 36
+        },
+        {
+          "caller": "requires_tls",
+          "callee": "parse_qsl",
+          "lineNumber": 36
+        },
+        {
+          "caller": "requires_tls",
+          "callee": "urlsplit",
+          "lineNumber": 36
+        },
+        {
+          "caller": "connect_args",
+          "callee": "to_asyncpg_url(url).startswith",
+          "lineNumber": 41
+        },
+        {
+          "caller": "connect_args",
+          "callee": "to_asyncpg_url",
+          "lineNumber": 41
+        },
+        {
+          "caller": "connect_args",
+          "callee": "requires_tls",
+          "lineNumber": 45
+        },
+        {
+          "caller": "connect_args",
+          "callee": "ssl.create_default_context",
+          "lineNumber": 49
+        },
+        {
+          "caller": "session_scope",
+          "callee": "SessionLocal",
+          "lineNumber": 63
+        },
+        {
+          "caller": "session_scope",
+          "callee": "session.commit",
+          "lineNumber": 66
+        },
+        {
+          "caller": "session_scope",
+          "callee": "session.rollback",
+          "lineNumber": 68
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 4,
+        "functionCount": 4,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "app/jobs/collect.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 69,
+      "nonEmptyLines": 58,
+      "functions": [
+        {
+          "name": "run_source",
+          "startLine": 21,
+          "endLine": 57,
+          "params": [
+            "source_id"
+          ]
+        },
+        {
+          "name": "run_all_sources",
+          "startLine": 60,
+          "endLine": 69,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "run_source",
+          "line": 21,
+          "isDefault": false
+        },
+        {
+          "name": "run_all_sources",
+          "line": 60,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "run_source",
+          "callee": "session_scope",
+          "lineNumber": 23
+        },
+        {
+          "caller": "run_source",
+          "callee": "session.get",
+          "lineNumber": 24
+        },
+        {
+          "caller": "run_source",
+          "callee": "SourceConfig",
+          "lineNumber": 28
+        },
+        {
+          "caller": "run_source",
+          "callee": "build_source(cfg).fetch",
+          "lineNumber": 36
+        },
+        {
+          "caller": "run_source",
+          "callee": "build_source",
+          "lineNumber": 36
+        },
+        {
+          "caller": "run_source",
+          "callee": "type",
+          "lineNumber": 39
+        },
+        {
+          "caller": "run_source",
+          "callee": "log.warning",
+          "lineNumber": 40
+        },
+        {
+          "caller": "run_source",
+          "callee": "str",
+          "lineNumber": 41
+        },
+        {
+          "caller": "run_source",
+          "callee": "session.commit",
+          "lineNumber": 45
+        },
+        {
+          "caller": "run_source",
+          "callee": "send_ops_alert",
+          "lineNumber": 47
+        },
+        {
+          "caller": "run_source",
+          "callee": "log.warning",
+          "lineNumber": 49
+        },
+        {
+          "caller": "run_source",
+          "callee": "str",
+          "lineNumber": 49
+        },
+        {
+          "caller": "run_source",
+          "callee": "store_items",
+          "lineNumber": 52
+        },
+        {
+          "caller": "run_source",
+          "callee": "datetime.now",
+          "lineNumber": 53
+        },
+        {
+          "caller": "run_source",
+          "callee": "log.info",
+          "lineNumber": 56
+        },
+        {
+          "caller": "run_source",
+          "callee": "len",
+          "lineNumber": 56
+        },
+        {
+          "caller": "run_source",
+          "callee": "len",
+          "lineNumber": 56
+        },
+        {
+          "caller": "run_source",
+          "callee": "len",
+          "lineNumber": 57
+        },
+        {
+          "caller": "run_all_sources",
+          "callee": "session_scope",
+          "lineNumber": 62
+        },
+        {
+          "caller": "run_all_sources",
+          "callee": "list",
+          "lineNumber": 63
+        },
+        {
+          "caller": "run_all_sources",
+          "callee": "(await session.execute(select(Source.id).where(Source.enabled.is_(True)))).scalars",
+          "lineNumber": 64
+        },
+        {
+          "caller": "run_all_sources",
+          "callee": "session.execute",
+          "lineNumber": 64
+        },
+        {
+          "caller": "run_all_sources",
+          "callee": "select(Source.id).where",
+          "lineNumber": 64
+        },
+        {
+          "caller": "run_all_sources",
+          "callee": "select",
+          "lineNumber": 64
+        },
+        {
+          "caller": "run_all_sources",
+          "callee": "Source.enabled.is_",
+          "lineNumber": 64
+        },
+        {
+          "caller": "run_all_sources",
+          "callee": "run_source",
+          "lineNumber": 68
+        }
+      ],
+      "metrics": {
+        "importCount": 7,
+        "exportCount": 2,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "app/jobs/scheduler.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 66,
+      "nonEmptyLines": 55,
+      "functions": [
+        {
+          "name": "sync_sources",
+          "startLine": 21,
+          "endLine": 43,
+          "params": []
+        },
+        {
+          "name": "start_scheduler",
+          "startLine": 46,
+          "endLine": 66,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "sync_sources",
+          "line": 21,
+          "isDefault": false
+        },
+        {
+          "name": "start_scheduler",
+          "line": 46,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "sync_sources",
+          "callee": "get_source_configs",
+          "lineNumber": 23
+        },
+        {
+          "caller": "sync_sources",
+          "callee": "session_scope",
+          "lineNumber": 24
+        },
+        {
+          "caller": "sync_sources",
+          "callee": "(await session.execute(select(Source))).scalars",
+          "lineNumber": 25
+        },
+        {
+          "caller": "sync_sources",
+          "callee": "session.execute",
+          "lineNumber": 25
+        },
+        {
+          "caller": "sync_sources",
+          "callee": "select",
+          "lineNumber": 25
+        },
+        {
+          "caller": "sync_sources",
+          "callee": "configs.items",
+          "lineNumber": 27
+        },
+        {
+          "caller": "sync_sources",
+          "callee": "existing.get",
+          "lineNumber": 28
+        },
+        {
+          "caller": "sync_sources",
+          "callee": "Source",
+          "lineNumber": 30
+        },
+        {
+          "caller": "sync_sources",
+          "callee": "session.add",
+          "lineNumber": 31
+        },
+        {
+          "caller": "sync_sources",
+          "callee": "existing.items",
+          "lineNumber": 38
+        },
+        {
+          "caller": "sync_sources",
+          "callee": "session.flush",
+          "lineNumber": 42
+        },
+        {
+          "caller": "sync_sources",
+          "callee": "(await session.execute(select(Source))).scalars",
+          "lineNumber": 43
+        },
+        {
+          "caller": "sync_sources",
+          "callee": "session.execute",
+          "lineNumber": 43
+        },
+        {
+          "caller": "sync_sources",
+          "callee": "select",
+          "lineNumber": 43
+        },
+        {
+          "caller": "start_scheduler",
+          "callee": "AsyncIOScheduler",
+          "lineNumber": 47
+        },
+        {
+          "caller": "start_scheduler",
+          "callee": "sync_sources",
+          "lineNumber": 48
+        },
+        {
+          "caller": "start_scheduler",
+          "callee": "scheduler.add_job",
+          "lineNumber": 49
+        },
+        {
+          "caller": "start_scheduler",
+          "callee": "scheduler.add_job",
+          "lineNumber": 58
+        },
+        {
+          "caller": "start_scheduler",
+          "callee": "scheduler.add_job",
+          "lineNumber": 61
+        },
+        {
+          "caller": "start_scheduler",
+          "callee": "scheduler.start",
+          "lineNumber": 64
+        },
+        {
+          "caller": "start_scheduler",
+          "callee": "log.info",
+          "lineNumber": 65
+        },
+        {
+          "caller": "start_scheduler",
+          "callee": "scheduler.get_jobs",
+          "lineNumber": 65
+        }
+      ],
+      "metrics": {
+        "importCount": 7,
+        "exportCount": 2,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "app/log.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 29,
+      "nonEmptyLines": 21,
+      "functions": [
+        {
+          "name": "configure_logging",
+          "startLine": 12,
+          "endLine": 25,
+          "params": []
+        },
+        {
+          "name": "get_logger",
+          "startLine": 28,
+          "endLine": 29,
+          "params": [
+            "name"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "configure_logging",
+          "line": 12,
+          "isDefault": false
+        },
+        {
+          "name": "get_logger",
+          "line": 28,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "configure_logging",
+          "callee": "getattr",
+          "lineNumber": 13
+        },
+        {
+          "caller": "configure_logging",
+          "callee": "get_settings().log_level.upper",
+          "lineNumber": 13
+        },
+        {
+          "caller": "configure_logging",
+          "callee": "get_settings",
+          "lineNumber": 13
+        },
+        {
+          "caller": "configure_logging",
+          "callee": "logging.basicConfig",
+          "lineNumber": 14
+        },
+        {
+          "caller": "configure_logging",
+          "callee": "structlog.configure",
+          "lineNumber": 15
+        },
+        {
+          "caller": "configure_logging",
+          "callee": "structlog.processors.TimeStamper",
+          "lineNumber": 19
+        },
+        {
+          "caller": "configure_logging",
+          "callee": "structlog.processors.JSONRenderer",
+          "lineNumber": 21
+        },
+        {
+          "caller": "configure_logging",
+          "callee": "structlog.make_filtering_bound_logger",
+          "lineNumber": 23
+        },
+        {
+          "caller": "get_logger",
+          "callee": "structlog.get_logger",
+          "lineNumber": 29
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 2,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "app/main.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 34,
+      "nonEmptyLines": 25,
+      "functions": [
+        {
+          "name": "lifespan",
+          "startLine": 20,
+          "endLine": 28,
+          "params": [
+            "app"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "lifespan",
+          "line": 19,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "lifespan",
+          "callee": "configure_logging",
+          "lineNumber": 21
+        },
+        {
+          "caller": "lifespan",
+          "callee": "start_scheduler",
+          "lineNumber": 22
+        },
+        {
+          "caller": "lifespan",
+          "callee": "get_settings",
+          "lineNumber": 22
+        },
+        {
+          "caller": "lifespan",
+          "callee": "scheduler.shutdown",
+          "lineNumber": 27
+        },
+        {
+          "caller": "lifespan",
+          "callee": "engine.dispose",
+          "lineNumber": 28
+        }
+      ],
+      "metrics": {
+        "importCount": 8,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "scripts/run_job.py",
+      "language": "python",
+      "fileCategory": "script",
+      "totalLines": 36,
+      "nonEmptyLines": 28,
+      "functions": [
+        {
+          "name": "main",
+          "startLine": 23,
+          "endLine": 30,
+          "params": [
+            "names"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "main",
+          "line": 23,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "main",
+          "callee": "configure_logging",
+          "lineNumber": 24
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 28
+        },
+        {
+          "caller": "main",
+          "callee": "len",
+          "lineNumber": 28
+        },
+        {
+          "caller": "main",
+          "callee": "isinstance",
+          "lineNumber": 28
+        },
+        {
+          "caller": "main",
+          "callee": "engine.dispose",
+          "lineNumber": 30
+        }
+      ],
+      "metrics": {
+        "importCount": 6,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "tests/test_session_url.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 58,
+      "nonEmptyLines": 39,
+      "functions": [
+        {
+          "name": "test_driver_prefix_is_rewritten",
+          "startLine": 13,
+          "endLine": 15,
+          "params": []
+        },
+        {
+          "name": "test_already_asyncpg_url_is_kept",
+          "startLine": 18,
+          "endLine": 20,
+          "params": []
+        },
+        {
+          "name": "test_libpq_only_params_are_dropped",
+          "startLine": 23,
+          "endLine": 28,
+          "params": []
+        },
+        {
+          "name": "test_non_libpq_params_survive",
+          "startLine": 31,
+          "endLine": 32,
+          "params": []
+        },
+        {
+          "name": "test_requires_tls",
+          "startLine": 35,
+          "endLine": 39,
+          "params": []
+        },
+        {
+          "name": "test_connect_args_for_neon",
+          "startLine": 42,
+          "endLine": 50,
+          "params": []
+        },
+        {
+          "name": "test_connect_args_without_tls_has_no_ssl",
+          "startLine": 53,
+          "endLine": 54,
+          "params": []
+        },
+        {
+          "name": "test_connect_args_for_non_postgres_is_empty",
+          "startLine": 57,
+          "endLine": 58,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "test_driver_prefix_is_rewritten",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "test_already_asyncpg_url_is_kept",
+          "line": 18,
+          "isDefault": false
+        },
+        {
+          "name": "test_libpq_only_params_are_dropped",
+          "line": 23,
+          "isDefault": false
+        },
+        {
+          "name": "test_non_libpq_params_survive",
+          "line": 31,
+          "isDefault": false
+        },
+        {
+          "name": "test_requires_tls",
+          "line": 35,
+          "isDefault": false
+        },
+        {
+          "name": "test_connect_args_for_neon",
+          "line": 42,
+          "isDefault": false
+        },
+        {
+          "name": "test_connect_args_without_tls_has_no_ssl",
+          "line": 53,
+          "isDefault": false
+        },
+        {
+          "name": "test_connect_args_for_non_postgres_is_empty",
+          "line": 57,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "test_driver_prefix_is_rewritten",
+          "callee": "to_asyncpg_url(\"postgres://u:p@h/db\").startswith",
+          "lineNumber": 14
+        },
+        {
+          "caller": "test_driver_prefix_is_rewritten",
+          "callee": "to_asyncpg_url",
+          "lineNumber": 14
+        },
+        {
+          "caller": "test_driver_prefix_is_rewritten",
+          "callee": "to_asyncpg_url(\"postgresql://u:p@h/db\").startswith",
+          "lineNumber": 15
+        },
+        {
+          "caller": "test_driver_prefix_is_rewritten",
+          "callee": "to_asyncpg_url",
+          "lineNumber": 15
+        },
+        {
+          "caller": "test_already_asyncpg_url_is_kept",
+          "callee": "to_asyncpg_url",
+          "lineNumber": 20
+        },
+        {
+          "caller": "test_libpq_only_params_are_dropped",
+          "callee": "to_asyncpg_url",
+          "lineNumber": 25
+        },
+        {
+          "caller": "test_libpq_only_params_are_dropped",
+          "callee": "result.endswith",
+          "lineNumber": 28
+        },
+        {
+          "caller": "test_non_libpq_params_survive",
+          "callee": "to_asyncpg_url",
+          "lineNumber": 32
+        },
+        {
+          "caller": "test_requires_tls",
+          "callee": "requires_tls",
+          "lineNumber": 36
+        },
+        {
+          "caller": "test_requires_tls",
+          "callee": "requires_tls",
+          "lineNumber": 37
+        },
+        {
+          "caller": "test_requires_tls",
+          "callee": "requires_tls",
+          "lineNumber": 38
+        },
+        {
+          "caller": "test_requires_tls",
+          "callee": "requires_tls",
+          "lineNumber": 39
+        },
+        {
+          "caller": "test_connect_args_for_neon",
+          "callee": "connect_args",
+          "lineNumber": 43
+        },
+        {
+          "caller": "test_connect_args_for_neon",
+          "callee": "isinstance",
+          "lineNumber": 48
+        },
+        {
+          "caller": "test_connect_args_without_tls_has_no_ssl",
+          "callee": "connect_args",
+          "lineNumber": 54
+        },
+        {
+          "caller": "test_connect_args_for_non_postgres_is_empty",
+          "callee": "connect_args",
+          "lineNumber": 58
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 8,
+        "functionCount": 8,
+        "classCount": 0
+      }
+    }
+  ]
+}
