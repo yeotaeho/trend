@@ -153,3 +153,23 @@ async def test_429_waits_retry_after_then_succeeds(no_sleep):
     body = await _call("POST", "/channels/42/messages", {})
     assert body["id"] == "999"
     assert route.call_count == 2
+
+
+@respx.mock
+async def test_429_beyond_max_wait_fails_without_retry(no_sleep):
+    route = respx.post("https://discord.com/api/v10/channels/42/messages").mock(
+        return_value=httpx.Response(429, json={"retry_after": 120.0, "global": True})
+    )
+    with pytest.raises(RuntimeError, match="retry_after 120"):
+        await _call("POST", "/channels/42/messages", {})
+    assert route.call_count == 1  # 디스코드가 준 시간보다 빨리 다시 보내지 않는다
+
+
+@respx.mock
+async def test_requests_carry_discord_user_agent():
+    route = respx.post("https://discord.com/api/v10/channels/42/messages").mock(
+        return_value=httpx.Response(200, json={"id": "1"})
+    )
+    await _call("POST", "/channels/42/messages", {})
+    ua = route.calls.last.request.headers["user-agent"]
+    assert ua.startswith("DiscordBot (")

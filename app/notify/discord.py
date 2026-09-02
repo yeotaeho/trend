@@ -19,7 +19,9 @@ TIMEOUT = httpx.Timeout(15.0)
 MAX_CONTENT = 2000  # 디스코드 메시지 본문 상한
 MAX_BUTTON_URL = 512  # 링크 버튼 url 상한
 RETRY_ATTEMPTS = 3
-MAX_RETRY_AFTER = 30.0  # 429 대기 상한(초)
+MAX_RETRY_AFTER = 30.0  # 429 대기가 이보다 길면 재시도하지 않고 실패로 기록한다
+# 디스코드는 `DiscordBot (url, version)` 형식의 UA 를 요구한다. 없으면 Cloudflare 가 막을 수 있다.
+USER_AGENT = "DiscordBot (https://github.com/yeotaeho/trend, 0.1.0)"
 
 # 메시지 플래그·컴포넌트 상수 (Discord API v10)
 FLAG_SUPPRESS_NOTIFICATIONS = 1 << 12  # @silent — 알림 없이 도착
@@ -88,9 +90,10 @@ def build_payload(item: Item, summary: Summary, level: Level, source_name: str) 
 
 
 def _retry_after_seconds(response: httpx.Response) -> float:
-    """429 본문의 retry_after(초). 없거나 이상하면 1초, 너무 길면 상한."""
+    """429 본문의 retry_after(초). 없거나 이상하면 1초. 자르지 않는다 — 디스코드가 준
+    시간보다 빨리 같은 요청을 다시 보내면 429 가 반복되고 오류 임계에 걸린다."""
     try:
-        return min(float(response.json().get("retry_after", 1.0)), MAX_RETRY_AFTER)
+        return float(response.json().get("retry_after", 1.0))
     except (ValueError, AttributeError, TypeError):
         return 1.0
 
@@ -101,7 +104,10 @@ async def _call(method: str, path: str, payload: dict[str, Any]) -> dict[str, An
     401·403·404 같은 영구 4xx 를 반복하면 디스코드가 봇을 제한할 수 있어 즉시 실패시킨다.
     토큰은 헤더에만 들어가므로 예외 메시지에 새지 않는다. 디스코드 오류 본문은 남긴다.
     """
-    headers = {"Authorization": f"Bot {get_settings().discord_bot_token}"}
+    headers = {
+        "Authorization": f"Bot {get_settings().discord_bot_token}",
+        "User-Agent": USER_AGENT,
+    }
     for attempt in range(1, RETRY_ATTEMPTS + 1):
         try:
             async with httpx.AsyncClient(timeout=TIMEOUT) as client:
@@ -121,6 +127,10 @@ async def _call(method: str, path: str, payload: dict[str, Any]) -> dict[str, An
         detail = f"discord {method} {path} HTTP {status}: {response.text[:200]}"
         if status == 429:
             wait = _retry_after_seconds(response)
+            if wait > MAX_RETRY_AFTER:
+                # 잡을 그만큼 세울 수는 없다. 대신 조기 재시도도 하지 않는다 — 실패로
+                # 기록하고 다음 발송 잡이 새 요청으로 다시 시도한다.
+                raise RuntimeError(f"{detail} (retry_after {wait:.0f}초, 재시도 안 함)")
         elif status >= 500:
             wait = float(attempt)
         else:
