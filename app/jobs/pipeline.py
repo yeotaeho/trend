@@ -83,6 +83,20 @@ async def _process(session: AsyncSession, item: Item, source: Source) -> bool:
         # kw=0 이라 어떤 신뢰도로도 임계값을 못 넘는데, 화이트리스트의 뜻은 "이 소스는
         # 봐라"다. 거르는 일은 LLM 의 worth_notifying 이 맡는다. (include_repo 는 키워드성
         # 신호라 그대로 점수화한다.)
+        # 단, 신선도는 본다. 첫 실행 백필(GitHub 200건·YouTube 30건)이 전부 LLM 으로 가면
+        # 하루 예산 300 을 오래된 항목에 쓰고 첫날 알림이 옛 릴리즈로 넘친다.
+        age = datetime.now(UTC) - item.published_at
+        if age > timedelta(hours=rules.scoring.whitelist_max_age_hours):
+            item.status = ItemStatus.DROPPED.value
+            session.add(
+                _record(
+                    item,
+                    Stage.SCORE,
+                    False,
+                    {"reason": "whitelist_stale", "age_hours": round(age.total_seconds() / 3600)},
+                )
+            )
+            return False
         session.add(_record(item, Stage.SCORE, True, {"reason": "whitelist_bypass"}))
     else:
         mentions = await mention_count(session, item.id)

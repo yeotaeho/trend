@@ -76,6 +76,9 @@ scoring:
   w_multi: 0.2
   w_fresh: 0.1
   threshold: 0.45
+  # always_pass 소스(GitHub Releases·YouTube)는 점수 관문을 건너뛰고 바로 LLM 으로 간다.
+  # 단, 이보다 오래된 항목은 보내지 않는다. 첫 실행 백필이 LLM 예산을 잠식하는 걸 막는다.
+  whitelist_max_age_hours: 48
 
 notify:
   daily_push_cap: 15

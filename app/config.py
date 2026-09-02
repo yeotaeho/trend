@@ -52,6 +52,8 @@ class ScoringConfig(BaseModel):
     w_multi: float = 0.2
     w_fresh: float = 0.1
     threshold: float = 0.45
+    # always_pass 소스가 점수 관문을 건너뛰는 유효 기간. 이보다 오래된 항목은 LLM 에 안 보낸다.
+    whitelist_max_age_hours: int = 48
 
 
 class NotifyConfig(BaseModel):
