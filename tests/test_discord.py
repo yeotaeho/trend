@@ -143,10 +143,11 @@ async def test_5xx_is_retried_three_times(no_sleep):
 
 
 @respx.mock
-async def test_429_waits_retry_after_then_succeeds(no_sleep):
+async def test_429_waits_retry_after_then_succeeds():
+    # 실제 sleep 을 쓴다. 게이트는 sleep(wait) 과 같은 길이라 재시도 시점엔 풀려 있다.
     route = respx.post("https://discord.com/api/v10/channels/42/messages").mock(
         side_effect=[
-            httpx.Response(429, json={"retry_after": 0.5, "global": False}),
+            httpx.Response(429, json={"retry_after": 0.01, "global": False}),
             httpx.Response(200, json={"id": "999"}),
         ]
     )
@@ -208,3 +209,28 @@ async def test_expired_gate_lets_requests_through(monkeypatch):
     )
     assert (await _call("POST", "/channels/42/messages", {}))["id"] == "1"
     assert route.call_count == 1
+
+
+def test_extend_gate_never_shortens(monkeypatch):
+    import time
+
+    from app.notify import discord
+
+    far = time.monotonic() + 100
+    monkeypatch.setattr("app.notify.discord._blocked_until", far)
+    discord._extend_gate(0.5)  # 동시 진행 요청의 짧은 429
+    assert discord._blocked_until == far
+    discord._extend_gate(200)
+    assert discord._blocked_until > far
+
+
+@respx.mock
+async def test_repeated_short_429_exhausts_as_rate_limited():
+    from app.notify.base import RateLimited
+
+    route = respx.post("https://discord.com/api/v10/channels/42/messages").mock(
+        return_value=httpx.Response(429, json={"retry_after": 0.01})
+    )
+    with pytest.raises(RateLimited, match="3회 429"):
+        await _call("POST", "/channels/42/messages", {})
+    assert route.call_count == 3  # 항목 FAILED 가 아니라 배치 중단 신호

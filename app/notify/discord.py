@@ -104,22 +104,28 @@ def _retry_after_seconds(response: httpx.Response) -> float:
         return 1.0
 
 
+def _extend_gate(wait: float) -> None:
+    """게이트를 뒤로만 민다. 동시에 진행 중이던 요청의 짧은 429 가 앞선 긴 대기를
+    덮어써 줄이면 제한 만료 전에 요청이 나간다."""
+    global _blocked_until
+    _blocked_until = max(_blocked_until, time.monotonic() + wait)
+
+
 async def _call(method: str, path: str, payload: dict[str, Any]) -> dict[str, Any]:
     """네트워크 오류·5xx·429 만 재시도한다. 429 는 디스코드가 알려준 시간만큼 기다린다.
 
     401·403·404 같은 영구 4xx 를 반복하면 디스코드가 봇을 제한할 수 있어 즉시 실패시킨다.
     토큰은 헤더에만 들어가므로 예외 메시지에 새지 않는다. 디스코드 오류 본문은 남긴다.
     """
-    global _blocked_until
-    remaining = _blocked_until - time.monotonic()
-    if remaining > 0:
-        raise RateLimited(f"discord 대기 중 ({remaining:.0f}초 남음), 요청 보내지 않음")
-
     headers = {
         "Authorization": f"Bot {get_settings().discord_bot_token}",
         "User-Agent": USER_AGENT,
     }
     for attempt in range(1, RETRY_ATTEMPTS + 1):
+        # 매 시도 직전에 본다. 대기하는 사이 다른 요청이 게이트를 더 멀리 세웠을 수 있다.
+        remaining = _blocked_until - time.monotonic()
+        if remaining > 0:
+            raise RateLimited(f"discord 대기 중 ({remaining:.0f}초 남음), 요청 보내지 않음")
         try:
             async with httpx.AsyncClient(timeout=TIMEOUT) as client:
                 response = await client.request(
@@ -138,8 +144,7 @@ async def _call(method: str, path: str, payload: dict[str, Any]) -> dict[str, An
         detail = f"discord {method} {path} HTTP {status}: {response.text[:200]}"
         if status == 429:
             wait = _retry_after_seconds(response)
-            # 이 프로세스의 모든 디스코드 요청을 그 시각까지 막는다.
-            _blocked_until = time.monotonic() + wait
+            _extend_gate(wait)
             if wait > MAX_RETRY_AFTER:
                 # 잡을 그만큼 세울 수는 없다. 항목 실패가 아니라 배치 중단 신호를 보낸다 —
                 # 게이트가 풀린 뒤 다음 발송 잡이 이 항목부터 다시 시도한다.
@@ -149,6 +154,9 @@ async def _call(method: str, path: str, payload: dict[str, Any]) -> dict[str, An
         else:
             raise RuntimeError(detail)
         if attempt == RETRY_ATTEMPTS:
+            if status == 429:
+                # 짧은 429 가 반복돼 횟수를 소진한 것도 항목 탓이 아니다. 배치를 멈춘다.
+                raise RateLimited(f"{detail} ({attempt}회 429)")
             raise RuntimeError(f"{detail} ({attempt}회 시도)")
         await asyncio.sleep(wait)
     raise AssertionError("unreachable")
