@@ -51,13 +51,15 @@ class Item(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     source_id: Mapped[int] = mapped_column(ForeignKey("sources.id", ondelete="CASCADE"), index=True)
-    external_id: Mapped[str] = mapped_column(String(500))
+    # 피드에서 오는 문자열은 길이를 보장할 수 없다. varchar(n) 은 Postgres 에서
+    # 성능 이득이 없고 적재 크래시만 만든다.
+    external_id: Mapped[str] = mapped_column(Text)
     url: Mapped[str] = mapped_column(Text)
     url_normalized: Mapped[str] = mapped_column(Text)
     url_hash: Mapped[str] = mapped_column(String(64))
     title: Mapped[str] = mapped_column(Text)
     summary_raw: Mapped[str | None] = mapped_column(Text)
-    author: Mapped[str | None] = mapped_column(String(300))
+    author: Mapped[str | None] = mapped_column(Text)
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     category: Mapped[str] = mapped_column(String(30), default=Category.UNKNOWN.value)

@@ -34,6 +34,16 @@ async def run_source(source_id: int) -> int:
         )
         try:
             items = await build_source(cfg).fetch(source.last_polled_at)
+            # 적재 실패도 수집 실패로 다룬다. savepoint 로 감싸야 예외 뒤에도 세션이
+            # 살아 있어 아래 실패 기록을 커밋할 수 있다. 예외를 밖으로 흘리면
+            # 이 소스의 실패가 기록되지 않고 run_all_sources 의 나머지 소스까지 죽는다.
+            savepoint = await session.begin_nested()
+            try:
+                inserted = await store_items(session, source.id, items)
+            except Exception:
+                await savepoint.rollback()
+                raise
+            await savepoint.commit()
         except Exception as exc:
             source.fail_count += 1
             source.last_error = f"{type(exc).__name__}: {exc}"
@@ -49,7 +59,6 @@ async def run_source(source_id: int) -> int:
                     log.warning("collect.alert_failed", error=str(alert_exc))
             return 0
 
-        inserted = await store_items(session, source.id, items)
         source.last_polled_at = datetime.now(UTC)
         source.last_error = None
         source.fail_count = 0
