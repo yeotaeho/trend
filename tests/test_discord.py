@@ -173,3 +173,38 @@ async def test_requests_carry_discord_user_agent():
     await _call("POST", "/channels/42/messages", {})
     ua = route.calls.last.request.headers["user-agent"]
     assert ua.startswith("DiscordBot (")
+
+
+@pytest.fixture(autouse=True)
+def reset_discord_gate(monkeypatch):
+    """429 테스트가 세운 프로세스 전역 게이트가 다른 테스트로 새지 않게 한다."""
+    monkeypatch.setattr("app.notify.discord._blocked_until", 0.0)
+
+
+@respx.mock
+async def test_long_429_raises_rate_limited_and_blocks_following_calls(no_sleep):
+    from app.notify.base import RateLimited
+
+    route = respx.post("https://discord.com/api/v10/channels/42/messages").mock(
+        return_value=httpx.Response(429, json={"retry_after": 120.0, "global": True})
+    )
+    with pytest.raises(RateLimited, match="retry_after 120"):
+        await _call("POST", "/channels/42/messages", {})
+    assert route.call_count == 1
+
+    # 게이트가 열리기 전의 다른 요청은 네트워크에 닿지 않는다.
+    with pytest.raises(RateLimited, match="대기 중"):
+        await _call("POST", "/channels/42/messages", {"other": True})
+    assert route.call_count == 1
+
+
+@respx.mock
+async def test_expired_gate_lets_requests_through(monkeypatch):
+    import time
+
+    monkeypatch.setattr("app.notify.discord._blocked_until", time.monotonic() - 1)
+    route = respx.post("https://discord.com/api/v10/channels/42/messages").mock(
+        return_value=httpx.Response(200, json={"id": "1"})
+    )
+    assert (await _call("POST", "/channels/42/messages", {}))["id"] == "1"
+    assert route.call_count == 1

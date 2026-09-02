@@ -11,6 +11,14 @@ from app.schemas import Level
 CALLBACK_PREFIX = "fb"
 
 
+class RateLimited(RuntimeError):
+    """채널이 대기를 요구했다. 항목의 실패가 아니라 "이 배치는 여기서 멈춰라" 는 신호다.
+
+    발송 잡은 이 예외를 받으면 항목을 FAILED 로 기록하지 않고 배치를 끝낸다.
+    대기가 끝나면 다음 잡이 같은 항목부터 다시 시도한다.
+    """
+
+
 @runtime_checkable
 class Notifier(Protocol):
     """채널 하나 = 이 프로토콜을 만족하는 객체 하나. 성공 시 message_id 를 돌려준다."""

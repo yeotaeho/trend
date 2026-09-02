@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import time
 from datetime import datetime
 from typing import Any
 
@@ -11,7 +12,7 @@ import httpx
 
 from app.config import get_settings
 from app.db.models import Item, Summary
-from app.notify.base import feedback_callback_data, relative_time
+from app.notify.base import RateLimited, feedback_callback_data, relative_time
 from app.schemas import Level
 
 API = "https://discord.com/api/v10"
@@ -22,6 +23,11 @@ RETRY_ATTEMPTS = 3
 MAX_RETRY_AFTER = 30.0  # 429 대기가 이보다 길면 재시도하지 않고 실패로 기록한다
 # 디스코드는 `DiscordBot (url, version)` 형식의 UA 를 요구한다. 없으면 Cloudflare 가 막을 수 있다.
 USER_AGENT = "DiscordBot (https://github.com/yeotaeho/trend, 0.1.0)"
+
+# 프로세스 전역 게이트 — 이 시각(monotonic) 전에는 디스코드에 어떤 요청도 보내지 않는다.
+# 429 의 retry_after 는 "그 요청" 이 아니라 "다음 요청" 까지의 대기다. 발송·운영 알림이
+# 전부 같은 채널 라우트를 쓰므로 global/라우트별 구분 없이 하나로 충분하다.
+_blocked_until = 0.0
 
 # 메시지 플래그·컴포넌트 상수 (Discord API v10)
 FLAG_SUPPRESS_NOTIFICATIONS = 1 << 12  # @silent — 알림 없이 도착
@@ -104,6 +110,11 @@ async def _call(method: str, path: str, payload: dict[str, Any]) -> dict[str, An
     401·403·404 같은 영구 4xx 를 반복하면 디스코드가 봇을 제한할 수 있어 즉시 실패시킨다.
     토큰은 헤더에만 들어가므로 예외 메시지에 새지 않는다. 디스코드 오류 본문은 남긴다.
     """
+    global _blocked_until
+    remaining = _blocked_until - time.monotonic()
+    if remaining > 0:
+        raise RateLimited(f"discord 대기 중 ({remaining:.0f}초 남음), 요청 보내지 않음")
+
     headers = {
         "Authorization": f"Bot {get_settings().discord_bot_token}",
         "User-Agent": USER_AGENT,
@@ -127,10 +138,12 @@ async def _call(method: str, path: str, payload: dict[str, Any]) -> dict[str, An
         detail = f"discord {method} {path} HTTP {status}: {response.text[:200]}"
         if status == 429:
             wait = _retry_after_seconds(response)
+            # 이 프로세스의 모든 디스코드 요청을 그 시각까지 막는다.
+            _blocked_until = time.monotonic() + wait
             if wait > MAX_RETRY_AFTER:
-                # 잡을 그만큼 세울 수는 없다. 대신 조기 재시도도 하지 않는다 — 실패로
-                # 기록하고 다음 발송 잡이 새 요청으로 다시 시도한다.
-                raise RuntimeError(f"{detail} (retry_after {wait:.0f}초, 재시도 안 함)")
+                # 잡을 그만큼 세울 수는 없다. 항목 실패가 아니라 배치 중단 신호를 보낸다 —
+                # 게이트가 풀린 뒤 다음 발송 잡이 이 항목부터 다시 시도한다.
+                raise RateLimited(f"{detail} (retry_after {wait:.0f}초)")
         elif status >= 500:
             wait = float(attempt)
         else:

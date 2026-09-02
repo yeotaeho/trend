@@ -11,7 +11,7 @@ from app.config import get_rules
 from app.db.models import Item, Notification, Source, Summary
 from app.db.session import session_scope
 from app.log import get_logger
-from app.notify.base import Notifier
+from app.notify.base import Notifier, RateLimited
 from app.notify.discord import DiscordNotifier
 from app.notify.policy import decide
 from app.schemas import ItemStatus, Level
@@ -80,6 +80,11 @@ async def run_notify(notifier: Notifier | None = None) -> int:
 
             try:
                 message_id = await notifier.send(item, summary, verdict.level, source.name)
+            except RateLimited as exc:
+                # 항목 탓이 아니다. 기록하지 않고 배치를 멈춘다 — 채널이 준 대기 시간이
+                # 지나면 다음 발송 잡이 이 항목부터 다시 시도한다.
+                log.warning("notify.rate_limited", item_id=item.id, error=str(exc))
+                break
             except Exception as exc:
                 session.add(
                     Notification(
