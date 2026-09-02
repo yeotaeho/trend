@@ -78,21 +78,28 @@ async def _process(session: AsyncSession, item: Item, source: Source) -> bool:
         item.status = ItemStatus.FILTERED_OUT.value
         return False
 
-    mentions = await mention_count(session, item.id)
-    metrics = item.raw.get("metrics", {}) if isinstance(item.raw, dict) else {}
-    score = score_item(
-        rules.scoring,
-        trust=source.trust_score,
-        keyword_hits=len(verdict.matched_keywords),
-        metrics=metrics if isinstance(metrics, dict) else {},
-        mention_count=mentions,
-        published_at=item.published_at,
-    )
-    item.score = score.score
-    session.add(_record(item, Stage.SCORE, score.passed, {"breakdown": score.breakdown}))
-    if not score.passed:
-        item.status = ItemStatus.DROPPED.value
-        return False
+    if verdict.reason == "always_pass_source":
+        # 화이트리스트 소스는 점수 관문을 건너뛴다. 제목에 키워드가 없는 채널(YouTube)은
+        # kw=0 이라 어떤 신뢰도로도 임계값을 못 넘는데, 화이트리스트의 뜻은 "이 소스는
+        # 봐라"다. 거르는 일은 LLM 의 worth_notifying 이 맡는다. (include_repo 는 키워드성
+        # 신호라 그대로 점수화한다.)
+        session.add(_record(item, Stage.SCORE, True, {"reason": "whitelist_bypass"}))
+    else:
+        mentions = await mention_count(session, item.id)
+        metrics = item.raw.get("metrics", {}) if isinstance(item.raw, dict) else {}
+        score = score_item(
+            rules.scoring,
+            trust=source.trust_score,
+            keyword_hits=len(verdict.matched_keywords),
+            metrics=metrics if isinstance(metrics, dict) else {},
+            mention_count=mentions,
+            published_at=item.published_at,
+        )
+        item.score = score.score
+        session.add(_record(item, Stage.SCORE, score.passed, {"breakdown": score.breakdown}))
+        if not score.passed:
+            item.status = ItemStatus.DROPPED.value
+            return False
 
     body = item.summary_raw
     enrich_failed = False
