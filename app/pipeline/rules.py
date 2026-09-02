@@ -65,13 +65,16 @@ def apply_rules(
     if _excluded_domain(url, rules.exclude_domains):
         return RuleResult(False, "exclude_domain")
 
+    # 화이트리스트 경로도 매칭 키워드를 돌려준다. 점수 관문의 kw 항이 이 목록 길이를
+    # 쓰므로, 비워서 보내면 신뢰도 1.0 소스도 최대 0.35 라 임계값(0.45)을 절대 못 넘는다.
+    matched = find_keywords(text, rules.include_keywords)
+
     if _matches_any(source, rules.always_pass_sources):
-        return RuleResult(True, "always_pass_source")
+        return RuleResult(True, "always_pass_source", matched)
 
     if repo and _matches_any(repo, rules.include_repos):
-        return RuleResult(True, "include_repo")
+        return RuleResult(True, "include_repo", matched)
 
-    matched = find_keywords(text, rules.include_keywords)
     if matched:
         return RuleResult(True, "include_keyword", matched)
 
