@@ -99,7 +99,9 @@ async def _process(session: AsyncSession, item: Item, source: Source) -> bool:
             return False
         session.add(_record(item, Stage.SCORE, True, {"reason": "whitelist_bypass"}))
     else:
-        mentions = await mention_count(session, item.id)
+        mentions = await mention_count(
+            session, item.title, exclude_item_id=item.id, source_id=item.source_id
+        )
         metrics = item.raw.get("metrics", {}) if isinstance(item.raw, dict) else {}
         score = score_item(
             rules.scoring,
