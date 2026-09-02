@@ -6,6 +6,7 @@ sources:
     type: rss
     config:
       url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml
+      allowed_hosts: [anthropic.com]   # 미러가 넣은 외부 링크는 버린다
     poll_interval_sec: 900
     trust_score: 1.0
 
