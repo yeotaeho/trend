@@ -155,12 +155,15 @@ async def run_pipeline() -> int:
 
             # 항목 하나를 savepoint 로 감싼다. LLM 이 죽어 있으면 rule·score 판정만
             # 기록된 채 NEW 로 남고, 2분마다 같은 판정이 decisions 에 다시 쌓인다.
+            # 롤백은 savepoint 안에서 수정된 객체를 만료시키므로, 롤백 뒤에 item 의
+            # 속성을 읽으면 동기 로드가 일어나 MissingGreenlet 이 난다. id 는 미리 뺀다.
+            item_id = item.id
             savepoint = await session.begin_nested()
             try:
                 used = await _process(session, item, source)
             except Exception as exc:
                 await savepoint.rollback()
-                log.warning("pipeline.item_failed", item_id=item.id, error=str(exc))
+                log.warning("pipeline.item_failed", item_id=item_id, error=str(exc))
                 continue
             await savepoint.commit()
 
