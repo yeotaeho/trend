@@ -50,7 +50,7 @@ def test_render_escapes_and_includes_source():
 
     assert r"\*정식\*" in text
     assert "출처: rss:vercel · 12분 전" in text
-    assert "#nextjs #release" in text
+    assert r"\#nextjs \#release" in text  # \# 는 디스코드에서 # 로 보인다
 
 
 def test_push_payload_has_buttons_and_no_mentions():
@@ -97,3 +97,59 @@ async def test_api_error_keeps_status_and_body_but_not_token():
     assert "403" in str(exc.value)
     assert "Missing Access" in str(exc.value)
     assert "test-discord-token" not in str(exc.value)
+
+
+def test_escape_md_covers_link_masking_and_line_markers():
+    assert escape_md("[x](https://e.com) # h > q - l") == r"\[x\]\(https://e.com\) \# h \> q \- l"
+
+
+def test_link_button_omitted_for_bad_scheme_or_long_url():
+    item, summary = make_pair()
+    item.url = "javascript:alert(1)"
+    buttons = build_payload(item, summary, Level.PUSH, "rss:x")["components"][0]["components"]
+    assert [b.get("custom_id") for b in buttons] == ["fb:useful:7", "fb:useless:7"]
+
+    item.url = "https://example.com/" + "a" * 600
+    buttons = build_payload(item, summary, Level.PUSH, "rss:x")["components"][0]["components"]
+    assert all("url" not in b for b in buttons)
+
+
+@pytest.fixture
+def no_sleep(monkeypatch):
+    async def _instant(_seconds: float) -> None:
+        return None
+
+    monkeypatch.setattr("app.notify.discord.asyncio.sleep", _instant)
+
+
+@respx.mock
+async def test_permanent_4xx_is_not_retried(no_sleep):
+    route = respx.post("https://discord.com/api/v10/channels/42/messages").mock(
+        return_value=httpx.Response(401, json={"message": "401: Unauthorized"})
+    )
+    with pytest.raises(RuntimeError, match="401"):
+        await _call("POST", "/channels/42/messages", {})
+    assert route.call_count == 1
+
+
+@respx.mock
+async def test_5xx_is_retried_three_times(no_sleep):
+    route = respx.post("https://discord.com/api/v10/channels/42/messages").mock(
+        return_value=httpx.Response(502, text="bad gateway")
+    )
+    with pytest.raises(RuntimeError, match="502.*3회"):
+        await _call("POST", "/channels/42/messages", {})
+    assert route.call_count == 3
+
+
+@respx.mock
+async def test_429_waits_retry_after_then_succeeds(no_sleep):
+    route = respx.post("https://discord.com/api/v10/channels/42/messages").mock(
+        side_effect=[
+            httpx.Response(429, json={"retry_after": 0.5, "global": False}),
+            httpx.Response(200, json={"id": "999"}),
+        ]
+    )
+    body = await _call("POST", "/channels/42/messages", {})
+    assert body["id"] == "999"
+    assert route.call_count == 2
