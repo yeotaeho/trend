@@ -10,7 +10,8 @@ from app.config import get_settings
 from app.db.models import Feedback
 from app.db.session import session_scope
 from app.log import get_logger
-from app.notify.telegram import answer_callback, parse_feedback_callback
+from app.notify.base import parse_feedback_callback
+from app.notify.telegram import answer_callback
 
 router = APIRouter(prefix="/webhook")
 log = get_logger(__name__)

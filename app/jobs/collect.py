@@ -10,7 +10,7 @@ from app.config import SourceConfig
 from app.db.models import Source
 from app.db.session import session_scope
 from app.log import get_logger
-from app.notify.telegram import send_ops_alert
+from app.notify.discord import send_ops_alert
 from app.pipeline.ingest import store_items
 from app.sources import build_source
 

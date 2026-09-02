@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     telegram_chat_id: str = ""
     telegram_webhook_secret: str = ""
 
+    discord_bot_token: str = ""
+    discord_channel_id: str = ""
+    discord_public_key: str = ""  # 인터랙션 서명 검증용. 비어 있으면 엔드포인트가 전부 401
+
     github_token: str = ""
     github_webhook_secret: str = ""
 

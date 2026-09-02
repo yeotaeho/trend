@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api import github, health, telegram
+from app.api import discord, github, health, telegram
 from app.config import get_settings
 from app.db.session import engine
 from app.jobs.scheduler import start_scheduler
@@ -32,3 +32,4 @@ app = FastAPI(title="기술 파악", lifespan=lifespan)
 app.include_router(health.router)
 app.include_router(github.router)
 app.include_router(telegram.router)
+app.include_router(discord.router)

@@ -1,4 +1,4 @@
-# 발송 잡 — SCORED/QUEUED 항목에 정책을 적용해 텔레그램으로 보내고 결과를 기록
+# 발송 잡 — SCORED/QUEUED 항목에 정책을 적용해 디스코드로 보내고 결과를 기록
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from app.db.models import Item, Notification, Source, Summary
 from app.db.session import session_scope
 from app.log import get_logger
 from app.notify.base import Notifier
+from app.notify.discord import DiscordNotifier
 from app.notify.policy import decide
-from app.notify.telegram import TelegramNotifier
 from app.schemas import ItemStatus, Level
 
 BATCH_SIZE = 20
@@ -47,7 +47,7 @@ async def _claim_one(
 
 async def run_notify(notifier: Notifier | None = None) -> int:
     """실제로 발송한 건수를 돌려준다."""
-    notifier = notifier or TelegramNotifier()
+    notifier = notifier or DiscordNotifier()
     cfg = get_rules().notify
     now = datetime.now(UTC)
     sent = 0

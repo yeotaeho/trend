@@ -9,6 +9,10 @@ os.environ.setdefault("DATABASE_URL", "postgresql://test:test@localhost:5432/tes
 os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
 os.environ.setdefault("TELEGRAM_BOT_TOKEN", "test-token")
 os.environ.setdefault("TELEGRAM_CHAT_ID", "1")
+# 환경변수가 .env 보다 우선하므로 실제 키가 테스트에 섞이지 않는다.
+os.environ.setdefault("DISCORD_BOT_TOKEN", "test-discord-token")
+os.environ.setdefault("DISCORD_CHANNEL_ID", "42")
+os.environ.setdefault("DISCORD_PUBLIC_KEY", "")
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
