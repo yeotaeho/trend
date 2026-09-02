@@ -12,10 +12,17 @@ from app.schemas import ItemStatus
 
 WINDOW_HOURS = 72
 SIMILARITY_THRESHOLD = 0.6
-# 알림된 적 없는 항목은 중복 "알림"의 기준이 될 수 없다. 점수·규칙에서 떨어진 항목을
-# 기준으로 삼으면, 같은 이슈가 다른 소스에서 새로 들어와도 dup 으로 죽어 다중 소스
-# 신호가 작동하기 전에 사라진다.
-_NEVER_NOTIFIED = (ItemStatus.DROPPED.value, ItemStatus.FILTERED_OUT.value)
+# 알림된 적 없는 항목은 중복 "알림"의 기준이 될 수 없다. 점수·규칙에서 떨어졌거나
+# 발송이 3회 실패로 종결된 항목을 기준으로 삼으면, 같은 이슈가 다른 소스에서 새로
+# 들어와도 dup 으로 죽어 사용자가 영영 못 듣는다.
+# NEW 는 남긴다. 아직 판정 전인 대표에 중복이 묶여야 mention_count 가 오르고,
+# 대표를 점수화할 때 다중 소스 boost 를 받는다(구현도 5.2). 대표가 나중에 떨어지면
+# 그 뒤 재등장은 위 규칙으로 살아난다.
+_NEVER_NOTIFIED = (
+    ItemStatus.DROPPED.value,
+    ItemStatus.FILTERED_OUT.value,
+    ItemStatus.FAILED.value,
+)
 
 
 async def find_cluster(session: AsyncSession, title: str, *, exclude_item_id: int) -> int | None:
