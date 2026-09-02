@@ -8,9 +8,14 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Item
+from app.schemas import ItemStatus
 
 WINDOW_HOURS = 72
 SIMILARITY_THRESHOLD = 0.6
+# 알림된 적 없는 항목은 중복 "알림"의 기준이 될 수 없다. 점수·규칙에서 떨어진 항목을
+# 기준으로 삼으면, 같은 이슈가 다른 소스에서 새로 들어와도 dup 으로 죽어 다중 소스
+# 신호가 작동하기 전에 사라진다.
+_NEVER_NOTIFIED = (ItemStatus.DROPPED.value, ItemStatus.FILTERED_OUT.value)
 
 
 async def find_cluster(session: AsyncSession, title: str, *, exclude_item_id: int) -> int | None:
@@ -21,6 +26,7 @@ async def find_cluster(session: AsyncSession, title: str, *, exclude_item_id: in
         select(func.coalesce(Item.cluster_id, Item.id))
         .where(
             Item.id != exclude_item_id,
+            Item.status.notin_(_NEVER_NOTIFIED),
             Item.published_at >= since,
             similarity > SIMILARITY_THRESHOLD,
         )
