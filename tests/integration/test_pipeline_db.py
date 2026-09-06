@@ -44,15 +44,17 @@ async def items():
 
 
 async def _load(ids):
-    async with SessionLocal() as s:
-        rows = (
-            await s.execute(
-                select(Item, Source)
-                .join(Source, Source.id == Item.source_id)
-                .where(Item.id.in_(ids))
-            )
-        ).all()
-        return s, [(i, src) for i, src in rows]
+    """열린 세션과 (Item, Source) 쌍을 돌려준다. 호출자가 `async with s:` 로 닫는다.
+
+    여기서 `async with SessionLocal()` 로 감싸면 반환 시점에 세션이 닫혀, 뒤이은 commit 이 무시된다.
+    """
+    s = SessionLocal()
+    rows = (
+        await s.execute(
+            select(Item, Source).join(Source, Source.id == Item.source_id).where(Item.id.in_(ids))
+        )
+    ).all()
+    return s, [(i, src) for i, src in rows]
 
 
 async def test_item_failure_twice_drops_only_that_item(items, monkeypatch):
@@ -60,9 +62,13 @@ async def test_item_failure_twice_drops_only_that_item(items, monkeypatch):
     rules = get_rules()
 
     async def fake_triage(_rules, entries):
-        # 첫 항목만 빼먹고 나머지는 정상. 개수를 맞추려고 마지막 항목을 중복시킨다 (항목 실패).
-        good = [TriageItem(idx=e.idx, relevance=0.5, reason="r") for e in entries[1:]]
-        return TriageBatch(items=good + [good[-1]])
+        # 첫 항목만 relevance 범위 밖(항목 실패), 나머지 정상. 개수·idx 는 맞아 배치 실패가 아니다.
+        return TriageBatch(
+            items=[
+                TriageItem(idx=e.idx, relevance=5.0 if e.idx == ids[0] else 0.5, reason="r")
+                for e in entries
+            ]
+        )
 
     monkeypatch.setattr(pipeline, "call_triage", fake_triage)
 
