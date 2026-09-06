@@ -13,6 +13,7 @@ os.environ.setdefault("TELEGRAM_CHAT_ID", "1")
 os.environ.setdefault("DISCORD_BOT_TOKEN", "test-discord-token")
 os.environ.setdefault("DISCORD_CHANNEL_ID", "42")
 os.environ.setdefault("DISCORD_PUBLIC_KEY", "")
+os.environ.setdefault("VOYAGE_API_KEY", "test-voyage-key")
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     llm_model: str = "claude-haiku-4-5"
     llm_daily_cap: int = 300
 
+    # 임베딩. provider 는 voyage | openai. 모델을 바꾸면 backfill_embeddings.py 로 전량 재계산.
+    embedding_provider: str = "voyage"
+    embedding_model: str = "voyage-3.5-lite"
+    voyage_api_key: str = ""
+    openai_api_key: str = ""
+
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
     telegram_webhook_secret: str = ""
