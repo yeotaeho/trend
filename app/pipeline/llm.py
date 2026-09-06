@@ -9,6 +9,7 @@ import trafilatura
 from anthropic import AsyncAnthropic
 
 from app.config import PolicyConfig, Rules, get_settings
+from app.db.models import Item
 from app.log import get_logger
 from app.schemas import LLMVerdict
 
@@ -61,6 +62,18 @@ async def enrich_body(url: str) -> str | None:
     except Exception as exc:
         log.info("llm.enrich_failed", url=url, error=str(exc))
         return None
+
+
+async def body_for_judge(item: Item) -> tuple[str | None, bool]:
+    """본문이 짧으면 원문을 받아 보강한다. (본문, 보강 실패 여부). 결과는 summary_raw 에 남긴다."""
+    body = item.summary_raw
+    if body and len(body) >= ENRICH_MIN_CHARS:
+        return body, False
+    enriched = await enrich_body(item.url)
+    if enriched:
+        item.summary_raw = enriched[:3000]
+        return enriched, False
+    return body, True
 
 
 def client() -> AsyncAnthropic:

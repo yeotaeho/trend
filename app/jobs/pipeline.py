@@ -1,24 +1,36 @@
-# 파이프라인 잡 — NEW 항목을 중복·규칙·점수·LLM 관문에 차례로 통과시킨다
+# 파이프라인 잡 — NEW 배치를 1국면(항목 관문) → 2국면(선별 배치) → 3국면(점수·판정) 으로 통과시킨다
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import get_rules, get_settings
+from app.config import Rules, get_rules, get_settings
+from app.db.budget import reserve_call
 from app.db.models import Decision, Item, Source, Summary
 from app.db.session import session_scope
 from app.log import get_logger
+from app.notify.discord import send_ops_alert
 from app.pipeline import llm
 from app.pipeline.dedupe import Verdict, classify, find_candidates
 from app.pipeline.embedding import EmbeddingDimError, alert_dim_error, embed_pending
 from app.pipeline.rules import apply_rules
-from app.pipeline.scoring import score_item
+from app.pipeline.scoring import is_stale, score_item
+from app.pipeline.triage import (
+    TriageBatchError,
+    TriageEntry,
+    TriageItem,
+    call_triage,
+    parse_triage,
+)
 from app.schemas import ItemStatus, Stage
 
 BATCH_SIZE = 50
+SNIPPET_CHARS = 300
+TRIAGE_ERROR_LIMIT = 2  # 같은 항목의 항목 실패가 이만큼 쌓이면 폐기
+INFRA_FAIL_LIMIT = 2  # 한 잡에서 기반·배치 실패가 연속 이만큼이면 운영 알림 후 종료
 log = get_logger(__name__)
 
 
@@ -28,14 +40,8 @@ def _record(item: Item, stage: Stage, passed: bool, details: dict[str, object]) 
     )
 
 
-async def _llm_calls_today(session: AsyncSession) -> int:
-    since = datetime.now(UTC) - timedelta(days=1)
-    stmt = select(func.count()).select_from(Summary).where(Summary.created_at >= since)
-    return (await session.execute(stmt)).scalar_one()
-
-
 async def _claim_batch(session: AsyncSession) -> list[tuple[Item, Source]]:
-    """점수가 높을 항목부터 처리하도록 최신순으로 집는다."""
+    """최신순으로 집어 잠근다. 잠금은 세 국면과 외부 호출 동안 유지된다 (단일 프로세스 전제)."""
     stmt = (
         select(Item, Source)
         .join(Source, Source.id == Item.source_id)
@@ -58,9 +64,16 @@ async def _reembedding_in_progress(session: AsyncSession) -> bool:
     return (await session.execute(stmt)).first() is not None
 
 
-async def _process(session: AsyncSession, item: Item, source: Source) -> bool:
-    """항목 하나를 관문에 통과시킨다. 돌려주는 값은 LLM 을 실제로 호출했는지 여부."""
-    rules = get_rules()
+# ---------- 1국면 ----------
+
+
+async def _gate(session: AsyncSession, rules: Rules, item: Item, source: Source) -> Verdict | None:
+    """stale → 중복 → exclude. 살아남으면 중복 판정 결과를, 탈락하면 None 을 돌려준다."""
+    if is_stale(item.published_at, rules.scoring.max_age_hours):
+        item.status = ItemStatus.DROPPED.value
+        age = (datetime.now(UTC) - item.published_at).total_seconds() / 3600
+        session.add(_record(item, Stage.SCORE, False, {"reason": "stale", "age_hours": round(age)}))
+        return None
 
     dup, related = await find_candidates(session, item.id, rules.dedupe)
     embedded = await session.scalar(select(Item.embedding.is_not(None)).where(Item.id == item.id))
@@ -83,17 +96,9 @@ async def _process(session: AsyncSession, item: Item, source: Source) -> bool:
         session.add(
             _record(item, Stage.RULE, False, {"reason": "dup", "cluster_id": verdict.cluster_id})
         )
-        return False
+        return None
 
-    repo = item.raw.get("repo") if isinstance(item.raw, dict) else None
-    rule = apply_rules(
-        rules,
-        source=source.name,
-        title=item.title,
-        body=item.summary_raw,
-        url=item.url,
-        repo=str(repo) if repo else None,
-    )
+    rule = apply_rules(rules, title=item.title, body=item.summary_raw, url=item.url)
     session.add(
         _record(
             item,
@@ -104,53 +109,160 @@ async def _process(session: AsyncSession, item: Item, source: Source) -> bool:
     )
     if not rule.passed:
         item.status = ItemStatus.FILTERED_OUT.value
+        return None
+    return verdict
+
+
+# ---------- 2국면 ----------
+
+
+async def _existing_relevance(session: AsyncSession, item_ids: list[int]) -> dict[int, TriageItem]:
+    """판정 예산이 바닥나 NEW 로 남았던 항목은 이미 선별 결과가 있다. 다시 호출하지 않는다."""
+    if not item_ids:
+        return {}
+    stmt = (
+        select(Decision.item_id, Decision.details)
+        .where(
+            Decision.item_id.in_(item_ids),
+            Decision.stage == Stage.TRIAGE.value,
+            Decision.passed.is_(True),
+        )
+        .order_by(Decision.created_at.desc())
+    )
+    found: dict[int, TriageItem] = {}
+    for item_id, details in (await session.execute(stmt)).all():
+        if item_id not in found and "relevance" in details:
+            found[item_id] = TriageItem(
+                idx=item_id, relevance=float(details["relevance"]), reason=str(details["reason"])
+            )
+    return found
+
+
+async def _triage_error_count(session: AsyncSession, item_id: int) -> int:
+    stmt = select(Decision).where(
+        Decision.item_id == item_id,
+        Decision.stage == Stage.TRIAGE.value,
+        Decision.passed.is_(False),
+    )
+    return len((await session.execute(stmt)).scalars().all())
+
+
+class _CapReached(Exception):
+    """선별 예산 소진. 배치 루프를 끝내는 신호."""
+
+
+async def _triage_once(
+    rules: Rules, entries: list[TriageEntry], expected: list[int]
+) -> tuple[dict[int, TriageItem], list[int], str]:
+    """예약 → 호출 → 파싱 한 번. 재시도도 이 함수를 다시 부르므로 호출마다 예약 행이 남는다."""
+    batch_id = await reserve_call("triage")
+    if batch_id is None:
+        raise _CapReached
+    batch = await call_triage(rules, entries)
+    ok, failed = parse_triage(batch, expected)
+    return ok, failed, batch_id
+
+
+async def _triage(
+    session: AsyncSession, rules: Rules, survivors: list[tuple[Item, Source]]
+) -> dict[int, TriageItem]:
+    """배치별 선별. 돌려주는 값은 item_id → 결과. 없는 항목은 NEW 로 남는다."""
+    results = await _existing_relevance(session, [item.id for item, _ in survivors])
+    pending = [(i, s) for i, s in survivors if i.id not in results]
+    infra_failures = 0
+    size = rules.triage.batch_size
+
+    for start in range(0, len(pending), size):
+        chunk = pending[start : start + size]
+        entries = [
+            TriageEntry(item.id, source.name, item.title, (item.summary_raw or "")[:SNIPPET_CHARS])
+            for item, source in chunk
+        ]
+        expected = [item.id for item, _ in chunk]
+        try:
+            try:
+                ok, failed, batch_id = await _triage_once(rules, entries, expected)
+            except TriageBatchError as exc:
+                log.warning("pipeline.triage_batch_retry", error=str(exc))
+                ok, failed, batch_id = await _triage_once(rules, entries, expected)
+        except _CapReached:
+            log.info("pipeline.triage_cap_reached")
+            break
+        except Exception as exc:
+            # 기반 실패든 두 번째 배치 실패든 항목 탓이 아니다. 결정 행 없이 NEW 로 둔다.
+            infra_failures += 1
+            log.warning("pipeline.triage_failed", error=str(exc), consecutive=infra_failures)
+            if infra_failures >= INFRA_FAIL_LIMIT:
+                try:
+                    await send_ops_alert(f"선별 호출이 연속 {infra_failures}배치 실패: {exc}")
+                except Exception as alert_exc:
+                    log.warning("pipeline.alert_failed", error=str(alert_exc))
+                break
+            continue
+        infra_failures = 0
+
+        for item, _ in chunk:
+            if item.id in ok:
+                res = ok[item.id]
+                results[item.id] = res
+                session.add(
+                    _record(
+                        item,
+                        Stage.TRIAGE,
+                        True,
+                        {"relevance": res.relevance, "reason": res.reason, "batch_id": batch_id},
+                    )
+                )
+            else:
+                # 세기 전에 add 하면 autoflush 로 방금 행까지 세어져 첫 실패에 폐기된다. 먼저 센다.
+                prior = await _triage_error_count(session, item.id)
+                session.add(_record(item, Stage.TRIAGE, False, {"reason": "triage_error"}))
+                if prior + 1 >= TRIAGE_ERROR_LIMIT:
+                    item.status = ItemStatus.DROPPED.value
+        await session.flush()
+    return results
+
+
+# ---------- 3국면 ----------
+
+
+async def _judge(
+    session: AsyncSession,
+    rules: Rules,
+    item: Item,
+    source: Source,
+    verdict: Verdict,
+    tri: TriageItem,
+) -> bool:
+    """점수 → 보강 → 판정. 돌려주는 값은 판정 호출 여부. 예산이 없으면 False, 항목은 NEW 유지."""
+    trust = source.trust_adjusted if source.trust_adjusted is not None else source.trust_score
+    metrics = item.raw.get("metrics", {}) if isinstance(item.raw, dict) else {}
+    score = score_item(
+        rules.scoring,
+        trust=trust,
+        relevance=tri.relevance,
+        metrics=metrics if isinstance(metrics, dict) else {},
+        mention_count=verdict.mention_count,
+        published_at=item.published_at,
+    )
+    item.score = score.score
+    session.add(
+        _record(
+            item,
+            Stage.SCORE,
+            score.passed,
+            {"breakdown": score.breakdown, "triage_reason": tri.reason},
+        )
+    )
+    if not score.passed:
+        item.status = ItemStatus.DROPPED.value
         return False
 
-    if rule.reason == "always_pass_source":
-        # 화이트리스트 소스는 점수 관문을 건너뛴다. 제목에 키워드가 없는 채널(YouTube)은
-        # kw=0 이라 어떤 신뢰도로도 임계값을 못 넘는데, 화이트리스트의 뜻은 "이 소스는
-        # 봐라"다. 거르는 일은 LLM 의 worth_notifying 이 맡는다. (include_repo 는 키워드성
-        # 신호라 그대로 점수화한다.)
-        # 단, 신선도는 본다. 첫 실행 백필(GitHub 200건·YouTube 30건)이 전부 LLM 으로 가면
-        # 하루 예산 300 을 오래된 항목에 쓰고 첫날 알림이 옛 릴리즈로 넘친다.
-        age = datetime.now(UTC) - item.published_at
-        if age > timedelta(hours=rules.scoring.whitelist_max_age_hours):
-            item.status = ItemStatus.DROPPED.value
-            session.add(
-                _record(
-                    item,
-                    Stage.SCORE,
-                    False,
-                    {"reason": "whitelist_stale", "age_hours": round(age.total_seconds() / 3600)},
-                )
-            )
-            return False
-        session.add(_record(item, Stage.SCORE, True, {"reason": "whitelist_bypass"}))
-    else:
-        metrics = item.raw.get("metrics", {}) if isinstance(item.raw, dict) else {}
-        score = score_item(
-            rules.scoring,
-            trust=source.trust_score,
-            keyword_hits=len(rule.matched_keywords),
-            metrics=metrics if isinstance(metrics, dict) else {},
-            mention_count=verdict.mention_count,
-            published_at=item.published_at,
-        )
-        item.score = score.score
-        session.add(_record(item, Stage.SCORE, score.passed, {"breakdown": score.breakdown}))
-        if not score.passed:
-            item.status = ItemStatus.DROPPED.value
-            return False
+    body, enrich_failed = await llm.body_for_judge(item)
 
-    body = item.summary_raw
-    enrich_failed = False
-    if not body or len(body) < llm.ENRICH_MIN_CHARS:
-        enriched = await llm.enrich_body(item.url)
-        if enriched:
-            body = enriched
-            item.summary_raw = enriched[:3000]
-        else:
-            enrich_failed = True
+    if await reserve_call("judge") is None:
+        log.info("pipeline.judge_cap_reached", item_id=item.id)
+        return False
 
     result = await llm.judge(rules, source=source.name, title=item.title, body=body)
     session.add(
@@ -185,51 +297,57 @@ async def _process(session: AsyncSession, item: Item, source: Source) -> bool:
     return True
 
 
+# ---------- 잡 ----------
+
+
 async def run_pipeline() -> int:
-    """한 배치를 처리하고 통과(SCORED)한 항목 수를 돌려준다."""
-    settings = get_settings()
+    """한 배치를 처리하고 SCORED 수를 돌려준다."""
+    rules = get_rules()
     passed = 0
     async with session_scope() as session:
-        budget = settings.llm_daily_cap - await _llm_calls_today(session)
-        if budget <= 0:
-            log.info("pipeline.llm_cap_reached", cap=settings.llm_daily_cap)
-            return 0
         if await _reembedding_in_progress(session):
             log.info("pipeline.paused_for_reembedding")
             return 0
-
         batch = await _claim_batch(session)
-        # 수집 때 실패한 임베딩을 다시 시도한다. 여기서도 실패하면 dedupe_skipped 로 진행한다.
+        if not batch:
+            return 0
         try:
             await embed_pending(session, [item.id for item, _ in batch])
         except EmbeddingDimError as exc:
-            # 설정 오류. 잡을 세우고 알린다. 조용히 NULL 로 두면 중복 판정이 영구히 빠진다.
             await alert_dim_error(exc)
             raise
 
+        survivors: list[tuple[Item, Source, Verdict]] = []
         for item, source in batch:
-            # 예산이 바닥나면 손대지 않고 멈춘다. 판정을 기록해 두고 NEW 로 남기면
-            # 다음 실행마다 같은 항목을 다시 판정해 decisions 가 계속 쌓인다.
-            if budget <= 0:
-                break
-
-            # 항목 하나를 savepoint 로 감싼다. LLM 이 죽어 있으면 rule·score 판정만
-            # 기록된 채 NEW 로 남고, 2분마다 같은 판정이 decisions 에 다시 쌓인다.
-            # 롤백은 savepoint 안에서 수정된 객체를 만료시키므로, 롤백 뒤에 item 의
-            # 속성을 읽으면 동기 로드가 일어나 MissingGreenlet 이 난다. id 는 미리 뺀다.
             item_id = item.id
             savepoint = await session.begin_nested()
             try:
-                used = await _process(session, item, source)
+                verdict = await _gate(session, rules, item, source)
             except Exception as exc:
                 await savepoint.rollback()
-                log.warning("pipeline.item_failed", item_id=item_id, error=str(exc))
+                log.warning("pipeline.gate_failed", item_id=item_id, error=str(exc))
                 continue
             await savepoint.commit()
+            if verdict is not None:
+                survivors.append((item, source, verdict))
 
-            if used:
-                budget -= 1
+        triaged = await _triage(session, rules, [(i, s) for i, s, _ in survivors])
+
+        for item, source, verdict in survivors:
+            tri = triaged.get(item.id)
+            if tri is None or item.status != ItemStatus.NEW.value:
+                continue
+            item_id = item.id
+            savepoint = await session.begin_nested()
+            try:
+                await _judge(session, rules, item, source, verdict, tri)
+            except Exception as exc:
+                await savepoint.rollback()
+                log.warning("pipeline.judge_failed", item_id=item_id, error=str(exc))
+                continue
+            await savepoint.commit()
             if item.status == ItemStatus.SCORED.value:
                 passed += 1
+
     log.info("pipeline.done", scored=passed)
     return passed
