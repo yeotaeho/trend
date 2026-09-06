@@ -18,6 +18,7 @@ from app.schemas import Level
 API = "https://discord.com/api/v10"
 TIMEOUT = httpx.Timeout(15.0)
 MAX_CONTENT = 2000  # 디스코드 메시지 본문 상한
+EXPLORE_PREFIX = "🧪 실험 · 경계 항목"  # 점수 관문 바로 아래 항목을 하루 1건 보내 라벨을 모은다
 MAX_BUTTON_URL = 512  # 링크 버튼 url 상한
 RETRY_ATTEMPTS = 3
 MAX_RETRY_AFTER = 30.0  # 429 대기가 이보다 길면 재시도하지 않고 실패로 기록한다
@@ -85,8 +86,11 @@ def components(item_id: int, url: str) -> list[dict[str, Any]]:
 
 def build_payload(item: Item, summary: Summary, level: Level, source_name: str) -> dict[str, Any]:
     """네트워크 없이 검증할 수 있게 발송 본문을 따로 만든다."""
+    content = render(item, summary, source_name)
+    if level is Level.EXPLORE:
+        content = f"{EXPLORE_PREFIX}\n\n{content}"[:MAX_CONTENT]
     payload: dict[str, Any] = {
-        "content": render(item, summary, source_name),
+        "content": content,
         "components": components(item.id, item.url),
         # LLM 문자열에 @everyone 이 섞여도 멘션으로 해석되지 않게 한다.
         "allowed_mentions": {"parse": []},

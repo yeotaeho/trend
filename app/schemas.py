@@ -39,6 +39,7 @@ class Level(StrEnum):
     PUSH = "push"
     SILENT = "silent"
     FEED = "feed"
+    EXPLORE = "explore"  # 하루 1건 경계 항목 실험. push 상한에서 제외
 
 
 class NormalizedItem(BaseModel):

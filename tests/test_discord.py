@@ -224,3 +224,10 @@ async def test_repeated_short_429_exhausts_as_rate_limited():
     with pytest.raises(RateLimited, match="3회 429"):
         await _call("POST", "/channels/42/messages", {})
     assert route.call_count == 3  # 항목 FAILED 가 아니라 배치 중단 신호
+
+
+def test_explore_payload_has_prefix_and_is_silent():
+    item, summary = make_pair()
+    payload = build_payload(item, summary, Level.EXPLORE, "rss:vercel")
+    assert payload["content"].startswith("🧪 실험 · 경계 항목\n\n")
+    assert payload["flags"] == FLAG_SUPPRESS_NOTIFICATIONS
