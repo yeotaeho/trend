@@ -56,9 +56,10 @@ class SourceConfig(BaseModel):
 
 
 class DedupeConfig(BaseModel):
-    # 출발값. scripts/calibrate_dedupe.py 의 표본을 보고 정한다.
-    dup_threshold: float = 0.92
-    related_threshold: float = 0.80
+    # 2026-09-06 표본 보정값. 0.90~0.95 는 같은 채널의 다른 영상·다른 릴리즈였고,
+    # 0.80~0.85 는 arXiv 두 피드의 주제 이웃이었다. rules.yaml 이 우선한다.
+    dup_threshold: float = 0.96
+    related_threshold: float = 0.88
     window_hours: int = 72
 
 

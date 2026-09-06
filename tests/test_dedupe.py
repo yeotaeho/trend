@@ -28,17 +28,18 @@ def test_version_tokens():
 
 
 def test_dup_inherits_cluster_of_survivor():
-    v = run(dup=cand(5, 0.95, cluster_id=3))
+    v = run(dup=cand(5, 0.97, cluster_id=3))
     assert v.kind == "dup" and v.cluster_id == 3
 
 
 def test_dup_with_null_cluster_uses_candidate_id():
-    v = run(dup=cand(5, 0.95, cluster_id=None))
+    v = run(dup=cand(5, 0.97, cluster_id=None))
     assert v.kind == "dup" and v.cluster_id == 5
 
 
 def test_below_dup_threshold_is_not_dup():
-    v = run(dup=cand(5, 0.90), related=[cand(5, 0.90)])
+    # 0.93 은 표본에서 "같은 채널의 다른 영상" 이었다. 중복이 아니라 관련이어야 한다.
+    v = run(dup=cand(5, 0.93), related=[cand(5, 0.93)])
     assert v.kind == "related" and v.cluster_id == 5
 
 
