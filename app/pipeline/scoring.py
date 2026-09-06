@@ -1,10 +1,10 @@
-# 점수화 (2단계 관문) — trust·keyword·hotness·multi·freshness 가중합
+# 점수화 — trust·relevance·hotness·multi·freshness 가중합, 전역 신선도 가드
 
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from app.config import ScoringConfig
 
@@ -37,11 +37,16 @@ def hotness(metrics: dict[str, float]) -> float:
     return min(1.0, math.log1p(raw) / math.log1p(HOTNESS_SATURATION))
 
 
+def is_stale(published_at: datetime, max_age_hours: int, *, now: datetime | None = None) -> bool:
+    """전역 신선도 가드. 선별 호출 앞에 둬서 백필·오래된 항목이 예산을 쓰지 않게 한다."""
+    return (now or datetime.now(UTC)) - published_at > timedelta(hours=max_age_hours)
+
+
 def score_item(
     cfg: ScoringConfig,
     *,
     trust: float,
-    keyword_hits: int,
+    relevance: float,
     metrics: dict[str, float],
     mention_count: int,
     published_at: datetime,
@@ -49,10 +54,11 @@ def score_item(
 ) -> ScoreResult:
     breakdown = {
         "src": cfg.w_src * trust,
-        "kw": cfg.w_kw * min(keyword_hits, 3) / 3,
+        "rel": cfg.w_rel * relevance,
         "hot": cfg.w_hot * hotness(metrics),
         "multi": cfg.w_multi * min(max(mention_count - 1, 0), 2) / 2,
         "fresh": cfg.w_fresh * freshness(published_at, now=now),
     }
     total = sum(breakdown.values())
-    return ScoreResult(total, total >= cfg.threshold, breakdown)
+    # 부동소수 합이 0.4499999 로 떨어져 경계 케이스가 어긋나지 않게 소수 6자리에서 비교한다.
+    return ScoreResult(total, round(total, 6) >= cfg.threshold, breakdown)

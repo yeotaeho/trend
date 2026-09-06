@@ -1,4 +1,4 @@
-# 규칙 필터 (1단계 관문) — include/exclude 키워드·저장소·도메인 매칭
+# 규칙 필터 — exclude 키워드·도메인 판정. 포함 판단은 LLM 선별이 맡는다
 
 from __future__ import annotations
 
@@ -31,10 +31,6 @@ def find_keywords(text: str, keywords: list[str]) -> list[str]:
     return [kw for kw in keywords if _keyword_pattern(kw).search(text)]
 
 
-def _matches_any(value: str, patterns: list[str]) -> bool:
-    return any(fnmatch(value, pattern) for pattern in patterns)
-
-
 def _excluded_domain(url: str, patterns: list[str]) -> bool:
     """슬래시 없는 패턴은 호스트 매칭, 슬래시가 있으면 `host/path` 접두 매칭."""
     parts = urlsplit(url)
@@ -46,36 +42,12 @@ def _excluded_domain(url: str, patterns: list[str]) -> bool:
     )
 
 
-def apply_rules(
-    rules: Rules,
-    *,
-    source: str,
-    title: str,
-    body: str | None,
-    url: str,
-    repo: str | None = None,
-) -> RuleResult:
-    """제목 + 본문 앞부분으로 판정한다. exclude 가 언제나 우선한다."""
+def apply_rules(rules: Rules, *, title: str, body: str | None, url: str) -> RuleResult:
+    """제목 + 본문 앞부분으로 제외만 판정한다. 포함 판단은 LLM 선별이 한다."""
     text = f"{title}\n{(body or '')[:MATCH_BODY_CHARS]}"
-
-    excluded = find_keywords(text, rules.exclude_keywords)
+    excluded = find_keywords(text, rules.exclude.keywords)
     if excluded:
         return RuleResult(False, "exclude_keyword", excluded)
-
-    if _excluded_domain(url, rules.exclude_domains):
+    if _excluded_domain(url, rules.exclude.domains):
         return RuleResult(False, "exclude_domain")
-
-    # 화이트리스트 경로도 매칭 키워드를 돌려준다. 점수 관문의 kw 항이 이 목록 길이를
-    # 쓰므로, 비워서 보내면 신뢰도 1.0 소스도 최대 0.35 라 임계값(0.45)을 절대 못 넘는다.
-    matched = find_keywords(text, rules.include_keywords)
-
-    if _matches_any(source, rules.always_pass_sources):
-        return RuleResult(True, "always_pass_source", matched)
-
-    if repo and _matches_any(repo, rules.include_repos):
-        return RuleResult(True, "include_repo", matched)
-
-    if matched:
-        return RuleResult(True, "include_keyword", matched)
-
-    return RuleResult(False, "no_keyword")
+    return RuleResult(True, "ok")

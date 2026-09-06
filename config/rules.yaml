@@ -1,73 +1,30 @@
-include_keywords:
-  # 모델·LLM
-  - claude
-  - gpt
-  - gemini
-  - llama
-  - mistral
-  - qwen
-  - deepseek
-  - llm
-  - 에이전트
-  - agent
-  - reasoning
-  # 도구·프로토콜
-  - mcp
-  - model context protocol
-  - langchain
-  - langgraph
-  - rag
-  - vector
-  - embedding
-  - fine-tuning
-  - prompt
-  # 스택
-  - python
-  - fastapi
-  - pydantic
-  - sqlalchemy
-  - postgres
-  - next.js
-  - react
-  - typescript
-  - docker
-  - kubernetes
-  - uv
-  - ruff
+# 검증 파이프라인 정책. 관문 순서: stale → 중복 → exclude → LLM 선별 → 점수 → LLM 판정 → 발송.
+# 키워드 목록은 관문이 아니다. 선별·판정 프롬프트가 아래 policy 를 문장으로 읽는다.
 
-include_repos:
-  - anthropics/*
-  - modelcontextprotocol/*
-  - langchain-ai/*
-  - astral-sh/*
-  - vercel/next.js
-  - fastapi/fastapi
-  - pydantic/pydantic
+policy:
+  interests: |
+    - AI 시스템 개발자. LLM 애플리케이션·에이전트·MCP 를 직접 만든다.
+    - 주력 스택: Python(FastAPI, SQLAlchemy, Pydantic), Postgres, Docker, TypeScript/Next.js.
+    - 관심: 새 모델 출시와 가격·컨텍스트 변화, 에이전트·RAG 기법, MCP 서버와 개발 도구,
+      쓰는 라이브러리의 메이저 릴리즈, 개발 생태계의 정책·가격 변화.
+  not_interested: |
+    - 채용·홍보·입문자용 튜토리얼·이미 널리 알려진 일반론.
+    - 특정 종목·투자 도구처럼 개발과 무관한 금융 콘텐츠.
+  # "특히 주목" 힌트. 프롬프트에 그대로 들어간다.
+  focus_repos:
+    - anthropics/*
+    - modelcontextprotocol/*
+    - langchain-ai/*
+    - astral-sh/*
+    - vercel/next.js
+    - fastapi/fastapi
+    - pydantic/pydantic
+  focus_stack: [claude, mcp, langgraph, fastapi, pydantic, sqlalchemy, postgres, next.js, uv, ruff]
 
-exclude_keywords:
-  - hiring
-  - we're hiring
-  - giveaway
-  - webinar
-  - sponsored
-  - discount code
-  - 채용
-  - 광고
-
-exclude_domains: []
-
-# 이 소스들은 키워드 매칭 없이 규칙 관문을 통과한다.
-always_pass_sources:
-  - github_release:*
-  - youtube:*
-
-# LLM 프롬프트에 고정으로 넣는 사용자 관심 스택.
-interests: |
-  - AI 시스템 개발자. LLM 애플리케이션·에이전트·MCP 를 직접 만든다.
-  - 주력 스택: Python(FastAPI, SQLAlchemy, Pydantic), Postgres, Docker, TypeScript/Next.js.
-  - 관심: 새 모델 출시와 가격·컨텍스트 변화, 에이전트·RAG 기법, MCP 서버와 개발 도구,
-    쓰는 라이브러리의 메이저 릴리즈, 개발 생태계의 정책·가격 변화.
-  - 관심 없음: 채용·홍보·입문자용 튜토리얼·이미 널리 알려진 일반론.
+# 싸고 정확한 제외 규칙만 남긴다. exclude 는 언제나 우선한다.
+exclude:
+  keywords: [hiring, "we're hiring", giveaway, webinar, sponsored, "discount code", 채용, 광고]
+  domains: []
 
 # 벡터 유사도 임계값. 중복(≥dup)은 생존 항목만 기준, 관련(≥related)은 상태 무관.
 # 2026-09-06 보정: 0.90~0.95 는 전부 다른 사건(같은 채널의 다른 영상 0.93, 다른 릴리즈 0.91)이라
@@ -77,19 +34,23 @@ dedupe:
   related_threshold: 0.88
   window_hours: 72
 
+# LLM 선별 배치. 25건을 한 호출에 넣고 관련도 0~1 을 받는다.
+triage:
+  batch_size: 25
+  daily_cap_calls: 60
+
 scoring:
   w_src: 0.25
-  w_kw: 0.25
+  w_rel: 0.25
   w_hot: 0.2
   w_multi: 0.2
   w_fresh: 0.1
   threshold: 0.45
-  # always_pass 소스(GitHub Releases·YouTube)는 점수 관문을 건너뛰고 바로 LLM 으로 간다.
-  # 단, 이보다 오래된 항목은 보내지 않는다. 첫 실행 백필이 LLM 예산을 잠식하는 걸 막는다.
-  whitelist_max_age_hours: 48
+  max_age_hours: 72
 
 notify:
   daily_push_cap: 15
   quiet_start_hour: 23
   quiet_end_hour: 8
   timezone: Asia/Seoul
+  explore_judge_cap: 3
