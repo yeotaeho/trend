@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.engine import Row
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.config import NotifyConfig, Rules, get_rules
 from app.db.budget import reserve_call, today_start
@@ -151,16 +152,21 @@ async def _explore_candidate(
 ) -> Row[tuple[Item, Source]] | None:
     """점수 관문 바로 아래로 떨어진 최근 24시간 항목 중 최고점. Summary 가 없어야 한다."""
     thr = rules.scoring.threshold
-    last_score = (
-        select(Decision.passed)
-        .where(Decision.item_id == Item.id, Decision.stage == Stage.SCORE.value)
-        .order_by(Decision.created_at.desc())
+    # 항목의 "마지막" 결정 행 하나를 고른 뒤 그것이 score 탈락인지 본다. 최근 score 행만 보면
+    # 그 뒤에 다른 단계 결정이 붙은 항목까지 후보가 된다.
+    latest = aliased(Decision)
+    last_decision = (
+        select(latest.id)
+        .where(latest.item_id == Item.id)
+        .order_by(latest.created_at.desc(), latest.id.desc())
         .limit(1)
+        .correlate(Item)
         .scalar_subquery()
     )
     stmt = (
         select(Item, Source)
         .join(Source, Source.id == Item.source_id)
+        .join(Decision, Decision.id == last_decision)
         .outerjoin(Summary, Summary.item_id == Item.id)
         .where(
             Item.status == ItemStatus.DROPPED.value,
@@ -168,7 +174,8 @@ async def _explore_candidate(
             Item.score >= thr - EXPLORE_BAND,
             Item.score < thr,
             Item.published_at >= now - timedelta(hours=24),
-            last_score.is_(False),
+            Decision.stage == Stage.SCORE.value,
+            Decision.passed.is_(False),
         )
         .order_by(Item.score.desc())
         .limit(1)
@@ -226,6 +233,7 @@ async def _explore(
         tokens_out=result.tokens_out,
     )
     session.add(summary)
+    item.category = result.verdict.category.value
     if not result.verdict.worth_notifying:
         # Summary 가 생겼으니 같은 후보를 다시 판정하지 않는다. 오늘 슬롯은 소진되지 않는다.
         await session.commit()

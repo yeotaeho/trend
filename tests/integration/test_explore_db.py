@@ -31,18 +31,22 @@ async def test_explore_candidate_picks_highest_in_band_without_summary():
                 score=score,
             )
 
-        best, low, old, summarized, passed_later = (
+        best, low, old, summarized, passed_later, judged_later = (
             item("best", 0.44),
             item("low", 0.30),
             item("old", 0.44, age_h=30),
             item("summarized", 0.43),
             item("passed_later", 0.44),
+            item("judged_later", 0.445),
         )
-        s.add_all([best, low, old, summarized, passed_later])
+        s.add_all([best, low, old, summarized, passed_later, judged_later])
         await s.flush()
-        for it in (best, low, old, summarized):
+        for it in (best, low, old, summarized, judged_later):
             s.add(Decision(item_id=it.id, stage="score", passed=False, score=it.score, details={}))
         s.add(Decision(item_id=passed_later.id, stage="score", passed=True, score=0.44, details={}))
+        await s.flush()
+        # 점수 탈락 뒤 다른 결정이 붙으면 마지막 결정이 score 탈락이 아니다. 최고점이어도 제외.
+        s.add(Decision(item_id=judged_later.id, stage="llm", passed=False, score=0.445, details={}))
         s.add(
             Summary(
                 item_id=summarized.id,
@@ -53,7 +57,7 @@ async def test_explore_candidate_picks_highest_in_band_without_summary():
                 model="m",
             )
         )
-        ids = ([best.id, low.id, old.id, summarized.id, passed_later.id], src.id)
+        ids = ([best.id, low.id, old.id, summarized.id, passed_later.id, judged_later.id], src.id)
 
     try:
         async with SessionLocal() as s:
