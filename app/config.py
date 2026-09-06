@@ -56,7 +56,7 @@ class SourceConfig(BaseModel):
 
 
 class _Strict(BaseModel):
-    # 삭제된 키(include_keywords, always_pass_sources …)가 남아 있으면 기동이 실패해야 한다.
+    # v1 에서 삭제된 옛 키(키워드 목록·우회 소스 등)가 남아 있으면 기동이 실패해야 한다.
     model_config = ConfigDict(extra="forbid")
 
 

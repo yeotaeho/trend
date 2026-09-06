@@ -77,7 +77,9 @@ async def body_for_judge(item: Item) -> tuple[str | None, bool]:
 
 
 def client() -> AsyncAnthropic:
-    return AsyncAnthropic(api_key=get_settings().anthropic_api_key)
+    # SDK 기본 재시도(429·5xx 2회)를 끈다. 재시도는 예약(reserve_call) 없이 나가는 호출이라
+    # 일일 상한을 깨뜨린다. 기반 실패는 항목을 NEW 로 남기고 다음 잡이 새 예약으로 다시 시도한다.
+    return AsyncAnthropic(api_key=get_settings().anthropic_api_key, max_retries=0)
 
 
 def render_policy(policy: PolicyConfig) -> str:
