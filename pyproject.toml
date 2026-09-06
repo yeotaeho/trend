@@ -35,6 +35,8 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# 설계서·구현서의 코드 블록은 설명용이라 포맷 검사에서 뺀다.
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
