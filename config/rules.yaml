@@ -70,9 +70,11 @@ interests: |
   - 관심 없음: 채용·홍보·입문자용 튜토리얼·이미 널리 알려진 일반론.
 
 # 벡터 유사도 임계값. 중복(≥dup)은 생존 항목만 기준, 관련(≥related)은 상태 무관.
+# 2026-09-06 보정: 0.90~0.95 는 전부 다른 사건(같은 채널의 다른 영상 0.93, 다른 릴리즈 0.91)이라
+# 중복은 0.96. 0.80~0.85 는 arXiv 두 피드의 주제 이웃 2,415쌍이라 관련은 0.88.
 dedupe:
-  dup_threshold: 0.92
-  related_threshold: 0.80
+  dup_threshold: 0.96
+  related_threshold: 0.88
   window_hours: 72
 
 scoring:
