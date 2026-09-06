@@ -16,6 +16,7 @@ from app.notify.discord import send_ops_alert
 from app.pipeline import llm
 from app.pipeline.dedupe import Verdict, classify, find_candidates
 from app.pipeline.embedding import EmbeddingDimError, alert_dim_error, embed_pending
+from app.pipeline.feedback import format_examples, nearest_feedback
 from app.pipeline.rules import apply_rules
 from app.pipeline.scoring import is_stale, score_item
 from app.pipeline.triage import (
@@ -174,10 +175,18 @@ async def _triage(
 
     for start in range(0, len(pending), size):
         chunk = pending[start : start + size]
-        entries = [
-            TriageEntry(item.id, source.name, item.title, (item.summary_raw or "")[:SNIPPET_CHARS])
-            for item, source in chunk
-        ]
+        entries = []
+        for item, source in chunk:
+            examples = await nearest_feedback(session, item.id, k=2)
+            entries.append(
+                TriageEntry(
+                    item.id,
+                    source.name,
+                    item.title,
+                    (item.summary_raw or "")[:SNIPPET_CHARS],
+                    format_examples(examples),
+                )
+            )
         expected = [item.id for item, _ in chunk]
         try:
             try:
@@ -264,7 +273,10 @@ async def _judge(
         log.info("pipeline.judge_cap_reached", item_id=item.id)
         return False
 
-    result = await llm.judge(rules, source=source.name, title=item.title, body=body)
+    examples = format_examples(await nearest_feedback(session, item.id, k=3))
+    result = await llm.judge(
+        rules, source=source.name, title=item.title, body=body, examples=examples
+    )
     session.add(
         _record(
             item,

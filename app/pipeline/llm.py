@@ -32,12 +32,14 @@ SYSTEM_PROMPT = """\
 - title_ko: `[태그] 무엇 — 핵심 한 줄` 형식. 태그 예) 새 모델, 릴리즈, MCP, 기법, 커뮤니티, 영상.
 - summary_ko: 2~3줄. 무엇이 달라졌고 왜 중요한지. 원문에 없는 내용을 지어내지 않는다.
 - tags: 소문자 영문 키워드 2~5개.
+- "유사 피드백" 은 사용자가 비슷한 글에 남긴 👍/👎 다.
+  importance 와 worth_notifying 에 강하게 반영한다.
 """
 
 USER_TEMPLATE = """\
 소스: {source}
 제목: {title}
-본문:
+{examples}본문:
 {body}
 """
 
@@ -92,8 +94,10 @@ def render_policy(policy: PolicyConfig) -> str:
     return "\n".join(parts)
 
 
-async def judge(rules: Rules, *, source: str, title: str, body: str | None) -> LLMResult:
-    """한 번의 호출로 판단·요약·태깅을 구조화 출력으로 받는다."""
+async def judge(
+    rules: Rules, *, source: str, title: str, body: str | None, examples: str = ""
+) -> LLMResult:
+    """한 번의 호출로 판단·요약·태깅을 구조화 출력으로 받는다. examples 는 최근접 피드백 한 줄."""
     settings = get_settings()
     response = await client().messages.parse(
         model=settings.llm_model,
@@ -103,7 +107,10 @@ async def judge(rules: Rules, *, source: str, title: str, body: str | None) -> L
             {
                 "role": "user",
                 "content": USER_TEMPLATE.format(
-                    source=source, title=title, body=(body or "")[:PROMPT_BODY_CHARS]
+                    source=source,
+                    title=title,
+                    examples=f"유사 피드백: {examples}\n" if examples else "",
+                    body=(body or "")[:PROMPT_BODY_CHARS],
                 ),
             }
         ],
