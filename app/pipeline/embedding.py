@@ -21,6 +21,8 @@ SNIPPET_CHARS = 300
 TIMEOUT = httpx.Timeout(30.0)
 RETRY_ATTEMPTS = 3
 RETRY_WAIT = 1.0  # 초. 시도 번호를 곱한다
+# Retry-After 없는 429 는 분 단위 창(RPM)일 가능성이 높다. 초 단위 대기로는 같은 창을 다시 밟는다.
+RATE_LIMIT_WAIT = 20.0
 log = get_logger(__name__)
 
 # 차원 오류는 설정 오류라 고칠 때까지 매 잡마다 난다. 운영 알림은 프로세스당 한 번만 보낸다.
@@ -65,12 +67,13 @@ def _request(texts: list[str]) -> tuple[str, dict[str, str], dict[str, Any]]:
 
 
 def _retry_wait(response: httpx.Response, attempt: int) -> float:
-    """429·5xx 의 Retry-After(초) 를 존중한다. 없거나 숫자가 아니면 시도 번호 × RETRY_WAIT."""
+    """Retry-After 우선. 없으면 429 는 RATE_LIMIT_WAIT, 5xx 는 RETRY_WAIT 에 시도 번호를 곱한다."""
     header = response.headers.get("retry-after")
+    fallback = (RATE_LIMIT_WAIT if response.status_code == 429 else RETRY_WAIT) * attempt
     try:
-        return max(0.0, float(header)) if header else RETRY_WAIT * attempt
+        return max(0.0, float(header)) if header else fallback
     except ValueError:
-        return RETRY_WAIT * attempt
+        return fallback
 
 
 def _parse_vectors(data: list[dict[str, Any]], expected: int) -> list[list[float]]:

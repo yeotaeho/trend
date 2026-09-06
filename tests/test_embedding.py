@@ -65,6 +65,26 @@ async def test_duplicate_index_raises():
 
 
 @respx.mock
+async def test_429_without_header_waits_rate_limit_window(monkeypatch):
+    waits: list[float] = []
+
+    async def fake_sleep(seconds: float) -> None:
+        waits.append(seconds)
+
+    monkeypatch.setattr("app.pipeline.embedding.asyncio.sleep", fake_sleep)
+    monkeypatch.setattr("app.pipeline.embedding.RATE_LIMIT_WAIT", 20.0)
+    respx.post(VOYAGE).mock(
+        side_effect=[
+            httpx.Response(429),
+            httpx.Response(429),
+            httpx.Response(200, json={"data": [{"index": 0, "embedding": vec(0.1)}]}),
+        ]
+    )
+    assert await embed(["a"]) == [vec(0.1)]
+    assert waits == [20.0, 40.0]
+
+
+@respx.mock
 async def test_negative_retry_after_is_clamped(monkeypatch):
     waits: list[float] = []
 
