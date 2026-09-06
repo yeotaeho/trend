@@ -147,7 +147,7 @@ async def test_429_waits_retry_after_then_succeeds():
     # 실제 sleep 을 쓴다. 게이트는 sleep(wait) 과 같은 길이라 재시도 시점엔 풀려 있다.
     route = respx.post("https://discord.com/api/v10/channels/42/messages").mock(
         side_effect=[
-            httpx.Response(429, json={"retry_after": 0.01, "global": False}),
+            httpx.Response(429, json={"retry_after": 0.1, "global": False}),
             httpx.Response(200, json={"id": "999"}),
         ]
     )
@@ -219,7 +219,7 @@ async def test_repeated_short_429_exhausts_as_rate_limited():
     from app.notify.base import RateLimited
 
     route = respx.post("https://discord.com/api/v10/channels/42/messages").mock(
-        return_value=httpx.Response(429, json={"retry_after": 0.01})
+        return_value=httpx.Response(429, json={"retry_after": 0.1})
     )
     with pytest.raises(RateLimited, match="3회 429"):
         await _call("POST", "/channels/42/messages", {})

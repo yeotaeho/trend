@@ -21,6 +21,7 @@ MAX_CONTENT = 2000  # 디스코드 메시지 본문 상한
 MAX_BUTTON_URL = 512  # 링크 버튼 url 상한
 RETRY_ATTEMPTS = 3
 MAX_RETRY_AFTER = 30.0  # 429 대기가 이보다 길면 재시도하지 않고 실패로 기록한다
+GATE_SLACK = 1.0  # 게이트가 이만큼 미만 남았으면 배치를 멈추지 않고 마저 잔다
 # 디스코드는 `DiscordBot (url, version)` 형식의 UA 를 요구한다. 없으면 Cloudflare 가 막을 수 있다.
 USER_AGENT = "DiscordBot (https://github.com/yeotaeho/trend, 0.1.0)"
 
@@ -124,8 +125,12 @@ async def _call(method: str, path: str, payload: dict[str, Any]) -> dict[str, An
     for attempt in range(1, RETRY_ATTEMPTS + 1):
         # 매 시도 직전에 본다. 대기하는 사이 다른 요청이 게이트를 더 멀리 세웠을 수 있다.
         remaining = _blocked_until - time.monotonic()
-        if remaining > 0:
+        if remaining > GATE_SLACK:
             raise RateLimited(f"discord 대기 중 ({remaining:.0f}초 남음), 요청 보내지 않음")
+        if remaining > 0:
+            # 우리 자신의 429 대기가 막 끝난 참이다. asyncio 타이머는 시계 해상도(Windows 약 15ms)
+            # 만큼 일찍 깨어나므로 남은 몇 ms 를 마저 자고 간다. 배치를 멈출 일이 아니다.
+            await asyncio.sleep(remaining)
         try:
             async with httpx.AsyncClient(timeout=TIMEOUT) as client:
                 response = await client.request(
