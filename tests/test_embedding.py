@@ -51,6 +51,38 @@ async def test_wrong_dimension_raises_not_none():
 
 
 @respx.mock
+async def test_duplicate_index_raises():
+    respx.post(VOYAGE).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": [{"index": 0, "embedding": vec(0.1)}, {"index": 0, "embedding": vec(0.2)}]
+            },
+        )
+    )
+    with pytest.raises(EmbeddingDimError):
+        await embed(["a", "b"])
+
+
+@respx.mock
+async def test_negative_retry_after_is_clamped(monkeypatch):
+    waits: list[float] = []
+
+    async def fake_sleep(seconds: float) -> None:
+        waits.append(seconds)
+
+    monkeypatch.setattr("app.pipeline.embedding.asyncio.sleep", fake_sleep)
+    respx.post(VOYAGE).mock(
+        side_effect=[
+            httpx.Response(503, headers={"retry-after": "-3"}),
+            httpx.Response(200, json={"data": [{"index": 0, "embedding": vec(0.1)}]}),
+        ]
+    )
+    assert await embed(["a"]) == [vec(0.1)]
+    assert waits == [0.0]
+
+
+@respx.mock
 async def test_server_error_retries_then_none(monkeypatch):
     monkeypatch.setattr("app.pipeline.embedding.RETRY_WAIT", 0)
     route = respx.post(VOYAGE).mock(return_value=httpx.Response(503))

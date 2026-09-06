@@ -11,7 +11,7 @@ from app.db.models import Source
 from app.db.session import session_scope
 from app.log import get_logger
 from app.notify.discord import send_ops_alert
-from app.pipeline.embedding import EmbeddingDimError, embed_pending
+from app.pipeline.embedding import EmbeddingDimError, alert_dim_error, embed_pending
 from app.pipeline.ingest import store_items
 from app.sources import build_source
 
@@ -60,22 +60,21 @@ async def run_source(source_id: int) -> int:
                     log.warning("collect.alert_failed", error=str(alert_exc))
             return 0
 
+        embed_error: str | None = None
         if inserted:
             # 임베딩 실패는 수집 실패가 아니다. NULL 로 남기면 파이프라인 잡이 다시 시도한다.
             try:
                 await embed_pending(session, inserted)
             except EmbeddingDimError as exc:
-                # 설정 오류. 조용히 NULL 로 두면 중복 판정이 영구히 빠지므로 알린다.
-                log.error("collect.embed_dim_error", error=str(exc))
-                try:
-                    await send_ops_alert(f"임베딩 차원 오류: {exc}")
-                except Exception as alert_exc:
-                    log.warning("collect.alert_failed", error=str(alert_exc))
+                # 설정 오류. 적재는 이미 끝났으니 수집 실패로 롤백하지 않고, 알림과
+                # last_error 로 드러낸다. 파이프라인 잡은 같은 오류로 멈춘다.
+                await alert_dim_error(exc)
+                embed_error = f"{type(exc).__name__}: {exc}"
             except Exception as exc:
                 log.warning("collect.embed_failed", source=source.name, error=str(exc))
 
         source.last_polled_at = datetime.now(UTC)
-        source.last_error = None
+        source.last_error = embed_error
         source.fail_count = 0
         log.info("collect.done", source=source.name, fetched=len(items), inserted=len(inserted))
         return len(inserted)

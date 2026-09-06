@@ -11,10 +11,9 @@ from app.config import get_rules, get_settings
 from app.db.models import Decision, Item, Source, Summary
 from app.db.session import session_scope
 from app.log import get_logger
-from app.notify.discord import send_ops_alert
 from app.pipeline import llm
 from app.pipeline.dedupe import Verdict, classify, find_candidates
-from app.pipeline.embedding import EmbeddingDimError, embed_pending
+from app.pipeline.embedding import EmbeddingDimError, alert_dim_error, embed_pending
 from app.pipeline.rules import apply_rules
 from app.pipeline.scoring import score_item
 from app.schemas import ItemStatus, Stage
@@ -53,7 +52,7 @@ async def _reembedding_in_progress(session: AsyncSession) -> bool:
     model = get_settings().embedding_model
     stmt = (
         select(Item.id)
-        .where(Item.embedding_model.is_not(None), Item.embedding_model != model)
+        .where(Item.embedding.is_not(None), Item.embedding_model.is_distinct_from(model))
         .limit(1)
     )
     return (await session.execute(stmt)).first() is not None
@@ -205,10 +204,7 @@ async def run_pipeline() -> int:
             await embed_pending(session, [item.id for item, _ in batch])
         except EmbeddingDimError as exc:
             # 설정 오류. 잡을 세우고 알린다. 조용히 NULL 로 두면 중복 판정이 영구히 빠진다.
-            try:
-                await send_ops_alert(f"임베딩 차원 오류: {exc}")
-            except Exception as alert_exc:
-                log.warning("pipeline.alert_failed", error=str(alert_exc))
+            await alert_dim_error(exc)
             raise
 
         for item, source in batch:

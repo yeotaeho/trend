@@ -4,19 +4,19 @@ from __future__ import annotations
 
 import asyncio
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 
 from app.config import get_settings
 from app.db.models import Item
 from app.db.session import engine, session_scope
 from app.log import configure_logging
-from app.pipeline.embedding import MAX_BATCH, embed_pending
+from app.pipeline.embedding import MAX_BATCH, embed_pending, needs_embedding
 
 
 async def main() -> None:
     configure_logging()
     model = get_settings().embedding_model
-    pending = or_(Item.embedding.is_(None), Item.embedding_model != model)
+    pending = needs_embedding()
     try:
         async with session_scope() as session:
             todo = (
