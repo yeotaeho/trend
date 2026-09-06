@@ -8,7 +8,7 @@ import httpx
 import trafilatura
 from anthropic import AsyncAnthropic
 
-from app.config import Rules, get_settings
+from app.config import PolicyConfig, Rules, get_settings
 from app.log import get_logger
 from app.schemas import LLMVerdict
 
@@ -20,8 +20,8 @@ SYSTEM_PROMPT = """\
 너는 개인용 개발 트렌드 알림기의 마지막 관문이다.
 주어진 항목이 이 사용자에게 알릴 가치가 있는지 판단하고, 한국어로 요약한다.
 
-사용자 관심 스택:
-{interests}
+사용자 정책:
+{policy}
 
 판단 기준
 - worth_notifying: 새 모델·릴리즈·기법·도구처럼 사용자가 알아야 할 변화면 true.
@@ -63,17 +63,27 @@ async def enrich_body(url: str) -> str | None:
         return None
 
 
-def _client() -> AsyncAnthropic:
+def client() -> AsyncAnthropic:
     return AsyncAnthropic(api_key=get_settings().anthropic_api_key)
+
+
+def render_policy(policy: PolicyConfig) -> str:
+    """선별·판정 프롬프트가 같은 문장을 읽는다."""
+    parts = ["관심:", policy.interests.strip(), "관심 없음:", policy.not_interested.strip()]
+    if policy.focus_repos:
+        parts.append("특히 주목하는 저장소: " + ", ".join(policy.focus_repos))
+    if policy.focus_stack:
+        parts.append("특히 주목하는 스택·용어: " + ", ".join(policy.focus_stack))
+    return "\n".join(parts)
 
 
 async def judge(rules: Rules, *, source: str, title: str, body: str | None) -> LLMResult:
     """한 번의 호출로 판단·요약·태깅을 구조화 출력으로 받는다."""
     settings = get_settings()
-    response = await _client().messages.parse(
+    response = await client().messages.parse(
         model=settings.llm_model,
         max_tokens=1024,
-        system=SYSTEM_PROMPT.format(interests=rules.interests),
+        system=SYSTEM_PROMPT.format(policy=render_policy(rules.policy)),
         messages=[
             {
                 "role": "user",

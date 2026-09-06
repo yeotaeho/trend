@@ -30,6 +30,7 @@ class ItemStatus(StrEnum):
 
 class Stage(StrEnum):
     RULE = "rule"
+    TRIAGE = "triage"
     SCORE = "score"
     LLM = "llm"
 
