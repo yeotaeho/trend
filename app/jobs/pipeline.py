@@ -11,8 +11,10 @@ from app.config import get_rules, get_settings
 from app.db.models import Decision, Item, Source, Summary
 from app.db.session import session_scope
 from app.log import get_logger
+from app.notify.discord import send_ops_alert
 from app.pipeline import llm
-from app.pipeline.dedupe import find_cluster, mention_count
+from app.pipeline.dedupe import Verdict, classify, find_candidates
+from app.pipeline.embedding import EmbeddingDimError, embed_pending
 from app.pipeline.rules import apply_rules
 from app.pipeline.scoring import score_item
 from app.schemas import ItemStatus, Stage
@@ -46,19 +48,46 @@ async def _claim_batch(session: AsyncSession) -> list[tuple[Item, Source]]:
     return [(item, source) for item, source in (await session.execute(stmt)).all()]
 
 
+async def _reembedding_in_progress(session: AsyncSession) -> bool:
+    """embedding_model 이 현재 설정과 다른 행이 있으면 백필 중이다. 옛 벡터와 섞지 않는다."""
+    model = get_settings().embedding_model
+    stmt = (
+        select(Item.id)
+        .where(Item.embedding_model.is_not(None), Item.embedding_model != model)
+        .limit(1)
+    )
+    return (await session.execute(stmt)).first() is not None
+
+
 async def _process(session: AsyncSession, item: Item, source: Source) -> bool:
     """항목 하나를 관문에 통과시킨다. 돌려주는 값은 LLM 을 실제로 호출했는지 여부."""
     rules = get_rules()
 
-    cluster_id = await find_cluster(session, item.title, exclude_item_id=item.id)
-    if cluster_id is not None:
-        item.cluster_id = cluster_id
+    dup, related = await find_candidates(session, item.id, rules.dedupe)
+    embedded = await session.scalar(select(Item.embedding.is_not(None)).where(Item.id == item.id))
+    if not embedded:
+        # 임베딩 실패 항목. 중복·다중소스 판정 없이 진행한다 — 장애가 항목을 죽이면 안 된다.
+        session.add(_record(item, Stage.RULE, True, {"reason": "dedupe_skipped"}))
+        verdict = Verdict("independent", item.id, 1)
+    else:
+        verdict = classify(
+            item_id=item.id,
+            own_source_id=item.source_id,
+            own_title=item.title,
+            dup=dup,
+            related=related,
+            cfg=rules.dedupe,
+        )
+    item.cluster_id = verdict.cluster_id
+    if verdict.kind == "dup":
         item.status = ItemStatus.FILTERED_OUT.value
-        session.add(_record(item, Stage.RULE, False, {"reason": "dup", "cluster_id": cluster_id}))
+        session.add(
+            _record(item, Stage.RULE, False, {"reason": "dup", "cluster_id": verdict.cluster_id})
+        )
         return False
 
     repo = item.raw.get("repo") if isinstance(item.raw, dict) else None
-    verdict = apply_rules(
+    rule = apply_rules(
         rules,
         source=source.name,
         title=item.title,
@@ -70,15 +99,15 @@ async def _process(session: AsyncSession, item: Item, source: Source) -> bool:
         _record(
             item,
             Stage.RULE,
-            verdict.passed,
-            {"reason": verdict.reason, "matched": verdict.matched_keywords},
+            rule.passed,
+            {"reason": rule.reason, "matched": rule.matched_keywords},
         )
     )
-    if not verdict.passed:
+    if not rule.passed:
         item.status = ItemStatus.FILTERED_OUT.value
         return False
 
-    if verdict.reason == "always_pass_source":
+    if rule.reason == "always_pass_source":
         # 화이트리스트 소스는 점수 관문을 건너뛴다. 제목에 키워드가 없는 채널(YouTube)은
         # kw=0 이라 어떤 신뢰도로도 임계값을 못 넘는데, 화이트리스트의 뜻은 "이 소스는
         # 봐라"다. 거르는 일은 LLM 의 worth_notifying 이 맡는다. (include_repo 는 키워드성
@@ -99,16 +128,13 @@ async def _process(session: AsyncSession, item: Item, source: Source) -> bool:
             return False
         session.add(_record(item, Stage.SCORE, True, {"reason": "whitelist_bypass"}))
     else:
-        mentions = await mention_count(
-            session, item.title, exclude_item_id=item.id, source_id=item.source_id
-        )
         metrics = item.raw.get("metrics", {}) if isinstance(item.raw, dict) else {}
         score = score_item(
             rules.scoring,
             trust=source.trust_score,
-            keyword_hits=len(verdict.matched_keywords),
+            keyword_hits=len(rule.matched_keywords),
             metrics=metrics if isinstance(metrics, dict) else {},
-            mention_count=mentions,
+            mention_count=verdict.mention_count,
             published_at=item.published_at,
         )
         item.score = score.score
@@ -169,8 +195,23 @@ async def run_pipeline() -> int:
         if budget <= 0:
             log.info("pipeline.llm_cap_reached", cap=settings.llm_daily_cap)
             return 0
+        if await _reembedding_in_progress(session):
+            log.info("pipeline.paused_for_reembedding")
+            return 0
 
-        for item, source in await _claim_batch(session):
+        batch = await _claim_batch(session)
+        # 수집 때 실패한 임베딩을 다시 시도한다. 여기서도 실패하면 dedupe_skipped 로 진행한다.
+        try:
+            await embed_pending(session, [item.id for item, _ in batch])
+        except EmbeddingDimError as exc:
+            # 설정 오류. 잡을 세우고 알린다. 조용히 NULL 로 두면 중복 판정이 영구히 빠진다.
+            try:
+                await send_ops_alert(f"임베딩 차원 오류: {exc}")
+            except Exception as alert_exc:
+                log.warning("pipeline.alert_failed", error=str(alert_exc))
+            raise
+
+        for item, source in batch:
             # 예산이 바닥나면 손대지 않고 멈춘다. 판정을 기록해 두고 NEW 로 남기면
             # 다음 실행마다 같은 항목을 다시 판정해 decisions 가 계속 쌓인다.
             if budget <= 0:
