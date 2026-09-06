@@ -46,7 +46,8 @@ async def _claim_batch(session: AsyncSession) -> list[tuple[Item, Source]]:
     stmt = (
         select(Item, Source)
         .join(Source, Source.id == Item.source_id)
-        .where(Item.status == ItemStatus.NEW.value)
+        # 비활성 소스의 항목은 건드리지 않는다. 옛 trust_adjusted 로 판정·발송되면 안 된다.
+        .where(Item.status == ItemStatus.NEW.value, Source.enabled.is_(True))
         .order_by(Item.published_at.desc())
         .limit(BATCH_SIZE)
         .with_for_update(of=Item, skip_locked=True)

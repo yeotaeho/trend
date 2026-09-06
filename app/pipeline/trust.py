@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable
 
 
 def adjust_trust(base: float, useful: int, useless: int, *, prior_weight: int = 10) -> float:
@@ -20,3 +21,18 @@ def precision(useful: int, useless: int) -> float | None:
 def score_band(score: float, width: float = 0.05) -> float:
     # 0.45 / 0.05 = 8.999… 로 떨어지는 부동소수 오차를 막기 위해 소수 9자리에서 자른다.
     return round(math.floor(round(score / width, 9)) * width, 2)
+
+
+def band_table(
+    rows: Iterable[tuple[float, str | None]],
+) -> list[tuple[float, int, int, int, float | None]]:
+    """(score, verdict) 행 → 구간별 (band, sent, useful, useless, precision)."""
+    acc: dict[float, list[int]] = {}
+    for score, verdict in rows:
+        counts = acc.setdefault(score_band(float(score)), [0, 0, 0])
+        counts[0] += 1
+        if verdict == "useful":
+            counts[1] += 1
+        elif verdict == "useless":
+            counts[2] += 1
+    return [(b, c[0], c[1], c[2], precision(c[1], c[2])) for b, c in sorted(acc.items())]
