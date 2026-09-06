@@ -69,6 +69,12 @@ interests: |
     쓰는 라이브러리의 메이저 릴리즈, 개발 생태계의 정책·가격 변화.
   - 관심 없음: 채용·홍보·입문자용 튜토리얼·이미 널리 알려진 일반론.
 
+# 벡터 유사도 임계값. 중복(≥dup)은 생존 항목만 기준, 관련(≥related)은 상태 무관.
+dedupe:
+  dup_threshold: 0.92
+  related_threshold: 0.80
+  window_hours: 72
+
 scoring:
   w_src: 0.25
   w_kw: 0.25

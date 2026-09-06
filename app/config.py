@@ -55,6 +55,13 @@ class SourceConfig(BaseModel):
     enabled: bool = True
 
 
+class DedupeConfig(BaseModel):
+    # 출발값. scripts/calibrate_dedupe.py 의 표본을 보고 정한다.
+    dup_threshold: float = 0.92
+    related_threshold: float = 0.80
+    window_hours: int = 72
+
+
 class ScoringConfig(BaseModel):
     w_src: float = 0.25
     w_kw: float = 0.25
@@ -74,7 +81,7 @@ class NotifyConfig(BaseModel):
 
 
 class Rules(BaseModel):
-    """config/rules.yaml — 규칙 필터·점수 가중치·발송 정책."""
+    """config/rules.yaml — 규칙 필터·중복 임계값·점수 가중치·발송 정책."""
 
     include_keywords: list[str] = Field(default_factory=list)
     include_repos: list[str] = Field(default_factory=list)
@@ -82,6 +89,7 @@ class Rules(BaseModel):
     exclude_domains: list[str] = Field(default_factory=list)
     always_pass_sources: list[str] = Field(default_factory=list)
     interests: str = ""
+    dedupe: DedupeConfig = Field(default_factory=DedupeConfig)
     scoring: ScoringConfig = Field(default_factory=ScoringConfig)
     notify: NotifyConfig = Field(default_factory=NotifyConfig)
 

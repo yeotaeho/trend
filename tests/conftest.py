@@ -5,7 +5,11 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-os.environ.setdefault("DATABASE_URL", "postgresql://test:test@localhost:5432/test")
+# 통합 테스트(tests/integration)는 TEST_DATABASE_URL 의 Neon dev 브랜치를 같은 엔진으로 쓴다.
+os.environ.setdefault(
+    "DATABASE_URL",
+    os.environ.get("TEST_DATABASE_URL", "postgresql://test:test@localhost:5432/test"),
+)
 os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
 os.environ.setdefault("TELEGRAM_BOT_TOKEN", "test-token")
 os.environ.setdefault("TELEGRAM_CHAT_ID", "1")
