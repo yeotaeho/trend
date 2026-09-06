@@ -23,7 +23,7 @@
 
 **기술 파악(tech-radar)** — 개인용 개발 트렌드 알림 앱. 새로 나온 LLM·라이브러리·프레임워크·기법·플러그인·MCP 와 개발 커뮤니티 이슈를 여러 소스(GitHub, RSS, YouTube, HN, Reddit, X)에서 실시간에 가깝게 감지하고, 규칙 필터 → 점수화 → LLM 요약·판단을 거쳐 읽을 가치가 있는 것만 텔레그램(이후 앱/FCM)으로 푸시한다. 금융 앱의 "신상품 알림" UX 를 개발 정보에 적용한 것. 사용자는 나 혼자(단일 사용자)이며 상용화·회원가입·커뮤니티 기능은 비목표.
 
-기획·설계 원문은 Claude 프로젝트 문서 `claude/기획서.md`(v0.1), `claude/구현도.md`(v0.2) 참고.
+기획·설계 원문은 레포 루트의 `기획서.md`(v0.1), `구현도.md`(v0.2), 검증 파이프라인 v2 는 `검증파이프라인-v2-설계서.md`·`검증파이프라인-v2-구현서.md` 참고.
 
 **프로세스 하나 + Neon 하나**로 구성 (MVP). 컨테이너는 `app` 이미지 1개.
 
@@ -35,12 +35,17 @@
 
 **Stack** — Python 3.12+ · uv · FastAPI/uvicorn · APScheduler 3.x(AsyncIOScheduler, Postgres jobstore) · httpx + tenacity · feedparser · trafilatura(본문 보강 단계에서만) · Neon(Postgres 16/17, pg_trgm) · SQLAlchemy 2.x async(asyncpg, `statement_cache_size=0`) + Alembic · Pydantic v2 / pydantic-settings · Anthropic SDK(Claude Haiku 급, 구조화 JSON 출력) · python-telegram-bot 21.x · structlog · pytest + pytest-asyncio + respx · ruff + mypy · Docker Compose + Caddy · GitHub Actions
 
-**파이프라인 (설계 원칙: 플러그인 · 멱등 · LLM 은 마지막 관문 · 결정은 로그로)**
+**파이프라인 (설계 원칙: 플러그인 · 멱등 · 정책은 문장으로 · 결정은 로그로)** — v2 (`검증파이프라인-v2-설계서.md`)
 
 ```
-[소스] → [수집기 sources/*] → [정규화·중복제거] → [규칙 필터] → [점수화] → [본문 보강*] → [LLM 요약·태깅·판단] → [발송 정책] → [텔레그램/디스코드/FCM]
-                                url_hash·pg_trgm     rules.yaml   가중치 합    *body 부족 시만     JSON 1회 호출        강도·상한·무음
+[소스] → [수집기 sources/*] → [적재 + 임베딩] → NEW
+1국면 (항목별)   stale(72h) → 중복·관련 (벡터 코사인, 생존자 기준) → exclude 규칙
+2국면 (25건 배치) LLM 선별 — 정책 문장을 읽고 관련도 0~1 + 이유
+3국면 (항목별)   점수(src·rel·hot·multi·fresh ≥ 0.45) → 본문 보강* → LLM 판정·요약 → SCORED
+발송 잡          강도·상한·무음 → 디스코드 (+ 🧪 탐색 슬롯 1건/일)
 ```
+
+키워드 목록은 관문이 아니다. `rules.yaml` 의 `policy` 문장을 선별·판정 프롬프트가 읽는다. 모든 LLM 호출은 `llm_calls` 예약 행을 먼저 커밋한다(일일 상한). 단일 프로세스 전제.
 
 ---
 
@@ -71,7 +76,13 @@ uv run ruff check . && uv run ruff format .
 uv run mypy app
 
 # 수동 실행·백필·튜닝 리포트
-uv run python scripts/<스크립트>.py
+uv run python scripts/run_job.py collect pipeline notify   # 잡을 순서대로 한 번씩
+uv run python scripts/backfill_embeddings.py               # 임베딩 NULL·모델 불일치 행 재계산 (멱등)
+uv run python scripts/calibrate_dedupe.py                  # 유사도 구간별 쌍 표본 → dedupe 임계값 보정
+uv run python scripts/weekly_report.py [--apply]           # 주간 튜닝 표, --apply 면 소스 신뢰도 보정 기록
+
+# 통합 테스트 (pgvector 쿼리·예약 원자성). Neon dev 브랜치를 가리켜야 한다
+TEST_DATABASE_URL=<dev> uv run pytest tests/integration
 ```
 
 ---
@@ -87,6 +98,9 @@ tech-radar/
 │   ├── config.py             # pydantic-settings, YAML 로더 (.env 는 gitignore 대상)
 │   ├── schemas.py            # NormalizedItem 등 Pydantic 스키마
 │   ├── db/                   # SQLAlchemy 모델, 세션, alembic/ 마이그레이션
+│   │   ├── types.py          # Vector 컬럼 타입 (쓰기만, 비교는 SQL)
+│   │   ├── budget.py         # reserve_call — LLM 호출 전 예약, 일일 상한
+│   │   └── feedback.py       # 피드백 upsert (항목당 1건)
 │   │
 │   │  # 플러그인 계층 — 소스 하나 = 파일 하나
 │   ├── sources/              # 수집기 (Source 프로토콜: name, interval, fetch(since))
@@ -101,10 +115,14 @@ tech-radar/
 │   │  # 파이프라인 — NEW 항목을 단계별 관문으로 통과
 │   ├── pipeline/
 │   │   ├── normalize.py      # URL 정규화(utm 제거 등) → SHA-256 url_hash
-│   │   ├── dedupe.py         # 72h 내 제목 유사도(pg_trgm > 0.6) → cluster_id
-│   │   ├── rules.py          # include/exclude 키워드·저장소·도메인 (config/rules.yaml)
-│   │   ├── scoring.py        # trust·keyword·hotness·multi·freshness 가중합, 임계값
-│   │   └── llm.py            # 본문 보강(trafilatura) → 프롬프트, 구조화 출력, summaries 캐시
+│   │   ├── embedding.py      # Voyage/OpenAI 임베딩 어댑터, 적재 직후·보충 계산
+│   │   ├── dedupe.py         # 72h 창 벡터 코사인 → 중복(≥0.96, 생존자 기준)·관련(≥0.88) → cluster_id
+│   │   ├── rules.py          # exclude 키워드·도메인만 (config/rules.yaml)
+│   │   ├── triage.py         # LLM 선별 배치 — 정책 문장 → 관련도 0~1 + 이유
+│   │   ├── scoring.py        # trust·relevance·hotness·multi·freshness 가중합, stale 가드
+│   │   ├── feedback.py       # 최근접 피드백 사례 (3단계)
+│   │   ├── trust.py          # 소스 신뢰도 베이즈 보정 (4단계)
+│   │   └── llm.py            # 본문 보강(trafilatura) → 판정 프롬프트, 구조화 출력, summaries 캐시
 │   │
 │   │  # 발송 — Notifier 프로토콜 어댑터
 │   ├── notify/
@@ -118,7 +136,7 @@ tech-radar/
 │
 ├── config/
 │   ├── sources.yaml          # 소스 등록·폴링 주기·신뢰도
-│   └── rules.yaml            # 키워드·화이트/블랙리스트·always_pass_sources
+│   └── rules.yaml            # policy(관심 문장·주목 저장소)·exclude·dedupe/triage/scoring/notify 임계값
 ├── tests/
 │   └── fixtures/             # 소스별 실제 응답 샘플
 ├── scripts/                  # 수동 실행·백필·주간 튜닝 리포트
@@ -133,22 +151,26 @@ tech-radar/
 ### 데이터 모델
 
 - `sources` — 수집 소스 정의 (`type`, `config` jsonb, `poll_interval_sec`, `trust_score`, `last_polled_at`, `last_error`)
-- `items` — 정규화된 항목 (핵심). `url_hash` unique, `category`, `cluster_id`, `status`
-- `decisions` — 항목별 판단 기록 (`stage` rule|score|llm, `passed`, `score`, `details` jsonb). 튜닝 근거
+- `items` — 정규화된 항목 (핵심). `url_hash` unique, `category`, `cluster_id`, `status`, `embedding vector(1024)`(적재 시점 텍스트, 파이썬에서 읽지 않음)·`embedding_model`
+- `decisions` — 항목별 판단 기록 (`stage` rule|triage|score|llm, `passed`, `score`, `details` jsonb). 튜닝 근거
+- `llm_calls` — LLM 호출 직전 예약 행 (`kind` triage|judge|explore, `batch_id`, `called_at`). 일일 상한은 이 표로 센다
 - `summaries` — LLM 결과 (`title_ko`, `summary_ko`, `tags`, `importance` 1~5, `worth_notifying`, 토큰 수). 재실행 시 캐시
 - `notifications` — 발송 기록 (`channel`, `level` push|silent|feed, `message_id`, `error`)
-- `feedback` — 사용자 반응 (`verdict` useful|useless)
+- `feedback` — 사용자 반응 (`verdict` useful|useless). 항목당 1건, 재클릭은 upsert
 - `user_prefs` — 단일 사용자 설정 (MVP 는 YAML 로 대체 가능)
 
 **상태 전이**
 
 ```
-NEW ──dup/no_keyword──▶ FILTERED_OUT
-NEW ──규칙 통과──▶ (점수) ──미달──▶ DROPPED
-                        └─통과──▶ (LLM) ──false──▶ DROPPED
-                                        └─true──▶ SCORED ──상한/무음──▶ QUEUED
-                                                         └─발송──▶ SENT / FAILED
+NEW ──stale(72h)──▶ DROPPED
+NEW ──중복/exclude──▶ FILTERED_OUT
+NEW ──관문 통과──▶ (선별 배치: 관련도) ──▶ (점수) ──미달──▶ DROPPED
+                                              └─통과──▶ (판정) ──false──▶ DROPPED
+                                                              └─true──▶ SCORED ──상한/무음──▶ QUEUED
+                                                                               └─발송──▶ SENT / FAILED
 ```
+
+`FILTERED_OUT` 과 `DROPPED` 는 서로 다른 종단 분기다. 재처리 대상은 `NEW` 뿐이며, 선별·판정 예산이 바닥나면 항목은 `NEW` 로 남고 선별 결과는 `decisions` 에서 재사용된다.
 
 **발송 강도** — `importance ≥ 4 → push`, `3 → silent`, `≤ 2 → feed`(발송 안 함). 하루 push 상한·무음 시간(23:00~08:00 KST)은 `notify/policy.py` 에서 처리.
 
@@ -161,10 +183,11 @@ NEW ──규칙 통과──▶ (점수) ──미달──▶ DROPPED
 - **브랜치** — 새 브랜치의 이름은 `feat-`* / `fix-*` / `refactor-*` (또는 `feat/*` 형식)
 - **커밋 접두사** — `feat:` `fix:` `hotfix:` `refactor:` `docs:` `test:` `chore:` `perf:`
 - **배포** — GitHub Actions. push 시 `ruff → mypy → pytest`, `main` 머지 시 이미지 빌드 → GHCR 푸시 → VM 에 SSH 로 `docker compose pull && up -d`. Alembic 마이그레이션은 컨테이너 시작 시 자동 실행.
-- **시크릿** — `.env` 로컬 관리 (`ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `GITHUB_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `DATABASE_URL`). 커밋 금지. `.env.example` 이 안전한 참조본.
+- **시크릿** — `.env` 로컬 관리 (`ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`(또는 `OPENAI_API_KEY`), `DISCORD_*`, `TELEGRAM_*`, `GITHUB_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `DATABASE_URL`). 커밋 금지. `.env.example` 이 안전한 참조본.
+- **임베딩** — Voyage `voyage-3.5-lite` 1024차원 고정. 무료 등급은 분당 요청 3회·토큰 약 1만이라 배치 64건·간격 20초. 모델을 바꾸면 `backfill_embeddings.py` 로 전량 재계산하고, 불일치 행이 남아 있는 동안 파이프라인은 스스로 멈춘다.
 - **설정 분리** — 소스·키워드·임계값은 `config/*.yaml`, 시크릿은 `.env`. 코드에 하드코딩하지 않는다.
 - **Neon 연결** — pooled 엔드포인트(pgbouncer, `sslmode=require`) 사용, 잡 단위로 커넥션을 열고 닫는다. 브랜치 `main`(운영) / `dev`(로컬·CI).
-- **LLM 호출 위치** — 규칙·점수 관문을 통과한 항목에만, `pipeline/llm.py` 에서만 호출. 하루 호출 상한 준수, 결과는 `summaries` 캐시.
+- **LLM 호출 위치** — 선별은 `pipeline/triage.py`(25건 배치, 관문 통과 항목 전부), 판정은 점수 관문을 통과한 항목에만 `pipeline/llm.py`. 모든 호출 직전에 `db/budget.py` 의 `reserve_call` 로 예약한다(선별 60·판정 300·탐색 3, Asia/Seoul 달력일). 결과는 `summaries`·`decisions` 캐시.
 - **결정 로그** — 통과/탈락 판단은 반드시 `decisions` 에 남긴다 (매칭 키워드, 점수 내역, LLM 응답).
 
 ---

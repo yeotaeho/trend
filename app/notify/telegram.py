@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 from html import escape
 
 import httpx
@@ -10,35 +10,11 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import get_settings
 from app.db.models import Item, Summary
+from app.notify.base import feedback_callback_data, relative_time
 from app.schemas import Level
 
 API = "https://api.telegram.org/bot{token}/{method}"
 TIMEOUT = httpx.Timeout(15.0)
-
-CALLBACK_PREFIX = "fb"
-
-
-def feedback_callback_data(verdict: str, item_id: int) -> str:
-    return f"{CALLBACK_PREFIX}:{verdict}:{item_id}"
-
-
-def parse_feedback_callback(data: str) -> tuple[str, int] | None:
-    """`fb:useful:123` → ("useful", 123). 형식이 다르면 None."""
-    parts = data.split(":")
-    if len(parts) != 3 or parts[0] != CALLBACK_PREFIX or parts[1] not in ("useful", "useless"):
-        return None
-    if not parts[2].isdigit():
-        return None
-    return parts[1], int(parts[2])
-
-
-def relative_time(published_at: datetime, *, now: datetime | None = None) -> str:
-    minutes = int(((now or datetime.now(UTC)) - published_at).total_seconds() // 60)
-    if minutes < 60:
-        return f"{max(minutes, 0)}분 전"
-    if minutes < 60 * 24:
-        return f"{minutes // 60}시간 전"
-    return f"{minutes // (60 * 24)}일 전"
 
 
 def render(item: Item, summary: Summary, source_name: str, *, now: datetime | None = None) -> str:
@@ -106,8 +82,3 @@ class TelegramNotifier:
 async def answer_callback(callback_query_id: str, text: str) -> None:
     """버튼을 누른 사용자에게 토스트로 응답한다."""
     await _call("answerCallbackQuery", {"callback_query_id": callback_query_id, "text": text})
-
-
-async def send_ops_alert(text: str) -> None:
-    """파이프라인·수집 실패를 봇으로 알린다."""
-    await _call("sendMessage", {"chat_id": get_settings().telegram_chat_id, "text": f"⚠️ {text}"})

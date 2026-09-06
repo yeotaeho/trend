@@ -3,12 +3,8 @@
 from datetime import UTC, datetime, timedelta
 
 from app.db.models import Item, Summary
-from app.notify.telegram import (
-    feedback_callback_data,
-    parse_feedback_callback,
-    relative_time,
-    render,
-)
+from app.notify.base import feedback_callback_data, parse_feedback_callback, relative_time
+from app.notify.telegram import render
 
 NOW = datetime(2026, 8, 30, 12, 0, tzinfo=UTC)
 

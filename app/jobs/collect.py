@@ -10,7 +10,8 @@ from app.config import SourceConfig
 from app.db.models import Source
 from app.db.session import session_scope
 from app.log import get_logger
-from app.notify.telegram import send_ops_alert
+from app.notify.discord import send_ops_alert
+from app.pipeline.embedding import EmbeddingDimError, alert_dim_error, embed_pending
 from app.pipeline.ingest import store_items
 from app.sources import build_source
 
@@ -34,6 +35,16 @@ async def run_source(source_id: int) -> int:
         )
         try:
             items = await build_source(cfg).fetch(source.last_polled_at)
+            # 적재 실패도 수집 실패로 다룬다. savepoint 로 감싸야 예외 뒤에도 세션이
+            # 살아 있어 아래 실패 기록을 커밋할 수 있다. 예외를 밖으로 흘리면
+            # 이 소스의 실패가 기록되지 않고 run_all_sources 의 나머지 소스까지 죽는다.
+            savepoint = await session.begin_nested()
+            try:
+                inserted = await store_items(session, source.id, items)
+            except Exception:
+                await savepoint.rollback()
+                raise
+            await savepoint.commit()
         except Exception as exc:
             source.fail_count += 1
             source.last_error = f"{type(exc).__name__}: {exc}"
@@ -49,9 +60,21 @@ async def run_source(source_id: int) -> int:
                     log.warning("collect.alert_failed", error=str(alert_exc))
             return 0
 
-        inserted = await store_items(session, source.id, items)
+        embed_error: str | None = None
+        if inserted:
+            # 임베딩 실패는 수집 실패가 아니다. NULL 로 남기면 파이프라인 잡이 다시 시도한다.
+            try:
+                await embed_pending(session, inserted)
+            except EmbeddingDimError as exc:
+                # 설정 오류. 적재는 이미 끝났으니 수집 실패로 롤백하지 않고, 알림과
+                # last_error 로 드러낸다. 파이프라인 잡은 같은 오류로 멈춘다.
+                await alert_dim_error(exc)
+                embed_error = f"{type(exc).__name__}: {exc}"
+            except Exception as exc:
+                log.warning("collect.embed_failed", source=source.name, error=str(exc))
+
         source.last_polled_at = datetime.now(UTC)
-        source.last_error = None
+        source.last_error = embed_error
         source.fail_count = 0
         log.info("collect.done", source=source.name, fetched=len(items), inserted=len(inserted))
         return len(inserted)

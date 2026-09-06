@@ -1,9 +1,12 @@
 sources:
   # --- 기업·재단 기술 블로그 (RSS) ---
+  # Anthropic 은 공식 RSS 가 없다 (/news/rss.xml 404). 커뮤니티 미러를 쓴다.
+  # 미러가 끊기면 fail_count 5회에 운영 알림이 온다. 본문은 anthropic.com 원문에서 보강.
   - name: rss:anthropic
     type: rss
     config:
-      url: https://www.anthropic.com/news/rss.xml
+      url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml
+      allowed_hosts: [anthropic.com]   # 미러가 넣은 외부 링크는 버린다
     poll_interval_sec: 900
     trust_score: 1.0
 

@@ -50,3 +50,19 @@ async def test_category_hint_from_config():
 
 def test_youtube_feed_url_shape():
     assert FEED_URL.format(channel_id="ABC").endswith("videos.xml?channel_id=ABC")
+
+
+@respx.mock
+async def test_allowed_hosts_drops_foreign_links():
+    """서드파티 미러가 끼워 넣은 외부 링크는 원 출처 호스트가 아니면 버린다."""
+    respx.get(FEED).mock(return_value=httpx.Response(200, content=fixture("rss_blog.xml")))
+
+    assert await make_source(allowed_hosts=["other.example"]).fetch(None) == []
+    assert len(await make_source(allowed_hosts=["EXAMPLE.com"]).fetch(None)) == 2
+
+
+@respx.mock
+async def test_allowed_hosts_ignores_www_prefix():
+    respx.get(FEED).mock(return_value=httpx.Response(200, content=fixture("rss_blog.xml")))
+
+    assert len(await make_source(allowed_hosts=["www.example.com"]).fetch(None)) == 2
