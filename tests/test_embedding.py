@@ -4,7 +4,7 @@ import httpx
 import pytest
 import respx
 
-from app.pipeline.embedding import DIM, EmbeddingDimError, embed, embedding_text
+from app.pipeline.embedding import DIM, MAX_BATCH, EmbeddingDimError, embed, embedding_text
 
 VOYAGE = "https://api.voyageai.com/v1/embeddings"
 
@@ -120,7 +120,7 @@ async def test_client_error_fails_immediately(monkeypatch):
 
 async def test_more_than_max_batch_is_rejected():
     with pytest.raises(ValueError):
-        await embed(["x"] * 129)
+        await embed(["x"] * (MAX_BATCH + 1))
 
 
 @respx.mock

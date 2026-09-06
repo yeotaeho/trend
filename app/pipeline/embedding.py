@@ -16,7 +16,8 @@ from app.log import get_logger
 from app.notify.discord import send_ops_alert
 
 DIM = 1024
-MAX_BATCH = 128
+# 64건 × ~120 토큰 ≈ 8k. 무료 등급의 분당 토큰 제한(10k) 안. 128 은 arXiv 배치에서 429 가 났다.
+MAX_BATCH = 64
 SNIPPET_CHARS = 300
 TIMEOUT = httpx.Timeout(30.0)
 RETRY_ATTEMPTS = 3
