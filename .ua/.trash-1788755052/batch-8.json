@@ -1,0 +1,43 @@
+{
+  "nodes": [
+    {
+      "id": "pipeline:.github/workflows/ci.yml",
+      "type": "pipeline",
+      "name": "ci.yml",
+      "filePath": ".github/workflows/ci.yml",
+      "summary": "GitHub Actions CI/CD 워크플로. main push·PR 에서 ruff·mypy·pytest 검사를 돌리고, main 브랜치일 때만 GHCR 이미지를 빌드·푸시한 뒤 SSH 로 VM 에서 docker compose 를 갱신한다.",
+      "tags": ["ci-cd", "deployment", "infrastructure", "github-actions", "containerization"],
+      "complexity": "simple",
+      "languageNotes": "check → deploy 두 잡을 needs 로 직렬화하고, deploy 는 `if: github.ref == 'refs/heads/main'` 로 게이트한다. 시크릿은 모두 GitHub Secrets 참조라 값이 커밋되지 않는다."
+    },
+    {
+      "id": "step:.github/workflows/ci.yml:check",
+      "type": "pipeline",
+      "name": "check",
+      "filePath": ".github/workflows/ci.yml",
+      "lineRange": [12, 23],
+      "summary": "uv 로 의존성을 동기화한 뒤 ruff check·ruff format --check·mypy app·pytest 를 순서대로 실행하는 검증 잡. 로컬 CI 용 DATABASE_URL 환경변수를 사용한다.",
+      "tags": ["ci-cd", "test", "lint", "type-check", "quality-gate"],
+      "complexity": "simple"
+    },
+    {
+      "id": "step:.github/workflows/ci.yml:deploy",
+      "type": "pipeline",
+      "name": "deploy",
+      "filePath": ".github/workflows/ci.yml",
+      "lineRange": [25, 50],
+      "summary": "check 잡 통과 후 main 브랜치에서만 도는 배포 잡. GHCR 에 이미지를 빌드·푸시하고 SSH 로 VM 에 접속해 docker compose pull && up -d 로 서비스를 교체한다.",
+      "tags": ["deployment", "containerization", "ghcr", "ssh", "ci-cd"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {"source": "pipeline:.github/workflows/ci.yml", "target": "step:.github/workflows/ci.yml:check", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "pipeline:.github/workflows/ci.yml", "target": "step:.github/workflows/ci.yml:deploy", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "step:.github/workflows/ci.yml:check", "target": "file:tests/conftest.py", "type": "triggers", "direction": "forward", "weight": 0.6},
+    {"source": "step:.github/workflows/ci.yml:check", "target": "config:pyproject.toml", "type": "depends_on", "direction": "forward", "weight": 0.6},
+    {"source": "step:.github/workflows/ci.yml:deploy", "target": "service:Dockerfile", "type": "depends_on", "direction": "forward", "weight": 0.6},
+    {"source": "step:.github/workflows/ci.yml:deploy", "target": "service:docker-compose.yml", "type": "triggers", "direction": "forward", "weight": 0.6},
+    {"source": "pipeline:.github/workflows/ci.yml", "target": "file:app/main.py", "type": "deploys", "direction": "forward", "weight": 0.7}
+  ]
+}

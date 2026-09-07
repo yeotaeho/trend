@@ -1,0 +1,43 @@
+{
+  "issues": [],
+  "warnings": [
+    "Node 'file:app/__init__.py' has no edges (orphan)",
+    "Node 'file:app/db/__init__.py' has no edges (orphan)",
+    "Node 'file:app/notify/__init__.py' has no edges (orphan)",
+    "Node 'file:tests/__init__.py' has no edges (orphan)",
+    "Node 'file:tests/integration/__init__.py' has no edges (orphan)",
+    "Node 'file:tests/sources/__init__.py' has no edges (orphan)"
+  ],
+  "stats": {
+    "totalNodes": 249,
+    "totalEdges": 619,
+    "totalLayers": 10,
+    "tourSteps": 15,
+    "nodeTypes": {
+      "file": 80,
+      "function": 115,
+      "class": 27,
+      "config": 8,
+      "service": 5,
+      "pipeline": 3,
+      "document": 5,
+      "table": 6
+    },
+    "edgeTypes": {
+      "contains": 146,
+      "imports": 201,
+      "exports": 79,
+      "calls": 60,
+      "tested_by": 27,
+      "depends_on": 9,
+      "related": 10,
+      "deploys": 3,
+      "configures": 24,
+      "routes": 1,
+      "triggers": 2,
+      "documents": 47,
+      "migrates": 9,
+      "serves": 1
+    }
+  }
+}

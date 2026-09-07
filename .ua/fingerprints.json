@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "dfbdef090716b179e294c1ecc699ebdbf27c17f0",
-  "generatedAt": "2026-09-01T13:48:42.146Z",
+  "gitCommitHash": "688aeb86f0378d7299b7b3d713f4545429565742",
+  "generatedAt": "2026-09-07T04:24:03.772Z",
   "files": {
     ".dockerignore": {
       "filePath": ".dockerignore",
-      "contentHash": "d0ed0928537c7789a74a3141886810b7f7a8e759f80c0e0a4d8850df228c5d13",
+      "contentHash": "23878200fd31ace55ef4d37adf1f7fce86b350b7d4f5ed2c101acc3d12ca5f93",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -15,17 +15,17 @@
     },
     ".env.example": {
       "filePath": ".env.example",
-      "contentHash": "685ead8e0d561d21bab9aba1dac67e0c10062c4816890532beab20dc060afeb4",
+      "contentHash": "e52e7925a35ee663cf73fa3dc0766f8702c03c874343c14e730f62be3cad7f0a",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 21,
+      "totalLines": 43,
       "hasStructuralAnalysis": true
     },
     ".github/workflows/ci.yml": {
       "filePath": ".github/workflows/ci.yml",
-      "contentHash": "0848f9eca75bdfaf25647906284a3d399a1a17396131aaa6cb7589072f8b11e5",
+      "contentHash": "3fddc69cc03a698b43fef99f9cabf531d3b057494940807240f514778a84eb4b",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -33,29 +33,19 @@
       "totalLines": 51,
       "hasStructuralAnalysis": true
     },
-    ".serena/project.yml": {
-      "filePath": ".serena/project.yml",
-      "contentHash": "1303cc378584f498bd162c329bae34047e9781a8b98482ba09b3e68e2f5d9971",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 170,
-      "hasStructuralAnalysis": true
-    },
     "CLAUDE.md": {
       "filePath": "CLAUDE.md",
-      "contentHash": "62e2d6d9381fb7339e7f2462d368a75a00a84efdadef6e9e465edcb149c23093",
+      "contentHash": "dc820b335812f48ea40529e38eee54f6499cdaede2a46ee7d5ba7b17ef40e97a",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 343,
+      "totalLines": 366,
       "hasStructuralAnalysis": true
     },
     "Caddyfile": {
       "filePath": "Caddyfile",
-      "contentHash": "9bb7232237370df9addb9782927cef924e7cfdaf57cb68f3f6e6b28621147522",
+      "contentHash": "598c6f5e37e869a8672cc73e508e4069856a5d200949420d732fa79433922b1b",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -65,7 +55,7 @@
     },
     "Dockerfile": {
       "filePath": "Dockerfile",
-      "contentHash": "112be8379edd9f1e6cf5d565dc9c45a4a9e46fba6fb6b227927187da79c88c05",
+      "contentHash": "7b9d156864d110770bb68df8d52ee6f58a0790c820b56fa403449ecd8b098a9b",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -75,7 +65,7 @@
     },
     "alembic.ini": {
       "filePath": "alembic.ini",
-      "contentHash": "52868f5b7ac48ff4315ea5b07b8f737febf0e4af930e49fd56bc1a291e1837bf",
+      "contentHash": "88c30f8f6bd4473f82a1f82ccc223bf315b02ebeea848b78969c6866e19c5ba1",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -103,9 +93,114 @@
       "totalLines": 1,
       "hasStructuralAnalysis": true
     },
+    "app/api/discord.py": {
+      "filePath": "app/api/discord.py",
+      "contentHash": "3730cd65dcfc2839d67782053b62be71608a5e01c855690c66f410ccf229b258",
+      "functions": [
+        {
+          "name": "verify_signature",
+          "params": [
+            "public_key_hex",
+            "signature_hex",
+            "timestamp",
+            "body"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "_ephemeral",
+          "params": [
+            "text"
+          ],
+          "returnType": "dict[str, object]",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "discord_interaction",
+          "params": [
+            "request",
+            "x_signature_ed25519",
+            "x_signature_timestamp"
+          ],
+          "returnType": "dict[str, object]",
+          "exported": true,
+          "lineCount": 34
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "fastapi",
+          "specifiers": [
+            "APIRouter",
+            "Header",
+            "HTTPException",
+            "Request"
+          ]
+        },
+        {
+          "source": "nacl.exceptions",
+          "specifiers": [
+            "BadSignatureError"
+          ]
+        },
+        {
+          "source": "nacl.signing",
+          "specifiers": [
+            "VerifyKey"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.db.feedback",
+          "specifiers": [
+            "upsert_feedback"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "session_scope"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "get_logger"
+          ]
+        },
+        {
+          "source": "app.notify.base",
+          "specifiers": [
+            "parse_feedback_callback"
+          ]
+        }
+      ],
+      "exports": [
+        "verify_signature",
+        "_ephemeral",
+        "discord_interaction"
+      ],
+      "totalLines": 80,
+      "hasStructuralAnalysis": true
+    },
     "app/api/github.py": {
       "filePath": "app/api/github.py",
-      "contentHash": "2a2ed2df245c157726990ea08a8fa53cdc71ca26318170966cfc21e7f798e555",
+      "contentHash": "e6ec93d341091db2f42ed92eaa0d9eba64e0fc9e52a717ee29102487cc2115d4",
       "functions": [
         {
           "name": "verify_signature",
@@ -204,7 +299,7 @@
     },
     "app/api/health.py": {
       "filePath": "app/api/health.py",
-      "contentHash": "303247b8fb032d7684e4ad7c6dac0feba1629b53184a80acd8a9a59816f1dde1",
+      "contentHash": "fde81ec30bd0e9b50b419ab55278296a5dba22c636eae80817a17980e326a7e5",
       "functions": [
         {
           "name": "health",
@@ -243,7 +338,7 @@
     },
     "app/api/telegram.py": {
       "filePath": "app/api/telegram.py",
-      "contentHash": "9fdd6b237dabb50b8d109d5f14ad8c4695c8956e974398c27a5892edede96550",
+      "contentHash": "55d59ebbaf057478bfdf56f500a7c6498b24da462cb3cb5224da3094e9871787",
       "functions": [
         {
           "name": "telegram_webhook",
@@ -280,9 +375,9 @@
           ]
         },
         {
-          "source": "app.db.models",
+          "source": "app.db.feedback",
           "specifiers": [
-            "Feedback"
+            "upsert_feedback"
           ]
         },
         {
@@ -298,22 +393,27 @@
           ]
         },
         {
+          "source": "app.notify.base",
+          "specifiers": [
+            "parse_feedback_callback"
+          ]
+        },
+        {
           "source": "app.notify.telegram",
           "specifiers": [
-            "answer_callback",
-            "parse_feedback_callback"
+            "answer_callback"
           ]
         }
       ],
       "exports": [
         "telegram_webhook"
       ],
-      "totalLines": 51,
+      "totalLines": 52,
       "hasStructuralAnalysis": true
     },
     "app/config.py": {
       "filePath": "app/config.py",
-      "contentHash": "7e2d3dd443d85d02a5b6fea48b7fbeff65d0691990b4dcc30d7b9251f4c346d2",
+      "contentHash": "dadb67961678a4a37dadafd19396263a36099a29fd920a7ff848627929c0ac88",
       "functions": [
         {
           "name": "_read_yaml",
@@ -362,16 +462,23 @@
             "anthropic_api_key",
             "llm_model",
             "llm_daily_cap",
+            "embedding_provider",
+            "embedding_model",
+            "voyage_api_key",
+            "openai_api_key",
             "telegram_bot_token",
             "telegram_chat_id",
             "telegram_webhook_secret",
+            "discord_bot_token",
+            "discord_channel_id",
+            "discord_public_key",
             "github_token",
             "github_webhook_secret",
             "scheduler_enabled",
             "log_level"
           ],
           "exported": true,
-          "lineCount": 19
+          "lineCount": 29
         },
         {
           "name": "SourceConfig",
@@ -388,18 +495,69 @@
           "lineCount": 9
         },
         {
+          "name": "_Strict",
+          "methods": [],
+          "properties": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "PolicyConfig",
+          "methods": [],
+          "properties": [
+            "interests",
+            "not_interested",
+            "focus_repos",
+            "focus_stack"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "ExcludeConfig",
+          "methods": [],
+          "properties": [
+            "keywords",
+            "domains"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "DedupeConfig",
+          "methods": [],
+          "properties": [
+            "dup_threshold",
+            "related_threshold",
+            "window_hours"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "TriageConfig",
+          "methods": [],
+          "properties": [
+            "batch_size",
+            "daily_cap_calls"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
           "name": "ScoringConfig",
           "methods": [],
           "properties": [
             "w_src",
-            "w_kw",
+            "w_rel",
             "w_hot",
             "w_multi",
             "w_fresh",
-            "threshold"
+            "threshold",
+            "max_age_hours"
           ],
           "exported": true,
-          "lineCount": 7
+          "lineCount": 9
         },
         {
           "name": "NotifyConfig",
@@ -408,26 +566,25 @@
             "daily_push_cap",
             "quiet_start_hour",
             "quiet_end_hour",
-            "timezone"
+            "timezone",
+            "explore_judge_cap"
           ],
           "exported": true,
-          "lineCount": 5
+          "lineCount": 6
         },
         {
           "name": "Rules",
           "methods": [],
           "properties": [
-            "include_keywords",
-            "include_repos",
-            "exclude_keywords",
-            "exclude_domains",
-            "always_pass_sources",
-            "interests",
+            "policy",
+            "exclude",
+            "dedupe",
+            "triage",
             "scoring",
             "notify"
           ],
           "exported": true,
-          "lineCount": 11
+          "lineCount": 9
         }
       ],
       "imports": [
@@ -459,6 +616,7 @@
           "source": "pydantic",
           "specifiers": [
             "BaseModel",
+            "ConfigDict",
             "Field"
           ]
         },
@@ -473,6 +631,11 @@
       "exports": [
         "Settings",
         "SourceConfig",
+        "_Strict",
+        "PolicyConfig",
+        "ExcludeConfig",
+        "DedupeConfig",
+        "TriageConfig",
         "ScoringConfig",
         "NotifyConfig",
         "Rules",
@@ -482,7 +645,7 @@
         "get_source_configs",
         "reload_configs"
       ],
-      "totalLines": 104,
+      "totalLines": 147,
       "hasStructuralAnalysis": true
     },
     "app/db/__init__.py": {
@@ -497,7 +660,7 @@
     },
     "app/db/alembic/env.py": {
       "filePath": "app/db/alembic/env.py",
-      "contentHash": "dc502cab117046d163cefe77212fac4917976aed799bf7014a00126454a127ea",
+      "contentHash": "bed65504640f835d92a7e299e614c5f1851b4f88d81e188a6bfa2db6f44fe3ff",
       "functions": [
         {
           "name": "run_migrations_offline",
@@ -566,7 +729,7 @@
     },
     "app/db/alembic/script.py.mako": {
       "filePath": "app/db/alembic/script.py.mako",
-      "contentHash": "714e932cdf0d788e6e50e43431526113c4e543bc2d7869ac5effaac7cf53043f",
+      "contentHash": "dfae4e88452b6a6efa496afd2916a55aac6a110b18d3da7bf0a99042c4600c29",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -576,7 +739,7 @@
     },
     "app/db/alembic/versions/20260830_0001_initial.py": {
       "filePath": "app/db/alembic/versions/20260830_0001_initial.py",
-      "contentHash": "5cb6284ae2d7b7ebc7952111d92989b3d4597ca97b5504560552c0c4d93b5598",
+      "contentHash": "9f4206a5ad047951e9ca27af6e04c6560a7e36e76f075beafc39aabb595141fd",
       "functions": [
         {
           "name": "upgrade",
@@ -627,9 +790,273 @@
       "totalLines": 133,
       "hasStructuralAnalysis": true
     },
+    "app/db/alembic/versions/20260902_0002_widen_feed_strings.py": {
+      "filePath": "app/db/alembic/versions/20260902_0002_widen_feed_strings.py",
+      "contentHash": "4ad8055dcaa8dbc1b93539ec82429e8e84c67e0af270b085fccb2ba6e0ee3491",
+      "functions": [
+        {
+          "name": "upgrade",
+          "params": [],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "downgrade",
+          "params": [],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 16
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "collections.abc",
+          "specifiers": [
+            "Sequence"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "sa"
+          ]
+        },
+        {
+          "source": "alembic",
+          "specifiers": [
+            "op"
+          ]
+        }
+      ],
+      "exports": [
+        "upgrade",
+        "downgrade"
+      ],
+      "totalLines": 56,
+      "hasStructuralAnalysis": true
+    },
+    "app/db/alembic/versions/20260906_0003_embeddings.py": {
+      "filePath": "app/db/alembic/versions/20260906_0003_embeddings.py",
+      "contentHash": "5ad2485dc4f5ed66fb70d0b8d2674f3cc1aad8783617101ec0aae7bfab1fa834",
+      "functions": [
+        {
+          "name": "upgrade",
+          "params": [],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 33
+        },
+        {
+          "name": "downgrade",
+          "params": [],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "collections.abc",
+          "specifiers": [
+            "Sequence"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "sa"
+          ]
+        },
+        {
+          "source": "alembic",
+          "specifiers": [
+            "op"
+          ]
+        },
+        {
+          "source": "app.db.types",
+          "specifiers": [
+            "Vector"
+          ]
+        }
+      ],
+      "exports": [
+        "upgrade",
+        "downgrade"
+      ],
+      "totalLines": 65,
+      "hasStructuralAnalysis": true
+    },
+    "app/db/budget.py": {
+      "filePath": "app/db/budget.py",
+      "contentHash": "4fb965aa2fef1480927c5a416805f42229622da8b0a7a2f63a9440fa840b9b64",
+      "functions": [
+        {
+          "name": "today_start",
+          "params": [
+            "tz",
+            "now"
+          ],
+          "returnType": "datetime",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "budget_for",
+          "params": [
+            "kind"
+          ],
+          "returnType": "tuple[str, tuple[str, ...]]",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "_caps",
+          "params": [],
+          "returnType": "dict[str, int]",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "reserve_call",
+          "params": [
+            "kind"
+          ],
+          "returnType": "str | None",
+          "exported": true,
+          "lineCount": 36
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "uuid",
+          "specifiers": [
+            "uuid"
+          ]
+        },
+        {
+          "source": "datetime",
+          "specifiers": [
+            "datetime"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Literal"
+          ]
+        },
+        {
+          "source": "zoneinfo",
+          "specifiers": [
+            "ZoneInfo"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "func",
+            "select",
+            "text"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_rules",
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "LlmCall"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "SessionLocal"
+          ]
+        }
+      ],
+      "exports": [
+        "today_start",
+        "budget_for",
+        "_caps",
+        "reserve_call"
+      ],
+      "totalLines": 80,
+      "hasStructuralAnalysis": true
+    },
+    "app/db/feedback.py": {
+      "filePath": "app/db/feedback.py",
+      "contentHash": "810dc2d302f7dae0e7bb4658da9b61d38c5eb45874e38dd05eb7cd81204c6663",
+      "functions": [
+        {
+          "name": "feedback_upsert_stmt",
+          "params": [
+            "item_id",
+            "verdict"
+          ],
+          "returnType": "Insert",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "upsert_feedback",
+          "params": [
+            "session",
+            "item_id",
+            "verdict"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "func"
+          ]
+        },
+        {
+          "source": "sqlalchemy.dialects.postgresql",
+          "specifiers": [
+            "Insert",
+            "insert"
+          ]
+        },
+        {
+          "source": "sqlalchemy.ext.asyncio",
+          "specifiers": [
+            "AsyncSession"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Feedback"
+          ]
+        }
+      ],
+      "exports": [
+        "feedback_upsert_stmt",
+        "upsert_feedback"
+      ],
+      "totalLines": 22,
+      "hasStructuralAnalysis": true
+    },
     "app/db/models.py": {
       "filePath": "app/db/models.py",
-      "contentHash": "e81668daf5729136319f9f3c3b2aebd95963ec4148884bad525528d640176746",
+      "contentHash": "e91b7a32da967167f1f5831e261b46a970541659d96e2b10e6f211e5321f0073",
       "functions": [],
       "classes": [
         {
@@ -649,13 +1076,14 @@
             "config",
             "poll_interval_sec",
             "trust_score",
+            "trust_adjusted",
             "enabled",
             "last_polled_at",
             "last_error",
             "fail_count"
           ],
           "exported": true,
-          "lineCount": 13
+          "lineCount": 15
         },
         {
           "name": "Item",
@@ -676,10 +1104,12 @@
             "status",
             "cluster_id",
             "score",
-            "raw"
+            "raw",
+            "embedding",
+            "embedding_model"
           ],
           "exported": true,
-          "lineCount": 20
+          "lineCount": 26
         },
         {
           "name": "Decision",
@@ -739,7 +1169,19 @@
             "created_at"
           ],
           "exported": true,
-          "lineCount": 7
+          "lineCount": 9
+        },
+        {
+          "name": "LlmCall",
+          "methods": [],
+          "properties": [
+            "id",
+            "kind",
+            "batch_id",
+            "called_at"
+          ],
+          "exported": true,
+          "lineCount": 9
         }
       ],
       "imports": [
@@ -786,6 +1228,12 @@
           ]
         },
         {
+          "source": "app.db.types",
+          "specifiers": [
+            "Vector"
+          ]
+        },
+        {
           "source": "app.schemas",
           "specifiers": [
             "Category",
@@ -800,14 +1248,15 @@
         "Decision",
         "Summary",
         "Notification",
-        "Feedback"
+        "Feedback",
+        "LlmCall"
       ],
-      "totalLines": 118,
+      "totalLines": 140,
       "hasStructuralAnalysis": true
     },
     "app/db/session.py": {
       "filePath": "app/db/session.py",
-      "contentHash": "10de4cf55a281af214e9de79d148264e5f23b0eb63f0e4a428f5d5c23eea4063",
+      "contentHash": "f90711b29ffb70869a1627dd166f0e64c5ea973fda8c480de14eff36d6f6dcaf",
       "functions": [
         {
           "name": "to_asyncpg_url",
@@ -903,6 +1352,70 @@
       "totalLines": 70,
       "hasStructuralAnalysis": true
     },
+    "app/db/types.py": {
+      "filePath": "app/db/types.py",
+      "contentHash": "4b786985ed38c84eca04e31fcecf826f9c5575170202c34950ef9ecc57f7e928",
+      "functions": [],
+      "classes": [
+        {
+          "name": "Vector",
+          "methods": [
+            "__init__",
+            "get_col_spec",
+            "bind_processor",
+            "bind_expression"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 26
+        }
+      ],
+      "imports": [
+        {
+          "source": "collections.abc",
+          "specifiers": [
+            "Callable",
+            "Sequence"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Any"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "Text",
+            "cast"
+          ]
+        },
+        {
+          "source": "sqlalchemy.engine",
+          "specifiers": [
+            "Dialect"
+          ]
+        },
+        {
+          "source": "sqlalchemy.sql.elements",
+          "specifiers": [
+            "ColumnElement"
+          ]
+        },
+        {
+          "source": "sqlalchemy.types",
+          "specifiers": [
+            "UserDefinedType"
+          ]
+        }
+      ],
+      "exports": [
+        "Vector"
+      ],
+      "totalLines": 40,
+      "hasStructuralAnalysis": true
+    },
     "app/jobs/__init__.py": {
       "filePath": "app/jobs/__init__.py",
       "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -915,7 +1428,7 @@
     },
     "app/jobs/collect.py": {
       "filePath": "app/jobs/collect.py",
-      "contentHash": "afc663c35e3c2caf521f88cb613a5c0949defc447de56e767948c5142bacb55c",
+      "contentHash": "701e25b0eea5628931a3c4c277dfea7f3567a0c36c36ae899923e945bacf8b89",
       "functions": [
         {
           "name": "run_source",
@@ -924,7 +1437,7 @@
           ],
           "returnType": "int",
           "exported": true,
-          "lineCount": 37
+          "lineCount": 59
         },
         {
           "name": "run_all_sources",
@@ -974,9 +1487,17 @@
           ]
         },
         {
-          "source": "app.notify.telegram",
+          "source": "app.notify.discord",
           "specifiers": [
             "send_ops_alert"
+          ]
+        },
+        {
+          "source": "app.pipeline.embedding",
+          "specifiers": [
+            "EmbeddingDimError",
+            "alert_dim_error",
+            "embed_pending"
           ]
         },
         {
@@ -996,12 +1517,12 @@
         "run_source",
         "run_all_sources"
       ],
-      "totalLines": 70,
+      "totalLines": 93,
       "hasStructuralAnalysis": true
     },
     "app/jobs/notify.py": {
       "filePath": "app/jobs/notify.py",
-      "contentHash": "837091ffb20f186d6ec424807087f274d1a6ebfe32ceea38d88409dbc54956d9",
+      "contentHash": "743909acc83b2b5da5606458ef7b5baf9b6885d7e78081acf93ac94751117456",
       "functions": [
         {
           "name": "_claim_one",
@@ -1020,10 +1541,286 @@
           ],
           "returnType": "int",
           "exported": true,
-          "lineCount": 65
+          "lineCount": 77
+        },
+        {
+          "name": "_explore_sent_today",
+          "params": [
+            "session",
+            "cfg",
+            "now"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "_explore_candidate",
+          "params": [
+            "session",
+            "rules",
+            "now"
+          ],
+          "returnType": "Row[tuple[Item, Source]] | None",
+          "exported": true,
+          "lineCount": 35
+        },
+        {
+          "name": "_explore",
+          "params": [
+            "session",
+            "rules",
+            "notifier",
+            "now"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 68
         }
       ],
       "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime",
+            "timedelta"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "func",
+            "select"
+          ]
+        },
+        {
+          "source": "sqlalchemy.engine",
+          "specifiers": [
+            "Row"
+          ]
+        },
+        {
+          "source": "sqlalchemy.ext.asyncio",
+          "specifiers": [
+            "AsyncSession"
+          ]
+        },
+        {
+          "source": "sqlalchemy.orm",
+          "specifiers": [
+            "aliased"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "NotifyConfig",
+            "Rules",
+            "get_rules"
+          ]
+        },
+        {
+          "source": "app.db.budget",
+          "specifiers": [
+            "reserve_call",
+            "today_start"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Decision",
+            "Item",
+            "Notification",
+            "Source",
+            "Summary"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "session_scope"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "get_logger"
+          ]
+        },
+        {
+          "source": "app.notify.base",
+          "specifiers": [
+            "Notifier",
+            "RateLimited"
+          ]
+        },
+        {
+          "source": "app.notify.discord",
+          "specifiers": [
+            "DiscordNotifier"
+          ]
+        },
+        {
+          "source": "app.notify.policy",
+          "specifiers": [
+            "decide",
+            "in_quiet_hours"
+          ]
+        },
+        {
+          "source": "app.pipeline",
+          "specifiers": [
+            "llm"
+          ]
+        },
+        {
+          "source": "app.pipeline.feedback",
+          "specifiers": [
+            "format_examples",
+            "nearest_feedback"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "ItemStatus",
+            "Level",
+            "Stage"
+          ]
+        }
+      ],
+      "exports": [
+        "_claim_one",
+        "run_notify",
+        "_explore_sent_today",
+        "_explore_candidate",
+        "_explore"
+      ],
+      "totalLines": 255,
+      "hasStructuralAnalysis": true
+    },
+    "app/jobs/pipeline.py": {
+      "filePath": "app/jobs/pipeline.py",
+      "contentHash": "13b5ad2c76f8286b337f4dc5b74a0a30b8ead244faa10697f1e9668e447f7967",
+      "functions": [
+        {
+          "name": "_record",
+          "params": [
+            "item",
+            "stage",
+            "passed",
+            "details"
+          ],
+          "returnType": "Decision",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "_claim_batch",
+          "params": [
+            "session"
+          ],
+          "returnType": "list[tuple[Item, Source]]",
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "_reembedding_in_progress",
+          "params": [
+            "session"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "_gate",
+          "params": [
+            "session",
+            "rules",
+            "item",
+            "source"
+          ],
+          "returnType": "Verdict | None",
+          "exported": true,
+          "lineCount": 44
+        },
+        {
+          "name": "_existing_relevance",
+          "params": [
+            "session",
+            "item_ids"
+          ],
+          "returnType": "dict[int, TriageItem]",
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "_triage_error_count",
+          "params": [
+            "session",
+            "item_id"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "_triage_once",
+          "params": [
+            "rules",
+            "entries",
+            "expected"
+          ],
+          "returnType": "tuple[dict[int, TriageItem], list[int], str]",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "_triage",
+          "params": [
+            "session",
+            "rules",
+            "survivors"
+          ],
+          "returnType": "dict[int, TriageItem]",
+          "exported": true,
+          "lineCount": 66
+        },
+        {
+          "name": "_judge",
+          "params": [
+            "session",
+            "rules",
+            "item",
+            "source",
+            "verdict",
+            "tri"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 72
+        },
+        {
+          "name": "run_pipeline",
+          "params": [],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 51
+        }
+      ],
+      "classes": [
+        {
+          "name": "_CapReached",
+          "methods": [],
+          "properties": [],
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
       "imports": [
         {
           "source": "datetime",
@@ -1047,144 +1844,15 @@
         {
           "source": "app.config",
           "specifiers": [
-            "get_rules"
-          ]
-        },
-        {
-          "source": "app.db.models",
-          "specifiers": [
-            "Item",
-            "Notification",
-            "Source",
-            "Summary"
-          ]
-        },
-        {
-          "source": "app.db.session",
-          "specifiers": [
-            "session_scope"
-          ]
-        },
-        {
-          "source": "app.log",
-          "specifiers": [
-            "get_logger"
-          ]
-        },
-        {
-          "source": "app.notify.base",
-          "specifiers": [
-            "Notifier"
-          ]
-        },
-        {
-          "source": "app.notify.policy",
-          "specifiers": [
-            "decide"
-          ]
-        },
-        {
-          "source": "app.notify.telegram",
-          "specifiers": [
-            "TelegramNotifier"
-          ]
-        },
-        {
-          "source": "app.schemas",
-          "specifiers": [
-            "ItemStatus",
-            "Level"
-          ]
-        }
-      ],
-      "exports": [
-        "_claim_one",
-        "run_notify"
-      ],
-      "totalLines": 113,
-      "hasStructuralAnalysis": true
-    },
-    "app/jobs/pipeline.py": {
-      "filePath": "app/jobs/pipeline.py",
-      "contentHash": "ef179f78080a6e4272956a7d195893564ed219d895dda2a1b800cfb5fb867385",
-      "functions": [
-        {
-          "name": "_record",
-          "params": [
-            "item",
-            "stage",
-            "passed",
-            "details"
-          ],
-          "returnType": "Decision",
-          "exported": true,
-          "lineCount": 4
-        },
-        {
-          "name": "_llm_calls_today",
-          "params": [
-            "session"
-          ],
-          "returnType": "int",
-          "exported": true,
-          "lineCount": 4
-        },
-        {
-          "name": "_claim_batch",
-          "params": [
-            "session"
-          ],
-          "returnType": "list[tuple[Item, Source]]",
-          "exported": true,
-          "lineCount": 11
-        },
-        {
-          "name": "_process",
-          "params": [
-            "session",
-            "item",
-            "source"
-          ],
-          "returnType": "bool",
-          "exported": true,
-          "lineCount": 89
-        },
-        {
-          "name": "run_pipeline",
-          "params": [],
-          "returnType": "int",
-          "exported": true,
-          "lineCount": 33
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "source": "datetime",
-          "specifiers": [
-            "UTC",
-            "datetime",
-            "timedelta"
-          ]
-        },
-        {
-          "source": "sqlalchemy",
-          "specifiers": [
-            "func",
-            "select"
-          ]
-        },
-        {
-          "source": "sqlalchemy.ext.asyncio",
-          "specifiers": [
-            "AsyncSession"
-          ]
-        },
-        {
-          "source": "app.config",
-          "specifiers": [
+            "Rules",
             "get_rules",
             "get_settings"
+          ]
+        },
+        {
+          "source": "app.db.budget",
+          "specifiers": [
+            "reserve_call"
           ]
         },
         {
@@ -1209,6 +1877,12 @@
           ]
         },
         {
+          "source": "app.notify.discord",
+          "specifiers": [
+            "send_ops_alert"
+          ]
+        },
+        {
           "source": "app.pipeline",
           "specifiers": [
             "llm"
@@ -1217,8 +1891,24 @@
         {
           "source": "app.pipeline.dedupe",
           "specifiers": [
-            "find_cluster",
-            "mention_count"
+            "Verdict",
+            "classify",
+            "find_candidates"
+          ]
+        },
+        {
+          "source": "app.pipeline.embedding",
+          "specifiers": [
+            "EmbeddingDimError",
+            "alert_dim_error",
+            "embed_pending"
+          ]
+        },
+        {
+          "source": "app.pipeline.feedback",
+          "specifiers": [
+            "format_examples",
+            "nearest_feedback"
           ]
         },
         {
@@ -1230,7 +1920,18 @@
         {
           "source": "app.pipeline.scoring",
           "specifiers": [
+            "is_stale",
             "score_item"
+          ]
+        },
+        {
+          "source": "app.pipeline.triage",
+          "specifiers": [
+            "TriageBatchError",
+            "TriageEntry",
+            "TriageItem",
+            "call_triage",
+            "parse_triage"
           ]
         },
         {
@@ -1243,17 +1944,23 @@
       ],
       "exports": [
         "_record",
-        "_llm_calls_today",
         "_claim_batch",
-        "_process",
+        "_reembedding_in_progress",
+        "_gate",
+        "_existing_relevance",
+        "_triage_error_count",
+        "_CapReached",
+        "_triage_once",
+        "_triage",
+        "_judge",
         "run_pipeline"
       ],
-      "totalLines": 173,
+      "totalLines": 367,
       "hasStructuralAnalysis": true
     },
     "app/jobs/scheduler.py": {
       "filePath": "app/jobs/scheduler.py",
-      "contentHash": "e7c8731418fbf986926a912d0f276a3b81e6fcec31433c6c47b7c9a7aef592f9",
+      "contentHash": "f30d48036d5da47170b24303ebb722387363c43f9ff8b7667670e973cda044bf",
       "functions": [
         {
           "name": "sync_sources",
@@ -1336,7 +2043,7 @@
     },
     "app/log.py": {
       "filePath": "app/log.py",
-      "contentHash": "0d9d7d834d3c3e0fb455d014503e461bf75ce9ea8f6c632ae30f9a776844f308",
+      "contentHash": "f49e43b1271992b4fba5499b0ef17c889d92945c5527783ad574727feeb109dc",
       "functions": [
         {
           "name": "configure_logging",
@@ -1385,7 +2092,7 @@
     },
     "app/main.py": {
       "filePath": "app/main.py",
-      "contentHash": "e876f8cbb9c2575237c410d7aedc1d81a9a550ea1ce665314cfe0b1dcd7ade9b",
+      "contentHash": "fb46dafd4e4e197860b5a27be9c3d5d34bdd75607bcb2c5a189d7bfea0e7f767",
       "functions": [
         {
           "name": "lifespan",
@@ -1420,6 +2127,7 @@
         {
           "source": "app.api",
           "specifiers": [
+            "discord",
             "github",
             "health",
             "telegram"
@@ -1454,7 +2162,7 @@
       "exports": [
         "lifespan"
       ],
-      "totalLines": 35,
+      "totalLines": 36,
       "hasStructuralAnalysis": true
     },
     "app/notify/__init__.py": {
@@ -1469,9 +2177,46 @@
     },
     "app/notify/base.py": {
       "filePath": "app/notify/base.py",
-      "contentHash": "e4be5c1cf0b9354792c281573cf63e17b577cfb258112b5c78c277eee20458d0",
-      "functions": [],
+      "contentHash": "1bfc0a665216daf01d8bef6cbdaf2470792cb378184c6d0c0fbfa91dc4d5ece4",
+      "functions": [
+        {
+          "name": "feedback_callback_data",
+          "params": [
+            "verdict",
+            "item_id"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "parse_feedback_callback",
+          "params": [
+            "data"
+          ],
+          "returnType": "tuple[str, int] | None",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "relative_time",
+          "params": [
+            "published_at",
+            "now"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
       "classes": [
+        {
+          "name": "RateLimited",
+          "methods": [],
+          "properties": [],
+          "exported": true,
+          "lineCount": 6
+        },
         {
           "name": "Notifier",
           "methods": [
@@ -1485,6 +2230,13 @@
         }
       ],
       "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
         {
           "source": "typing",
           "specifiers": [
@@ -1507,9 +2259,199 @@
         }
       ],
       "exports": [
-        "Notifier"
+        "RateLimited",
+        "Notifier",
+        "feedback_callback_data",
+        "parse_feedback_callback",
+        "relative_time"
       ],
-      "totalLines": 18,
+      "totalLines": 53,
+      "hasStructuralAnalysis": true
+    },
+    "app/notify/discord.py": {
+      "filePath": "app/notify/discord.py",
+      "contentHash": "727469fd9b545cd7ae5e131a9941762f2014504f8d4d8e9e692fd10ec650f2a4",
+      "functions": [
+        {
+          "name": "escape_md",
+          "params": [
+            "text"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "_link_button",
+          "params": [
+            "url"
+          ],
+          "returnType": "dict[str, Any] | None",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "render",
+          "params": [
+            "item",
+            "summary",
+            "source_name",
+            "now"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "components",
+          "params": [
+            "item_id",
+            "url"
+          ],
+          "returnType": "list[dict[str, Any]]",
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "build_payload",
+          "params": [
+            "item",
+            "summary",
+            "level",
+            "source_name"
+          ],
+          "returnType": "dict[str, Any]",
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "_retry_after_seconds",
+          "params": [
+            "response"
+          ],
+          "returnType": "float",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "_extend_gate",
+          "params": [
+            "wait"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "_call",
+          "params": [
+            "method",
+            "path",
+            "payload"
+          ],
+          "returnType": "dict[str, Any]",
+          "exported": true,
+          "lineCount": 53
+        },
+        {
+          "name": "send_ops_alert",
+          "params": [
+            "text"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [
+        {
+          "name": "DiscordNotifier",
+          "methods": [
+            "send"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "imports": [
+        {
+          "source": "asyncio",
+          "specifiers": [
+            "asyncio"
+          ]
+        },
+        {
+          "source": "re",
+          "specifiers": [
+            "re"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "datetime",
+          "specifiers": [
+            "datetime"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Any"
+          ]
+        },
+        {
+          "source": "httpx",
+          "specifiers": [
+            "httpx"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Item",
+            "Summary"
+          ]
+        },
+        {
+          "source": "app.notify.base",
+          "specifiers": [
+            "RateLimited",
+            "feedback_callback_data",
+            "relative_time"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "Level"
+          ]
+        }
+      ],
+      "exports": [
+        "escape_md",
+        "_link_button",
+        "render",
+        "components",
+        "build_payload",
+        "_retry_after_seconds",
+        "_extend_gate",
+        "_call",
+        "DiscordNotifier",
+        "send_ops_alert"
+      ],
+      "totalLines": 195,
       "hasStructuralAnalysis": true
     },
     "app/notify/policy.py": {
@@ -1634,37 +2576,8 @@
     },
     "app/notify/telegram.py": {
       "filePath": "app/notify/telegram.py",
-      "contentHash": "40decbbd4b6e8a86f0ca61a556ff9f33ce7e582eddb248f0537cab545fd966d1",
+      "contentHash": "649ccde09c5274525c1ae4fbed534ce4724750dfbf79ec228b0a16cddc910384",
       "functions": [
-        {
-          "name": "feedback_callback_data",
-          "params": [
-            "verdict",
-            "item_id"
-          ],
-          "returnType": "str",
-          "exported": true,
-          "lineCount": 2
-        },
-        {
-          "name": "parse_feedback_callback",
-          "params": [
-            "data"
-          ],
-          "returnType": "tuple[str, int] | None",
-          "exported": true,
-          "lineCount": 8
-        },
-        {
-          "name": "relative_time",
-          "params": [
-            "published_at",
-            "now"
-          ],
-          "returnType": "str",
-          "exported": true,
-          "lineCount": 7
-        },
         {
           "name": "render",
           "params": [
@@ -1696,15 +2609,6 @@
           "returnType": "None",
           "exported": true,
           "lineCount": 3
-        },
-        {
-          "name": "send_ops_alert",
-          "params": [
-            "text"
-          ],
-          "returnType": "None",
-          "exported": true,
-          "lineCount": 3
         }
       ],
       "classes": [
@@ -1722,7 +2626,6 @@
         {
           "source": "datetime",
           "specifiers": [
-            "UTC",
             "datetime"
           ]
         },
@@ -1760,6 +2663,13 @@
           ]
         },
         {
+          "source": "app.notify.base",
+          "specifiers": [
+            "feedback_callback_data",
+            "relative_time"
+          ]
+        },
+        {
           "source": "app.schemas",
           "specifiers": [
             "Level"
@@ -1767,16 +2677,12 @@
         }
       ],
       "exports": [
-        "feedback_callback_data",
-        "parse_feedback_callback",
-        "relative_time",
         "render",
         "_call",
         "TelegramNotifier",
-        "answer_callback",
-        "send_ops_alert"
+        "answer_callback"
       ],
-      "totalLines": 114,
+      "totalLines": 85,
       "hasStructuralAnalysis": true
     },
     "app/pipeline/__init__.py": {
@@ -1791,32 +2697,100 @@
     },
     "app/pipeline/dedupe.py": {
       "filePath": "app/pipeline/dedupe.py",
-      "contentHash": "70a6179e7bfad28bbf2453aca9e351f2741184831d43cc8ca724e0acdc630179",
+      "contentHash": "4907959ddf0918d2dcdb0039755d2f0fe71edbfa1ce23f0fa7c81d003d3ba674",
       "functions": [
         {
-          "name": "find_cluster",
+          "name": "version_tokens",
           "params": [
-            "session",
-            "title",
-            "exclude_item_id"
+            "title"
           ],
-          "returnType": "int | None",
+          "returnType": "frozenset[str]",
           "exported": true,
-          "lineCount": 15
+          "lineCount": 2
         },
         {
-          "name": "mention_count",
+          "name": "_inherit",
           "params": [
-            "session",
-            "item_id"
+            "c"
           ],
           "returnType": "int",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "classify",
+          "params": [
+            "item_id",
+            "own_source_id",
+            "own_title",
+            "dup",
+            "related",
+            "cfg"
+          ],
+          "returnType": "Verdict",
+          "exported": true,
+          "lineCount": 27
+        },
+        {
+          "name": "_candidate",
+          "params": [
+            "row"
+          ],
+          "returnType": "Candidate",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "find_candidates",
+          "params": [
+            "session",
+            "item_id",
+            "cfg"
+          ],
+          "returnType": "tuple[Candidate | None, list[Candidate]]",
+          "exported": true,
+          "lineCount": 16
+        }
+      ],
+      "classes": [
+        {
+          "name": "Candidate",
+          "methods": [],
+          "properties": [
+            "id",
+            "source_id",
+            "cluster_id",
+            "title",
+            "sim"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "Verdict",
+          "methods": [],
+          "properties": [
+            "kind",
+            "cluster_id",
+            "mention_count"
+          ],
           "exported": true,
           "lineCount": 4
         }
       ],
-      "classes": [],
       "imports": [
+        {
+          "source": "re",
+          "specifiers": [
+            "re"
+          ]
+        },
+        {
+          "source": "dataclasses",
+          "specifiers": [
+            "dataclass"
+          ]
+        },
         {
           "source": "datetime",
           "specifiers": [
@@ -1826,10 +2800,17 @@
           ]
         },
         {
+          "source": "typing",
+          "specifiers": [
+            "Any",
+            "Literal"
+          ]
+        },
+        {
           "source": "sqlalchemy",
           "specifiers": [
-            "func",
-            "select"
+            "bindparam",
+            "text"
           ]
         },
         {
@@ -1839,23 +2820,275 @@
           ]
         },
         {
-          "source": "app.db.models",
+          "source": "app.config",
           "specifiers": [
-            "Item"
+            "DedupeConfig"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "ItemStatus"
           ]
         }
       ],
       "exports": [
-        "find_cluster",
-        "mention_count"
+        "Candidate",
+        "Verdict",
+        "version_tokens",
+        "_inherit",
+        "classify",
+        "_candidate",
+        "find_candidates"
       ],
-      "totalLines": 37,
+      "totalLines": 126,
+      "hasStructuralAnalysis": true
+    },
+    "app/pipeline/embedding.py": {
+      "filePath": "app/pipeline/embedding.py",
+      "contentHash": "a2c285a21199693997b4900ef0847a1f7deab022f4a3c1a4405efd73194ee838",
+      "functions": [
+        {
+          "name": "embedding_text",
+          "params": [
+            "title",
+            "summary_raw"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "needs_embedding",
+          "params": [],
+          "returnType": "ColumnElement[bool]",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "_request",
+          "params": [
+            "texts"
+          ],
+          "returnType": "tuple[str, dict[str, str], dict[str, Any]]",
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "_retry_wait",
+          "params": [
+            "response",
+            "attempt"
+          ],
+          "returnType": "float",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "_parse_vectors",
+          "params": [
+            "data",
+            "expected"
+          ],
+          "returnType": "list[list[float]]",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "embed",
+          "params": [
+            "texts"
+          ],
+          "returnType": "list[list[float]] | None",
+          "exported": true,
+          "lineCount": 27
+        },
+        {
+          "name": "alert_dim_error",
+          "params": [
+            "exc"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "embed_pending",
+          "params": [
+            "session",
+            "item_ids"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 30
+        }
+      ],
+      "classes": [
+        {
+          "name": "EmbeddingDimError",
+          "methods": [],
+          "properties": [],
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
+      "imports": [
+        {
+          "source": "asyncio",
+          "specifiers": [
+            "asyncio"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Any"
+          ]
+        },
+        {
+          "source": "httpx",
+          "specifiers": [
+            "httpx"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "or_",
+            "select",
+            "update"
+          ]
+        },
+        {
+          "source": "sqlalchemy.ext.asyncio",
+          "specifiers": [
+            "AsyncSession"
+          ]
+        },
+        {
+          "source": "sqlalchemy.sql.elements",
+          "specifiers": [
+            "ColumnElement"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Item"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "get_logger"
+          ]
+        },
+        {
+          "source": "app.notify.discord",
+          "specifiers": [
+            "send_ops_alert"
+          ]
+        }
+      ],
+      "exports": [
+        "EmbeddingDimError",
+        "embedding_text",
+        "needs_embedding",
+        "_request",
+        "_retry_wait",
+        "_parse_vectors",
+        "embed",
+        "alert_dim_error",
+        "embed_pending"
+      ],
+      "totalLines": 165,
+      "hasStructuralAnalysis": true
+    },
+    "app/pipeline/feedback.py": {
+      "filePath": "app/pipeline/feedback.py",
+      "contentHash": "86fbb2687ade3a37aceafe33df91bbf7a57c105377cdfe5dd52d15dc749dde13",
+      "functions": [
+        {
+          "name": "format_examples",
+          "params": [
+            "examples"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "nearest_feedback",
+          "params": [
+            "session",
+            "item_id",
+            "k",
+            "min_sim"
+          ],
+          "returnType": "list[FeedbackExample]",
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [
+        {
+          "name": "FeedbackExample",
+          "methods": [],
+          "properties": [
+            "verdict",
+            "title_ko"
+          ],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "dataclasses",
+          "specifiers": [
+            "dataclass"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "text"
+          ]
+        },
+        {
+          "source": "sqlalchemy.ext.asyncio",
+          "specifiers": [
+            "AsyncSession"
+          ]
+        }
+      ],
+      "exports": [
+        "FeedbackExample",
+        "format_examples",
+        "nearest_feedback"
+      ],
+      "totalLines": 43,
       "hasStructuralAnalysis": true
     },
     "app/pipeline/ingest.py": {
       "filePath": "app/pipeline/ingest.py",
-      "contentHash": "69bd7e06dc3a6486827106cec435242b898428862a3c7b1dac8479a7f0c1ae78",
+      "contentHash": "215f460421194473de2ebe2c9e80e2a1e752a804e6d3ee12a9e988fc1cc5996b",
       "functions": [
+        {
+          "name": "is_web_url",
+          "params": [
+            "url"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 7
+        },
         {
           "name": "to_row",
           "params": [
@@ -1875,7 +3108,7 @@
           ],
           "returnType": "list[int]",
           "exported": true,
-          "lineCount": 19
+          "lineCount": 22
         }
       ],
       "classes": [],
@@ -1899,6 +3132,12 @@
           ]
         },
         {
+          "source": "app.log",
+          "specifiers": [
+            "get_logger"
+          ]
+        },
+        {
           "source": "app.pipeline.normalize",
           "specifiers": [
             "normalize_url",
@@ -1915,15 +3154,16 @@
         }
       ],
       "exports": [
+        "is_web_url",
         "to_row",
         "store_items"
       ],
-      "totalLines": 52,
+      "totalLines": 66,
       "hasStructuralAnalysis": true
     },
     "app/pipeline/llm.py": {
       "filePath": "app/pipeline/llm.py",
-      "contentHash": "fdb78bcf114432bbe3b93670a79034c100686713f734bc164cb8a0526351befd",
+      "contentHash": "4e17a44bb5034eb6532edcfd38c928c46c9512cb17e51cc39c83669ddaf193c2",
       "functions": [
         {
           "name": "enrich_body",
@@ -1935,11 +3175,29 @@
           "lineCount": 10
         },
         {
-          "name": "_client",
+          "name": "body_for_judge",
+          "params": [
+            "item"
+          ],
+          "returnType": "tuple[str | None, bool]",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "client",
           "params": [],
           "returnType": "AsyncAnthropic",
           "exported": true,
-          "lineCount": 2
+          "lineCount": 4
+        },
+        {
+          "name": "render_policy",
+          "params": [
+            "policy"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 8
         },
         {
           "name": "judge",
@@ -1947,11 +3205,12 @@
             "rules",
             "source",
             "title",
-            "body"
+            "body",
+            "examples"
           ],
           "returnType": "LLMResult",
           "exported": true,
-          "lineCount": 25
+          "lineCount": 30
         }
       ],
       "classes": [
@@ -1996,8 +3255,15 @@
         {
           "source": "app.config",
           "specifiers": [
+            "PolicyConfig",
             "Rules",
             "get_settings"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Item"
           ]
         },
         {
@@ -2016,15 +3282,17 @@
       "exports": [
         "LLMResult",
         "enrich_body",
-        "_client",
+        "body_for_judge",
+        "client",
+        "render_policy",
         "judge"
       ],
-      "totalLines": 95,
+      "totalLines": 127,
       "hasStructuralAnalysis": true
     },
     "app/pipeline/normalize.py": {
       "filePath": "app/pipeline/normalize.py",
-      "contentHash": "91e5df83820e6cd6669cf19f931506ec460d8bf320e0be538324e0f561875a3e",
+      "contentHash": "4511dbfd95ca65108463c22b3c071b194eb93987f317c341e9f219ec691c13f6",
       "functions": [
         {
           "name": "normalize_url",
@@ -2094,7 +3362,7 @@
     },
     "app/pipeline/rules.py": {
       "filePath": "app/pipeline/rules.py",
-      "contentHash": "bbe29f5658e2c097e869b97eba44ee555c0505efb9a64b168f922ef1fc10e376",
+      "contentHash": "68b8a53522d335e337657f8957c6596bad4bbfe8ba8fbf5eee504768d2ac1406",
       "functions": [
         {
           "name": "_keyword_pattern",
@@ -2116,16 +3384,6 @@
           "lineCount": 2
         },
         {
-          "name": "_matches_any",
-          "params": [
-            "value",
-            "patterns"
-          ],
-          "returnType": "bool",
-          "exported": true,
-          "lineCount": 2
-        },
-        {
           "name": "_excluded_domain",
           "params": [
             "url",
@@ -2139,15 +3397,13 @@
           "name": "apply_rules",
           "params": [
             "rules",
-            "source",
             "title",
             "body",
-            "url",
-            "repo"
+            "url"
           ],
           "returnType": "RuleResult",
           "exported": true,
-          "lineCount": 30
+          "lineCount": 9
         }
       ],
       "classes": [
@@ -2200,16 +3456,15 @@
         "RuleResult",
         "_keyword_pattern",
         "find_keywords",
-        "_matches_any",
         "_excluded_domain",
         "apply_rules"
       ],
-      "totalLines": 79,
+      "totalLines": 54,
       "hasStructuralAnalysis": true
     },
     "app/pipeline/scoring.py": {
       "filePath": "app/pipeline/scoring.py",
-      "contentHash": "8592f7836ce494f5cb040f98e2e7b466abc6aef08fa1938d520471cb1ab373b0",
+      "contentHash": "c7ab8a74cd31bf37cf71b8cce12e0b1166a69e323d2f10b0f9ce3a0dd8fd08ce",
       "functions": [
         {
           "name": "freshness",
@@ -2231,11 +3486,22 @@
           "lineCount": 6
         },
         {
+          "name": "is_stale",
+          "params": [
+            "published_at",
+            "max_age_hours",
+            "now"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
           "name": "score_item",
           "params": [
             "cfg",
             "trust",
-            "keyword_hits",
+            "relevance",
             "metrics",
             "mention_count",
             "published_at",
@@ -2243,7 +3509,7 @@
           ],
           "returnType": "ScoreResult",
           "exported": true,
-          "lineCount": 19
+          "lineCount": 20
         }
       ],
       "classes": [
@@ -2276,7 +3542,8 @@
           "source": "datetime",
           "specifiers": [
             "UTC",
-            "datetime"
+            "datetime",
+            "timedelta"
           ]
         },
         {
@@ -2290,14 +3557,201 @@
         "ScoreResult",
         "freshness",
         "hotness",
+        "is_stale",
         "score_item"
       ],
-      "totalLines": 59,
+      "totalLines": 65,
+      "hasStructuralAnalysis": true
+    },
+    "app/pipeline/triage.py": {
+      "filePath": "app/pipeline/triage.py",
+      "contentHash": "a3bdd20450514ca4205882cf10423d880f74d22ee3578240888dbbeb36eb0f47",
+      "functions": [
+        {
+          "name": "build_user_content",
+          "params": [
+            "entries"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "parse_triage",
+          "params": [
+            "batch",
+            "expected"
+          ],
+          "returnType": "tuple[dict[int, TriageItem], list[int]]",
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "call_triage",
+          "params": [
+            "rules",
+            "entries"
+          ],
+          "returnType": "TriageBatch",
+          "exported": true,
+          "lineCount": 23
+        }
+      ],
+      "classes": [
+        {
+          "name": "TriageEntry",
+          "methods": [],
+          "properties": [
+            "idx",
+            "source",
+            "title",
+            "snippet",
+            "examples"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "TriageItem",
+          "methods": [],
+          "properties": [
+            "idx",
+            "relevance",
+            "reason"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "TriageBatch",
+          "methods": [],
+          "properties": [
+            "items"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "TriageBatchError",
+          "methods": [],
+          "properties": [],
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
+      "imports": [
+        {
+          "source": "dataclasses",
+          "specifiers": [
+            "dataclass"
+          ]
+        },
+        {
+          "source": "pydantic",
+          "specifiers": [
+            "BaseModel"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "Rules",
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.pipeline.llm",
+          "specifiers": [
+            "client",
+            "render_policy"
+          ]
+        }
+      ],
+      "exports": [
+        "TriageEntry",
+        "TriageItem",
+        "TriageBatch",
+        "TriageBatchError",
+        "build_user_content",
+        "parse_triage",
+        "call_triage"
+      ],
+      "totalLines": 110,
+      "hasStructuralAnalysis": true
+    },
+    "app/pipeline/trust.py": {
+      "filePath": "app/pipeline/trust.py",
+      "contentHash": "fa9b5c61a8d9c6bb5fef556b451dc58b6bd9f15811565870d21781cac644b67b",
+      "functions": [
+        {
+          "name": "adjust_trust",
+          "params": [
+            "base",
+            "useful",
+            "useless",
+            "prior_weight"
+          ],
+          "returnType": "float",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "precision",
+          "params": [
+            "useful",
+            "useless"
+          ],
+          "returnType": "float | None",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "score_band",
+          "params": [
+            "score",
+            "width"
+          ],
+          "returnType": "float",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "band_table",
+          "params": [
+            "rows"
+          ],
+          "returnType": "list[tuple[float, int, int, int, float | None]]",
+          "exported": true,
+          "lineCount": 13
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "math",
+          "specifiers": [
+            "math"
+          ]
+        },
+        {
+          "source": "collections.abc",
+          "specifiers": [
+            "Iterable"
+          ]
+        }
+      ],
+      "exports": [
+        "adjust_trust",
+        "precision",
+        "score_band",
+        "band_table"
+      ],
+      "totalLines": 39,
       "hasStructuralAnalysis": true
     },
     "app/schemas.py": {
       "filePath": "app/schemas.py",
-      "contentHash": "d6abadc41cd9d31148c6cdc2f4bfbcc7454aeb051b0fb3e3bebecf02fcf17fe1",
+      "contentHash": "769cd115b40f9849d11c8ca24ce2d0491420d5525c07e763a486d5a3819abbcb",
       "functions": [],
       "classes": [
         {
@@ -2319,14 +3773,14 @@
           "methods": [],
           "properties": [],
           "exported": true,
-          "lineCount": 4
+          "lineCount": 5
         },
         {
           "name": "Level",
           "methods": [],
           "properties": [],
           "exported": true,
-          "lineCount": 4
+          "lineCount": 5
         },
         {
           "name": "NormalizedItem",
@@ -2390,12 +3844,12 @@
         "NormalizedItem",
         "LLMVerdict"
       ],
-      "totalLines": 67,
+      "totalLines": 69,
       "hasStructuralAnalysis": true
     },
     "app/sources/__init__.py": {
       "filePath": "app/sources/__init__.py",
-      "contentHash": "5a54852d748fdbfe4337e000d8e90ebfb54a987a1e4b23e5e7cb58c52a1c8bd7",
+      "contentHash": "d328347cba2b9b7021eb397aed0cdd39f011268cc5a77715e93bf486607524d2",
       "functions": [],
       "classes": [],
       "imports": [
@@ -2646,8 +4100,17 @@
     },
     "app/sources/rss.py": {
       "filePath": "app/sources/rss.py",
-      "contentHash": "ecc0e8390b820809f8403aac714bcef3a965cf89e31e99c00277cfff55570756",
+      "contentHash": "4090dde5719d99b51276ea197625e5bebb28381f8d04408aaf9b47eda797cb23",
       "functions": [
+        {
+          "name": "_host",
+          "params": [
+            "url"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 2
+        },
         {
           "name": "entry_published",
           "params": [
@@ -2681,11 +4144,12 @@
           "name": "RssSource",
           "methods": [
             "__init__",
+            "_allowed",
             "fetch"
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 36
+          "lineCount": 44
         }
       ],
       "imports": [
@@ -2700,6 +4164,12 @@
           "source": "typing",
           "specifiers": [
             "Any"
+          ]
+        },
+        {
+          "source": "urllib.parse",
+          "specifiers": [
+            "urlsplit"
           ]
         },
         {
@@ -2737,17 +4207,18 @@
         }
       ],
       "exports": [
+        "_host",
         "entry_published",
         "entry_body",
         "RssSource",
         "_build"
       ],
-      "totalLines": 77,
+      "totalLines": 90,
       "hasStructuralAnalysis": true
     },
     "app/sources/youtube.py": {
       "filePath": "app/sources/youtube.py",
-      "contentHash": "877364d42c50241c35fe5ebfd44f30529931edc623f6033967b64d87862cec0b",
+      "contentHash": "f75c6becd3ae8dc922a214d2aff36f393667dc0b02b828c542058605007d48e9",
       "functions": [
         {
           "name": "_build",
@@ -2789,27 +4260,27 @@
     },
     "config/rules.yaml": {
       "filePath": "config/rules.yaml",
-      "contentHash": "d039353e51ce1d8cf3d44d9e8c5c8649a6630b389a13c7ba6f6f2b82a1fb2793",
+      "contentHash": "1749dea9545216335e5e2f54f62f36fe79a335d9da004a2b693cd8b253ffac1c",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 85,
+      "totalLines": 57,
       "hasStructuralAnalysis": true
     },
     "config/sources.yaml": {
       "filePath": "config/sources.yaml",
-      "contentHash": "5227b57797d1bbb9a9982112507c5a317a040b85b021b0afb410cd88920831b4",
+      "contentHash": "126d2f79a134063ff447959569b89b278cf9a70b71c13977f068e828ba748c11",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 81,
+      "totalLines": 84,
       "hasStructuralAnalysis": true
     },
     "docker-compose.yml": {
       "filePath": "docker-compose.yml",
-      "contentHash": "de5d9fe3d6d9fa6962feaff76039082ba8b0ebc5ad470ba3f6f4309464270a6c",
+      "contentHash": "09a00d44d803f67df3554574ebcf43f45b7fc0f94379c1d83bed1edd11ca5ffa",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -2819,17 +4290,124 @@
     },
     "pyproject.toml": {
       "filePath": "pyproject.toml",
-      "contentHash": "c582c85befec90a8efbb68468057de946edd3760c61eb05f54762a051d59f6e4",
+      "contentHash": "ea407a5867c8742890006a15ea3630f7dd6b960fd9d7d4a8322f61d838b65a28",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 60,
+      "totalLines": 63,
+      "hasStructuralAnalysis": true
+    },
+    "scripts/backfill_embeddings.py": {
+      "filePath": "scripts/backfill_embeddings.py",
+      "contentHash": "a31c6326e24235683166f1456fdd97ee2799186e87fddfa54afd46711526de0e",
+      "functions": [
+        {
+          "name": "main",
+          "params": [],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 45
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "asyncio",
+          "specifiers": [
+            "asyncio"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "func",
+            "select"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Item"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "engine",
+            "session_scope"
+          ]
+        },
+        {
+          "source": "app.log",
+          "specifiers": [
+            "configure_logging"
+          ]
+        },
+        {
+          "source": "app.pipeline.embedding",
+          "specifiers": [
+            "MAX_BATCH",
+            "embed_pending",
+            "needs_embedding"
+          ]
+        }
+      ],
+      "exports": [
+        "main"
+      ],
+      "totalLines": 69,
+      "hasStructuralAnalysis": true
+    },
+    "scripts/calibrate_dedupe.py": {
+      "filePath": "scripts/calibrate_dedupe.py",
+      "contentHash": "b351a457c2c3211cef50cdac4a8d82b4524db6e0bc14ca7b92750a02891341ee",
+      "functions": [
+        {
+          "name": "main",
+          "params": [],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "asyncio",
+          "specifiers": [
+            "asyncio"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "text"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "engine",
+            "session_scope"
+          ]
+        }
+      ],
+      "exports": [
+        "main"
+      ],
+      "totalLines": 46,
       "hasStructuralAnalysis": true
     },
     "scripts/run_job.py": {
       "filePath": "scripts/run_job.py",
-      "contentHash": "55fb55d71c619ec076b3e2fe780b6de513e57f4849a2ee86bea6062cfa036253",
+      "contentHash": "6279b71e445baa514a8330aac0450861bc0c8352f862acd068afe0405ec15b33",
       "functions": [
         {
           "name": "main",
@@ -2898,6 +4476,87 @@
       "totalLines": 37,
       "hasStructuralAnalysis": true
     },
+    "scripts/weekly_report.py": {
+      "filePath": "scripts/weekly_report.py",
+      "contentHash": "aefa34bb43c23981452d62ca0aca16feba46dc27d637d78f7457c159aaf42893",
+      "functions": [
+        {
+          "name": "table",
+          "params": [
+            "title",
+            "rows",
+            "header"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "main",
+          "params": [
+            "days",
+            "apply"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 58
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "argparse",
+          "specifiers": [
+            "argparse"
+          ]
+        },
+        {
+          "source": "asyncio",
+          "specifiers": [
+            "asyncio"
+          ]
+        },
+        {
+          "source": "collections.abc",
+          "specifiers": [
+            "Sequence"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Any"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "text"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "engine",
+            "session_scope"
+          ]
+        },
+        {
+          "source": "app.pipeline.trust",
+          "specifiers": [
+            "adjust_trust",
+            "band_table",
+            "precision"
+          ]
+        }
+      ],
+      "exports": [
+        "table",
+        "main"
+      ],
+      "totalLines": 201,
+      "hasStructuralAnalysis": true
+    },
     "tests/__init__.py": {
       "filePath": "tests/__init__.py",
       "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -2910,7 +4569,7 @@
     },
     "tests/conftest.py": {
       "filePath": "tests/conftest.py",
-      "contentHash": "631ef9ace32ccc1ecc9c30267ad8df973fbdaa7eb126a8408bc2836ff937b22f",
+      "contentHash": "50fbcf8e6c64d11602d3e92b7b0a86dc80e2a1e851a72b0aea0bd12c650d5658",
       "functions": [
         {
           "name": "fixture",
@@ -2940,12 +4599,12 @@
       "exports": [
         "fixture"
       ],
-      "totalLines": 18,
+      "totalLines": 27,
       "hasStructuralAnalysis": true
     },
     "tests/fixtures/github_release.json": {
       "filePath": "tests/fixtures/github_release.json",
-      "contentHash": "302c95794315f029933cd95b9cd852e001fa9d3ee3ae2f143633e22f24446381",
+      "contentHash": "287ff2687bbbfdabcf2bbb79994c94e0baff72c87f39cab79a56e667b3fb994e",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -2955,13 +4614,442 @@
     },
     "tests/fixtures/rss_blog.xml": {
       "filePath": "tests/fixtures/rss_blog.xml",
-      "contentHash": "260789174b31034b0004f6483d75ecbed6adaad3f3d6ef9c5322feede95bbc27",
+      "contentHash": "9c0a43ae8043cf8048e405e809fd488570ae24cb092184f2c86a2a3eec3f4cc6",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
       "totalLines": 23,
       "hasStructuralAnalysis": false
+    },
+    "tests/integration/__init__.py": {
+      "filePath": "tests/integration/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "tests/integration/conftest.py": {
+      "filePath": "tests/integration/conftest.py",
+      "contentHash": "ff3acd2c40b08897b7a6f41487b161fe4d102afc676143d350ea29c85df2b3d6",
+      "functions": [
+        {
+          "name": "_dispose_engine_between_tests",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "pytest",
+          "specifiers": [
+            "pytest"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_settings"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "engine"
+          ]
+        }
+      ],
+      "exports": [
+        "_dispose_engine_between_tests"
+      ],
+      "totalLines": 27,
+      "hasStructuralAnalysis": true
+    },
+    "tests/integration/test_budget_db.py": {
+      "filePath": "tests/integration/test_budget_db.py",
+      "contentHash": "746ffef3d055ad49b7f45e09633aff41847ad53e792ffaf550662be7a9786b1b",
+      "functions": [
+        {
+          "name": "clean_llm_calls",
+          "params": [],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "test_concurrent_reservations_respect_shared_cap",
+          "params": [
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "test_explore_own_cap",
+          "params": [
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "asyncio",
+          "specifiers": [
+            "asyncio"
+          ]
+        },
+        {
+          "source": "pytest",
+          "specifiers": [
+            "pytest"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "delete",
+            "func",
+            "select"
+          ]
+        },
+        {
+          "source": "app.db.budget",
+          "specifiers": [
+            "reserve_call"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "LlmCall"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "SessionLocal"
+          ]
+        }
+      ],
+      "exports": [
+        "clean_llm_calls",
+        "test_concurrent_reservations_respect_shared_cap",
+        "test_explore_own_cap"
+      ],
+      "totalLines": 41,
+      "hasStructuralAnalysis": true
+    },
+    "tests/integration/test_dedupe_db.py": {
+      "filePath": "tests/integration/test_dedupe_db.py",
+      "contentHash": "b7022fa1bf942a7bf69dc31b7822db5cbfc4ee5e6965481326eb7706ea51470d",
+      "functions": [
+        {
+          "name": "vec",
+          "params": [
+            "a",
+            "b"
+          ],
+          "returnType": "list[float]",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_query_a_prefers_survivor_over_more_similar_dropped",
+          "params": [],
+          "exported": true,
+          "lineCount": 45
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "delete",
+            "update"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "DedupeConfig"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Item",
+            "Source"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "SessionLocal"
+          ]
+        },
+        {
+          "source": "app.pipeline.dedupe",
+          "specifiers": [
+            "find_candidates"
+          ]
+        }
+      ],
+      "exports": [
+        "vec",
+        "test_query_a_prefers_survivor_over_more_similar_dropped"
+      ],
+      "totalLines": 63,
+      "hasStructuralAnalysis": true
+    },
+    "tests/integration/test_explore_db.py": {
+      "filePath": "tests/integration/test_explore_db.py",
+      "contentHash": "99c5cedb6d401b64314f665a012282d12310b13bdae25ba098b7f011419a3405",
+      "functions": [
+        {
+          "name": "test_explore_candidate_picks_highest_in_band_without_summary",
+          "params": [],
+          "exported": true,
+          "lineCount": 57
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime",
+            "timedelta"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "delete"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "Rules"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Decision",
+            "Item",
+            "Source",
+            "Summary"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "SessionLocal"
+          ]
+        },
+        {
+          "source": "app.jobs.notify",
+          "specifiers": [
+            "_explore_candidate"
+          ]
+        }
+      ],
+      "exports": [
+        "test_explore_candidate_picks_highest_in_band_without_summary"
+      ],
+      "totalLines": 70,
+      "hasStructuralAnalysis": true
+    },
+    "tests/integration/test_feedback_db.py": {
+      "filePath": "tests/integration/test_feedback_db.py",
+      "contentHash": "a5297c25f9947415d583b8743fdbb2f2296bce7d6cd98b7e2cad5b4310bdba08",
+      "functions": [
+        {
+          "name": "test_nearest_feedback_finds_identical_vector",
+          "params": [],
+          "exported": true,
+          "lineCount": 77
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "delete",
+            "update"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Feedback",
+            "Item",
+            "Source",
+            "Summary"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "SessionLocal"
+          ]
+        },
+        {
+          "source": "app.pipeline.feedback",
+          "specifiers": [
+            "nearest_feedback"
+          ]
+        }
+      ],
+      "exports": [
+        "test_nearest_feedback_finds_identical_vector"
+      ],
+      "totalLines": 91,
+      "hasStructuralAnalysis": true
+    },
+    "tests/integration/test_pipeline_db.py": {
+      "filePath": "tests/integration/test_pipeline_db.py",
+      "contentHash": "e6b68c7a71ea2d34c66f43e0176af32ceac4ab359094c76f768da652a4e50dfd",
+      "functions": [
+        {
+          "name": "items",
+          "params": [],
+          "exported": true,
+          "lineCount": 28
+        },
+        {
+          "name": "_load",
+          "params": [
+            "ids"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "test_item_failure_twice_drops_only_that_item",
+          "params": [
+            "items",
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 41
+        },
+        {
+          "name": "test_infra_failure_leaves_no_decision_rows",
+          "params": [
+            "items",
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "test_existing_relevance_is_reused_without_a_call",
+          "params": [
+            "items",
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 29
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
+        {
+          "source": "pytest",
+          "specifiers": [
+            "pytest"
+          ]
+        },
+        {
+          "source": "sqlalchemy",
+          "specifiers": [
+            "delete",
+            "select"
+          ]
+        },
+        {
+          "source": "app.config",
+          "specifiers": [
+            "get_rules"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Decision",
+            "Item",
+            "LlmCall",
+            "Source"
+          ]
+        },
+        {
+          "source": "app.db.session",
+          "specifiers": [
+            "SessionLocal"
+          ]
+        },
+        {
+          "source": "app.jobs",
+          "specifiers": [
+            "pipeline"
+          ]
+        },
+        {
+          "source": "app.pipeline.triage",
+          "specifiers": [
+            "TriageBatch",
+            "TriageItem"
+          ]
+        }
+      ],
+      "exports": [
+        "items",
+        "_load",
+        "test_item_failure_twice_drops_only_that_item",
+        "test_infra_failure_leaves_no_decision_rows",
+        "test_existing_relevance_is_reused_without_a_call"
+      ],
+      "totalLines": 153,
+      "hasStructuralAnalysis": true
     },
     "tests/sources/__init__.py": {
       "filePath": "tests/sources/__init__.py",
@@ -3074,7 +5162,7 @@
     },
     "tests/sources/test_retry.py": {
       "filePath": "tests/sources/test_retry.py",
-      "contentHash": "f0f4de1950be13a3b5b3b1fd00f9a4f4e181795c1212a00ec4a78d34c885ecae",
+      "contentHash": "5f1e18292e3b85bfe6c2a5acb1d70d8d21812492bc9ee24c6549ccadd6b211ff",
       "functions": [
         {
           "name": "status_error",
@@ -3137,7 +5225,7 @@
     },
     "tests/sources/test_rss.py": {
       "filePath": "tests/sources/test_rss.py",
-      "contentHash": "afabed0196e6812ff31ee8957bf5f35d94c34d3c5cd17c8ec16aaeafee422efa",
+      "contentHash": "03c144a00f255f93de88321448c844199584b185723190965fe5305038ba724c",
       "functions": [
         {
           "name": "make_source",
@@ -3171,6 +5259,18 @@
           "params": [],
           "exported": true,
           "lineCount": 2
+        },
+        {
+          "name": "test_allowed_hosts_drops_foreign_links",
+          "params": [],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "test_allowed_hosts_ignores_www_prefix",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
         }
       ],
       "classes": [],
@@ -3230,14 +5330,638 @@
         "test_parses_entries",
         "test_since_filters_older_entries",
         "test_category_hint_from_config",
-        "test_youtube_feed_url_shape"
+        "test_youtube_feed_url_shape",
+        "test_allowed_hosts_drops_foreign_links",
+        "test_allowed_hosts_ignores_www_prefix"
       ],
-      "totalLines": 53,
+      "totalLines": 69,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_budget.py": {
+      "filePath": "tests/test_budget.py",
+      "contentHash": "18ef5c0359c4b50a20ee43093b789b7bd0b5d59e5976786eaf20f907d780262d",
+      "functions": [
+        {
+          "name": "test_today_start_is_seoul_midnight_in_utc",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "test_before_seoul_midnight_belongs_to_previous_day",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_explore_shares_judge_budget",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
+        {
+          "source": "app.db.budget",
+          "specifiers": [
+            "BUDGETS",
+            "budget_for",
+            "today_start"
+          ]
+        }
+      ],
+      "exports": [
+        "test_today_start_is_seoul_midnight_in_utc",
+        "test_before_seoul_midnight_belongs_to_previous_day",
+        "test_explore_shares_judge_budget"
+      ],
+      "totalLines": 23,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_dedupe.py": {
+      "filePath": "tests/test_dedupe.py",
+      "contentHash": "cf161c24068a9d9b84b8602d02e719d493420f1118a457c29cb123a1e09c6c16",
+      "functions": [
+        {
+          "name": "cand",
+          "params": [
+            "id",
+            "sim",
+            "source_id",
+            "cluster_id",
+            "title"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "run",
+          "params": [
+            "dup",
+            "related",
+            "title",
+            "source_id"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "test_version_tokens",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "test_dup_inherits_cluster_of_survivor",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_dup_with_null_cluster_uses_candidate_id",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_below_dup_threshold_is_not_dup",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "test_different_version_demotes_dup_to_related",
+          "params": [],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "test_missing_version_on_one_side_keeps_dup",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_independent_gets_own_id",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_mention_count_excludes_own_source_but_clusters_still_inherit",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_mention_count_distinct_other_sources",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "app.config",
+          "specifiers": [
+            "DedupeConfig"
+          ]
+        },
+        {
+          "source": "app.pipeline.dedupe",
+          "specifiers": [
+            "Candidate",
+            "classify",
+            "version_tokens"
+          ]
+        }
+      ],
+      "exports": [
+        "cand",
+        "run",
+        "test_version_tokens",
+        "test_dup_inherits_cluster_of_survivor",
+        "test_dup_with_null_cluster_uses_candidate_id",
+        "test_below_dup_threshold_is_not_dup",
+        "test_different_version_demotes_dup_to_related",
+        "test_missing_version_on_one_side_keeps_dup",
+        "test_independent_gets_own_id",
+        "test_mention_count_excludes_own_source_but_clusters_still_inherit",
+        "test_mention_count_distinct_other_sources"
+      ],
+      "totalLines": 75,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_discord.py": {
+      "filePath": "tests/test_discord.py",
+      "contentHash": "7878ad3192f3135796f1ae737bc19ba84fee536604aee1caec23036ace62324f",
+      "functions": [
+        {
+          "name": "make_pair",
+          "params": [],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "test_escape_md_neutralizes_formatting",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_render_escapes_and_includes_source",
+          "params": [],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "test_push_payload_has_buttons_and_no_mentions",
+          "params": [],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "test_silent_payload_sets_suppress_flag",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "test_signature_roundtrip_and_tamper",
+          "params": [],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "test_api_error_keeps_status_and_body_but_not_token",
+          "params": [],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "test_escape_md_covers_link_masking_and_line_markers",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_link_button_omitted_for_bad_scheme_or_long_url",
+          "params": [],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "no_sleep",
+          "params": [
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "test_permanent_4xx_is_not_retried",
+          "params": [
+            "no_sleep"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "test_5xx_is_retried_three_times",
+          "params": [
+            "no_sleep"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "test_429_waits_retry_after_then_succeeds",
+          "params": [],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "test_requests_carry_discord_user_agent",
+          "params": [],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "reset_discord_gate",
+          "params": [
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_long_429_raises_rate_limited_and_blocks_following_calls",
+          "params": [
+            "no_sleep"
+          ],
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "test_expired_gate_lets_requests_through",
+          "params": [
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "test_extend_gate_never_shortens",
+          "params": [
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "test_repeated_short_429_exhausts_as_rate_limited",
+          "params": [],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "test_explore_payload_has_prefix_and_is_silent",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime",
+            "timedelta"
+          ]
+        },
+        {
+          "source": "httpx",
+          "specifiers": [
+            "httpx"
+          ]
+        },
+        {
+          "source": "pytest",
+          "specifiers": [
+            "pytest"
+          ]
+        },
+        {
+          "source": "respx",
+          "specifiers": [
+            "respx"
+          ]
+        },
+        {
+          "source": "nacl.signing",
+          "specifiers": [
+            "SigningKey"
+          ]
+        },
+        {
+          "source": "app.api.discord",
+          "specifiers": [
+            "verify_signature"
+          ]
+        },
+        {
+          "source": "app.db.models",
+          "specifiers": [
+            "Item",
+            "Summary"
+          ]
+        },
+        {
+          "source": "app.notify.discord",
+          "specifiers": [
+            "FLAG_SUPPRESS_NOTIFICATIONS",
+            "_call",
+            "build_payload",
+            "escape_md",
+            "render"
+          ]
+        },
+        {
+          "source": "app.schemas",
+          "specifiers": [
+            "Level"
+          ]
+        }
+      ],
+      "exports": [
+        "make_pair",
+        "test_escape_md_neutralizes_formatting",
+        "test_render_escapes_and_includes_source",
+        "test_push_payload_has_buttons_and_no_mentions",
+        "test_silent_payload_sets_suppress_flag",
+        "test_signature_roundtrip_and_tamper",
+        "test_api_error_keeps_status_and_body_but_not_token",
+        "test_escape_md_covers_link_masking_and_line_markers",
+        "test_link_button_omitted_for_bad_scheme_or_long_url",
+        "no_sleep",
+        "test_permanent_4xx_is_not_retried",
+        "test_5xx_is_retried_three_times",
+        "test_429_waits_retry_after_then_succeeds",
+        "test_requests_carry_discord_user_agent",
+        "reset_discord_gate",
+        "test_long_429_raises_rate_limited_and_blocks_following_calls",
+        "test_expired_gate_lets_requests_through",
+        "test_extend_gate_never_shortens",
+        "test_repeated_short_429_exhausts_as_rate_limited",
+        "test_explore_payload_has_prefix_and_is_silent"
+      ],
+      "totalLines": 234,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_embedding.py": {
+      "filePath": "tests/test_embedding.py",
+      "contentHash": "ed22a0aa4c189bea4ad4faaefc6238bee6845618cec01075791e4c7147c03515",
+      "functions": [
+        {
+          "name": "vec",
+          "params": [
+            "seed"
+          ],
+          "returnType": "list[float]",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_embedding_text_joins_title_and_300_chars",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "test_embedding_text_without_body",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_embed_returns_vectors_in_order",
+          "params": [],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "test_wrong_dimension_raises_not_none",
+          "params": [],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "test_duplicate_index_raises",
+          "params": [],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "test_429_without_header_waits_rate_limit_window",
+          "params": [
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "test_negative_retry_after_is_clamped",
+          "params": [
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "test_server_error_retries_then_none",
+          "params": [
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "test_client_error_fails_immediately",
+          "params": [
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "test_more_than_max_batch_is_rejected",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_retry_after_header_is_honored",
+          "params": [
+            "monkeypatch"
+          ],
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "httpx",
+          "specifiers": [
+            "httpx"
+          ]
+        },
+        {
+          "source": "pytest",
+          "specifiers": [
+            "pytest"
+          ]
+        },
+        {
+          "source": "respx",
+          "specifiers": [
+            "respx"
+          ]
+        },
+        {
+          "source": "app.pipeline.embedding",
+          "specifiers": [
+            "DIM",
+            "MAX_BATCH",
+            "EmbeddingDimError",
+            "embed",
+            "embedding_text"
+          ]
+        }
+      ],
+      "exports": [
+        "vec",
+        "test_embedding_text_joins_title_and_300_chars",
+        "test_embedding_text_without_body",
+        "test_embed_returns_vectors_in_order",
+        "test_wrong_dimension_raises_not_none",
+        "test_duplicate_index_raises",
+        "test_429_without_header_waits_rate_limit_window",
+        "test_negative_retry_after_is_clamped",
+        "test_server_error_retries_then_none",
+        "test_client_error_fails_immediately",
+        "test_more_than_max_batch_is_rejected",
+        "test_retry_after_header_is_honored"
+      ],
+      "totalLines": 142,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_feedback_examples.py": {
+      "filePath": "tests/test_feedback_examples.py",
+      "contentHash": "b8f839535bbdfdccf54df51a6f364bff7feffd1a49eb7f1ee292f573076ae46f",
+      "functions": [
+        {
+          "name": "test_format_examples",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "test_empty_is_empty_string",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "app.pipeline.feedback",
+          "specifiers": [
+            "FeedbackExample",
+            "format_examples"
+          ]
+        }
+      ],
+      "exports": [
+        "test_format_examples",
+        "test_empty_is_empty_string"
+      ],
+      "totalLines": 15,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_feedback_upsert.py": {
+      "filePath": "tests/test_feedback_upsert.py",
+      "contentHash": "dc8c3dd1dee4b380805d4a6a84836ba2ee35729465e9ee016f86350ea3043691",
+      "functions": [
+        {
+          "name": "test_upsert_overwrites_verdict_and_time",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "sqlalchemy.dialects",
+          "specifiers": [
+            "postgresql"
+          ]
+        },
+        {
+          "source": "app.db.feedback",
+          "specifiers": [
+            "feedback_upsert_stmt"
+          ]
+        }
+      ],
+      "exports": [
+        "test_upsert_overwrites_verdict_and_time"
+      ],
+      "totalLines": 13,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_ingest.py": {
+      "filePath": "tests/test_ingest.py",
+      "contentHash": "e7a5c77d94db7920cd855b2ec1e2ae3045d12030dcea5e75be1ee995b549e075",
+      "functions": [
+        {
+          "name": "test_only_http_schemes_pass",
+          "params": [],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "app.pipeline.ingest",
+          "specifiers": [
+            "is_web_url"
+          ]
+        }
+      ],
+      "exports": [
+        "test_only_http_schemes_pass"
+      ],
+      "totalLines": 13,
       "hasStructuralAnalysis": true
     },
     "tests/test_normalize.py": {
       "filePath": "tests/test_normalize.py",
-      "contentHash": "c324928322c7d0777d241a3fa9ee9a8290cc1c3a32c794d5665d5dfd1949b5af",
+      "contentHash": "fca42c4729ee0202daf7dd06926c892026c345bbba7e0ce7c8ed580c91954d68",
       "functions": [
         {
           "name": "test_tracking_params_removed",
@@ -3300,7 +6024,7 @@
     },
     "tests/test_policy.py": {
       "filePath": "tests/test_policy.py",
-      "contentHash": "b7328f536b98637406ca9f313d94d9482916f6fb180de2513a3e4e4225b86f91",
+      "contentHash": "4d4f9888702eba08b8898cc846c517d3b696f76907b65bc550ffdce110b8cb46",
       "functions": [
         {
           "name": "kst",
@@ -3377,7 +6101,7 @@
     },
     "tests/test_rules.py": {
       "filePath": "tests/test_rules.py",
-      "contentHash": "e1395e3fcbf78a43f3bd5380507b69fa77e23d601aa137fada33fab2bcbc18e0",
+      "contentHash": "bfa7aee7bfe616efa506980486ff7b59318c8db2b201d1854bf5482ee74d8180",
       "functions": [
         {
           "name": "call",
@@ -3388,22 +6112,16 @@
           "lineCount": 3
         },
         {
-          "name": "test_include_keyword_passes",
+          "name": "test_plain_item_passes",
           "params": [],
           "exported": true,
           "lineCount": 3
         },
         {
-          "name": "test_no_keyword_fails",
+          "name": "test_exclude_keyword",
           "params": [],
           "exported": true,
-          "lineCount": 2
-        },
-        {
-          "name": "test_exclude_beats_include",
-          "params": [],
-          "exported": true,
-          "lineCount": 3
+          "lineCount": 4
         },
         {
           "name": "test_excluded_domain",
@@ -3415,28 +6133,10 @@
           "name": "test_excluded_domain_path_prefix",
           "params": [],
           "exported": true,
-          "lineCount": 3
-        },
-        {
-          "name": "test_always_pass_source_skips_keywords",
-          "params": [],
-          "exported": true,
-          "lineCount": 3
-        },
-        {
-          "name": "test_include_repo",
-          "params": [],
-          "exported": true,
-          "lineCount": 3
-        },
-        {
-          "name": "test_word_boundary_avoids_substring_match",
-          "params": [],
-          "exported": true,
           "lineCount": 2
         },
         {
-          "name": "test_symbol_keyword_matches",
+          "name": "test_word_boundary_avoids_substring_match",
           "params": [],
           "exported": true,
           "lineCount": 2
@@ -3453,6 +6153,7 @@
         {
           "source": "app.config",
           "specifiers": [
+            "ExcludeConfig",
             "Rules"
           ]
         },
@@ -3465,23 +6166,19 @@
       ],
       "exports": [
         "call",
-        "test_include_keyword_passes",
-        "test_no_keyword_fails",
-        "test_exclude_beats_include",
+        "test_plain_item_passes",
+        "test_exclude_keyword",
         "test_excluded_domain",
         "test_excluded_domain_path_prefix",
-        "test_always_pass_source_skips_keywords",
-        "test_include_repo",
         "test_word_boundary_avoids_substring_match",
-        "test_symbol_keyword_matches",
         "test_body_is_searched"
       ],
-      "totalLines": 63,
+      "totalLines": 43,
       "hasStructuralAnalysis": true
     },
     "tests/test_scoring.py": {
       "filePath": "tests/test_scoring.py",
-      "contentHash": "f347900da1be11cb5b157ec627ee5eb76ba96b08ddfefdad0767271eb4041ebb",
+      "contentHash": "a1dc943bb4bdcb7a88be1b5beae636c6d84d6f960bbbf6be16ec5a48d75dfa79",
       "functions": [
         {
           "name": "test_freshness_full_within_a_day",
@@ -3508,10 +6205,19 @@
           "lineCount": 2
         },
         {
-          "name": "test_trusted_fresh_keyworded_item_passes",
+          "name": "test_trusted_fresh_relevant_item_passes",
           "params": [],
           "exported": true,
           "lineCount": 12
+        },
+        {
+          "name": "test_relevance_needed_to_pass_alone_within_a_day",
+          "params": [
+            "trust",
+            "needed"
+          ],
+          "exported": true,
+          "lineCount": 10
         },
         {
           "name": "test_weak_item_drops",
@@ -3524,6 +6230,12 @@
           "params": [],
           "exported": true,
           "lineCount": 11
+        },
+        {
+          "name": "test_stale_boundary",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
         }
       ],
       "classes": [],
@@ -3537,6 +6249,12 @@
           ]
         },
         {
+          "source": "pytest",
+          "specifiers": [
+            "pytest"
+          ]
+        },
+        {
           "source": "app.config",
           "specifiers": [
             "ScoringConfig"
@@ -3547,6 +6265,7 @@
           "specifiers": [
             "freshness",
             "hotness",
+            "is_stale",
             "score_item"
           ]
         }
@@ -3556,16 +6275,18 @@
         "test_freshness_halves_after_two_days",
         "test_hotness_zero_without_metrics",
         "test_hotness_monotonic_and_bounded",
-        "test_trusted_fresh_keyworded_item_passes",
+        "test_trusted_fresh_relevant_item_passes",
+        "test_relevance_needed_to_pass_alone_within_a_day",
         "test_weak_item_drops",
-        "test_multi_source_mentions_lift_score"
+        "test_multi_source_mentions_lift_score",
+        "test_stale_boundary"
       ],
-      "totalLines": 66,
+      "totalLines": 89,
       "hasStructuralAnalysis": true
     },
     "tests/test_session_url.py": {
       "filePath": "tests/test_session_url.py",
-      "contentHash": "20da2216419848500ddbd716ebdfed8ec863f03eca298c4ff7298e4bf5a85f00",
+      "contentHash": "e82799d00201f53728f8e27835f380c6acafbf6766cedbef65542f3d34b3a47e",
       "functions": [
         {
           "name": "test_driver_prefix_is_rewritten",
@@ -3648,7 +6369,7 @@
     },
     "tests/test_telegram.py": {
       "filePath": "tests/test_telegram.py",
-      "contentHash": "5b3e11afb8a777b29f5b759c07dac7c24227cbebf265858e132ba7c8eecca919",
+      "contentHash": "41ab83c771e5a5d5f75887327e2621a47a367ebe5f9bb86ea0bd4eb99d4c89e6",
       "functions": [
         {
           "name": "make_pair",
@@ -3701,11 +6422,16 @@
           ]
         },
         {
-          "source": "app.notify.telegram",
+          "source": "app.notify.base",
           "specifiers": [
             "feedback_callback_data",
             "parse_feedback_callback",
-            "relative_time",
+            "relative_time"
+          ]
+        },
+        {
+          "source": "app.notify.telegram",
+          "specifiers": [
             "render"
           ]
         }
@@ -3717,12 +6443,12 @@
         "test_callback_roundtrip",
         "test_callback_rejects_garbage"
       ],
-      "totalLines": 58,
+      "totalLines": 54,
       "hasStructuralAnalysis": true
     },
     "tests/test_telegram_api.py": {
       "filePath": "tests/test_telegram_api.py",
-      "contentHash": "35f6d36b1adbfb1a3e9367ab8c2a8985210f36d3fedc08e997f01d3ad510a34c",
+      "contentHash": "9f8ffbebcc99b8285b53b2622f3d8fa10a8360d802c4ac4dcffc576f04eefacb",
       "functions": [
         {
           "name": "test_http_error_does_not_leak_token",
@@ -3784,9 +6510,187 @@
       "totalLines": 43,
       "hasStructuralAnalysis": true
     },
+    "tests/test_triage.py": {
+      "filePath": "tests/test_triage.py",
+      "contentHash": "12416ebd1bf1206cb2d6faf08bef9c1f5e6fc29c71cd99a6f9a4c13890284594",
+      "functions": [
+        {
+          "name": "entries",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "items",
+          "params": [],
+          "returnType": "TriageBatch",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_user_content_numbers_items_and_appends_examples",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "test_parse_valid_batch",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_count_mismatch_is_batch_error",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_unknown_idx_is_batch_error",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_duplicate_idx_marks_missing_item_failed",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_out_of_range_relevance_is_item_failure",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_reason_is_truncated_to_200_chars",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "pytest",
+          "specifiers": [
+            "pytest"
+          ]
+        },
+        {
+          "source": "app.pipeline.triage",
+          "specifiers": [
+            "TriageBatch",
+            "TriageBatchError",
+            "TriageEntry",
+            "TriageItem",
+            "build_user_content",
+            "parse_triage"
+          ]
+        }
+      ],
+      "exports": [
+        "entries",
+        "items",
+        "test_user_content_numbers_items_and_appends_examples",
+        "test_parse_valid_batch",
+        "test_count_mismatch_is_batch_error",
+        "test_unknown_idx_is_batch_error",
+        "test_duplicate_idx_marks_missing_item_failed",
+        "test_out_of_range_relevance_is_item_failure",
+        "test_reason_is_truncated_to_200_chars"
+      ],
+      "totalLines": 62,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_trust.py": {
+      "filePath": "tests/test_trust.py",
+      "contentHash": "d322628069797d745341758d657e6e9b8c5914f47c7f577139ac0726a0b5cd95",
+      "functions": [
+        {
+          "name": "test_no_labels_keeps_base",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_ten_labels_split_evenly_with_prior",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_clamped_to_range",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_precision_none_without_labels",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_score_band_floors_to_width",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "test_band_table_sums_rows_per_band",
+          "params": [],
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "app.pipeline.trust",
+          "specifiers": [
+            "adjust_trust",
+            "band_table",
+            "precision",
+            "score_band"
+          ]
+        }
+      ],
+      "exports": [
+        "test_no_labels_keeps_base",
+        "test_ten_labels_split_evenly_with_prior",
+        "test_clamped_to_range",
+        "test_precision_none_without_labels",
+        "test_score_band_floors_to_width",
+        "test_band_table_sums_rows_per_band"
+      ],
+      "totalLines": 38,
+      "hasStructuralAnalysis": true
+    },
+    "검증파이프라인-v2-구현서.md": {
+      "filePath": "검증파이프라인-v2-구현서.md",
+      "contentHash": "c0f181d0936dcaaad04dbba3e32152c5e1c774b173b037b48c95290f4b426fd3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 3094,
+      "hasStructuralAnalysis": true
+    },
+    "검증파이프라인-v2-설계서.md": {
+      "filePath": "검증파이프라인-v2-설계서.md",
+      "contentHash": "1174ae20eb62ebc53698dea2eeadeb791976df5b31dbff9f02222f326f66403f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 329,
+      "hasStructuralAnalysis": true
+    },
     "구현도.md": {
       "filePath": "구현도.md",
-      "contentHash": "202c5d8ca665ff4f9b18d9b2ea8f3cdfffae1b9422de98b33d098a678aa0f77b",
+      "contentHash": "233a3c87642bea865e80db0c4de04dd5bc3b7027354034fcd6597626df84fc58",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -3796,7 +6700,7 @@
     },
     "기획서.md": {
       "filePath": "기획서.md",
-      "contentHash": "c2c017508fafa99ef2103e90d28cb4ce2729b19ec6e8554d480dad66e99169d1",
+      "contentHash": "90f9124945794c64d8f618bb8f422e5fe09c2306c11233feb31246027944672e",
       "functions": [],
       "classes": [],
       "imports": [],

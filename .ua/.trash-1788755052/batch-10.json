@@ -1,0 +1,275 @@
+{
+  "nodes": [
+    {
+      "id": "service:Caddyfile",
+      "type": "service",
+      "name": "Caddyfile",
+      "filePath": "Caddyfile",
+      "summary": "Caddy 리버스 프록시 설정. `$DOMAIN` 환경변수로 받은 도메인의 요청을 컨테이너 네트워크의 `app:8000` (FastAPI/uvicorn) 으로 그대로 넘긴다.",
+      "tags": ["infrastructure", "reverse-proxy", "deployment", "caddy"],
+      "complexity": "simple",
+      "languageNotes": "Caddy 는 도메인 블록만 적으면 TLS 인증서를 자동 발급·갱신하므로 3줄로 HTTPS 종단이 끝난다."
+    },
+    {
+      "id": "file:app/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "app/__init__.py",
+      "summary": "`app` 패키지를 파이썬 패키지로 선언하는 빈 초기화 파일. 재export 없이 임포트 경로만 열어 준다.",
+      "tags": ["barrel", "package-init", "python", "entry-point"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:app/db/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "app/db/__init__.py",
+      "summary": "`app.db` 패키지(모델·세션·예산·피드백·Alembic)를 선언하는 빈 초기화 파일.",
+      "tags": ["barrel", "package-init", "python", "database"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:app/db/alembic/script.py.mako",
+      "type": "file",
+      "name": "script.py.mako",
+      "filePath": "app/db/alembic/script.py.mako",
+      "summary": "Alembic 이 새 마이그레이션 파일을 생성할 때 쓰는 Mako 템플릿. `from __future__ import annotations` 와 PEP 604 타입 표기를 미리 넣어 두어 생성된 리비전이 ruff·mypy 를 그대로 통과한다.",
+      "tags": ["template", "migration", "alembic", "code-generation"],
+      "complexity": "simple",
+      "languageNotes": "`${down_revision | comma,n}` 처럼 Mako 필터를 써서 None 과 다중 부모를 한 표기로 처리한다."
+    },
+    {
+      "id": "file:app/db/alembic/versions/20260830_0001_initial.py",
+      "type": "file",
+      "name": "20260830_0001_initial.py",
+      "filePath": "app/db/alembic/versions/20260830_0001_initial.py",
+      "summary": "초기 스키마 마이그레이션(리비전 0001). pg_trgm 확장을 켜고 sources·items·decisions·summaries·notifications·feedback 6개 테이블과 조회·큐 처리를 위한 인덱스(제목 trigram GIN 포함)를 만든다.",
+      "tags": ["migration", "database", "schema-definition", "alembic", "postgres"],
+      "complexity": "moderate",
+      "languageNotes": "items 의 status·published_at·cluster_id 인덱스는 `FOR UPDATE SKIP LOCKED` 큐 조회를 위한 것이고, 제목 중복 탐색은 `gin_trgm_ops` GIN 인덱스가 받쳐 준다."
+    },
+    {
+      "id": "file:app/db/alembic/versions/20260902_0002_widen_feed_strings.py",
+      "type": "file",
+      "name": "20260902_0002_widen_feed_strings.py",
+      "filePath": "app/db/alembic/versions/20260902_0002_widen_feed_strings.py",
+      "summary": "리비전 0002. arXiv 저자 목록이 varchar(300) 를 넘겨 적재가 실패한 사고를 받아 items.author·items.external_id 를 text 로 넓힌다. 외부 피드가 주는 문자열에는 길이 제한을 두지 않는다는 결정이다.",
+      "tags": ["migration", "database", "hotfix", "alembic", "schema-definition"],
+      "complexity": "simple",
+      "languageNotes": "Postgres 에서 varchar(n) 은 text 대비 성능 이득이 없어 길이 제한이 사실상 검증 역할만 한다. downgrade 는 이미 긴 값이 들어간 뒤라면 실패한다."
+    },
+    {
+      "id": "file:app/notify/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "app/notify/__init__.py",
+      "summary": "`app.notify` 패키지(Notifier 프로토콜, 텔레그램·디스코드 어댑터, 발송 정책)를 선언하는 빈 초기화 파일.",
+      "tags": ["barrel", "package-init", "python", "notification"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:config/rules.yaml",
+      "type": "config",
+      "name": "rules.yaml",
+      "filePath": "config/rules.yaml",
+      "summary": "검증 파이프라인의 정책·임계값을 한곳에 모은 설정. 관심/비관심을 문장으로 적은 `policy` 를 LLM 선별·판정 프롬프트가 그대로 읽고, exclude 규칙과 dedupe·triage·scoring·notify 임계값을 코드 대신 여기서 조정한다.",
+      "tags": ["configuration", "pipeline", "policy", "thresholds", "yaml"],
+      "complexity": "moderate",
+      "languageNotes": "키워드 목록이 관문이 아니라는 설계가 파일 구조에 그대로 드러난다. dedupe 임계값(중복 0.96 / 관련 0.88)에는 보정 근거가 주석으로 남아 있다."
+    },
+    {
+      "id": "config:config/sources.yaml",
+      "type": "config",
+      "name": "sources.yaml",
+      "filePath": "config/sources.yaml",
+      "summary": "수집 소스 등록부. 소스별 `name`·`type`·`config`(피드 URL, 허용 호스트, 카테고리 힌트)·폴링 주기·신뢰도를 선언해 스케줄러가 잡을 만들고 각 수집기가 자기 설정을 읽어 간다.",
+      "tags": ["configuration", "sources", "scheduler", "polling", "yaml"],
+      "complexity": "moderate",
+      "languageNotes": "소스 하나 = YAML 항목 하나라 새 소스를 코드 수정 없이 추가할 수 있다. Anthropic 처럼 공식 RSS 가 없는 곳은 커뮤니티 미러 + `allowed_hosts` 로 막는다."
+    },
+    {
+      "id": "file:tests/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "tests/__init__.py",
+      "summary": "`tests` 를 패키지로 만들어 하위 테스트 모듈 이름이 충돌하지 않게 하는 빈 파일.",
+      "tags": ["test", "package-init", "python", "barrel"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:tests/fixtures/github_release.json",
+      "type": "config",
+      "name": "github_release.json",
+      "filePath": "tests/fixtures/github_release.json",
+      "summary": "GitHub Releases API 응답 샘플 픽스처. 정상 릴리즈 1건과 draft 릴리즈 1건을 담아 수집기가 draft 를 걸러 내는지 검증하는 데 쓰인다.",
+      "tags": ["test", "fixture", "github", "json", "sample-data"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:tests/fixtures/rss_blog.xml",
+      "type": "config",
+      "name": "rss_blog.xml",
+      "filePath": "tests/fixtures/rss_blog.xml",
+      "summary": "기업 블로그 RSS 2.0 응답 샘플 픽스처. utm 파라미터가 붙은 링크와 HTML 이스케이프된 본문, 그리고 exclude 키워드에 걸리는 채용 글을 함께 넣어 URL 정규화·필터 경로를 한 번에 태운다.",
+      "tags": ["test", "fixture", "rss", "xml", "sample-data"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/integration/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "tests/integration/__init__.py",
+      "summary": "실제 Neon dev 브랜치를 필요로 하는 통합 테스트 패키지를 선언하는 빈 파일.",
+      "tags": ["test", "package-init", "integration", "python"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/sources/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "tests/sources/__init__.py",
+      "summary": "수집기(sources) 단위 테스트 패키지를 선언하는 빈 파일.",
+      "tags": ["test", "package-init", "python", "barrel"],
+      "complexity": "simple"
+    },
+
+    {
+      "id": "table:app/db/alembic/versions/20260830_0001_initial.py:sources",
+      "type": "table",
+      "name": "sources",
+      "filePath": "app/db/alembic/versions/20260830_0001_initial.py",
+      "summary": "수집 소스 정의 테이블. 이름(unique)·타입·jsonb 설정과 폴링 주기, 신뢰도, 마지막 폴링 시각·에러·연속 실패 횟수를 담아 스케줄러와 신뢰도 보정의 기준이 된다.",
+      "tags": ["database", "table", "sources", "schema-definition"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:app/db/alembic/versions/20260830_0001_initial.py:items",
+      "type": "table",
+      "name": "items",
+      "filePath": "app/db/alembic/versions/20260830_0001_initial.py",
+      "summary": "파이프라인의 중심 테이블. 정규화된 항목을 url_hash unique 로 멱등 적재하고 status 컬럼이 큐 역할을, embedding·cluster_id 가 중복·관련 판정의 근거를 맡는다.",
+      "tags": ["database", "table", "pipeline", "queue", "schema-definition"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "table:app/db/alembic/versions/20260830_0001_initial.py:decisions",
+      "type": "table",
+      "name": "decisions",
+      "filePath": "app/db/alembic/versions/20260830_0001_initial.py",
+      "summary": "항목별 단계(rule·triage·score·llm) 판단 기록 테이블. 통과 여부·점수·상세 jsonb 를 남겨 탈락 사유 추적과 주간 튜닝의 근거가 된다.",
+      "tags": ["database", "table", "audit-log", "tuning", "schema-definition"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:app/db/alembic/versions/20260830_0001_initial.py:summaries",
+      "type": "table",
+      "name": "summaries",
+      "filePath": "app/db/alembic/versions/20260830_0001_initial.py",
+      "summary": "LLM 판정 결과 테이블. item_id 를 그대로 기본키로 써서 항목당 1건을 보장하고, 한국어 제목·요약·태그·중요도·발송 가치와 토큰 수를 저장해 재실행 시 캐시로 쓰인다.",
+      "tags": ["database", "table", "llm", "cache", "schema-definition"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:app/db/alembic/versions/20260830_0001_initial.py:notifications",
+      "type": "table",
+      "name": "notifications",
+      "filePath": "app/db/alembic/versions/20260830_0001_initial.py",
+      "summary": "발송 기록 테이블. 채널·강도(push/silent/feed)·message_id·에러를 남겨 하루 상한 계산과 인라인 버튼 피드백 연결에 쓰인다.",
+      "tags": ["database", "table", "notification", "schema-definition"],
+      "complexity": "simple"
+    },
+    {
+      "id": "table:app/db/alembic/versions/20260830_0001_initial.py:feedback",
+      "type": "table",
+      "name": "feedback",
+      "filePath": "app/db/alembic/versions/20260830_0001_initial.py",
+      "summary": "사용자 반응(useful/useless) 테이블. 항목당 1건으로 재클릭은 upsert 되며 소스 신뢰도 보정과 최근접 사례 검색의 입력이 된다.",
+      "tags": ["database", "table", "feedback", "schema-definition"],
+      "complexity": "simple"
+    },
+
+    {
+      "id": "function:app/db/alembic/versions/20260830_0001_initial.py:upgrade",
+      "type": "function",
+      "name": "upgrade",
+      "filePath": "app/db/alembic/versions/20260830_0001_initial.py",
+      "lineRange": [22, 123],
+      "summary": "pg_trgm 확장을 켠 뒤 6개 테이블과 인덱스를 순서대로 생성한다. items 는 url_hash unique 로 멱등성을, status·published_at·cluster_id 인덱스로 큐 조회를 받친다.",
+      "tags": ["migration", "schema-definition", "database", "alembic"],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:app/db/alembic/versions/20260830_0001_initial.py:downgrade",
+      "type": "function",
+      "name": "downgrade",
+      "filePath": "app/db/alembic/versions/20260830_0001_initial.py",
+      "lineRange": [126, 132],
+      "summary": "외래키 의존 역순으로 6개 테이블을 모두 드롭해 초기 스키마를 되돌린다.",
+      "tags": ["migration", "rollback", "database", "alembic"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:app/db/alembic/versions/20260902_0002_widen_feed_strings.py:upgrade",
+      "type": "function",
+      "name": "upgrade",
+      "filePath": "app/db/alembic/versions/20260902_0002_widen_feed_strings.py",
+      "lineRange": [21, 37],
+      "summary": "items.author 와 items.external_id 의 타입을 varchar 에서 text 로 바꿔 외부 피드가 주는 긴 문자열 때문에 적재가 죽지 않게 한다.",
+      "tags": ["migration", "hotfix", "database", "alembic"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:app/db/alembic/versions/20260902_0002_widen_feed_strings.py:downgrade",
+      "type": "function",
+      "name": "downgrade",
+      "filePath": "app/db/alembic/versions/20260902_0002_widen_feed_strings.py",
+      "lineRange": [40, 55],
+      "summary": "두 컬럼을 원래 varchar 길이로 되돌린다. 이미 길이를 넘는 값이 적재돼 있으면 실패하는 비가역 되돌리기다.",
+      "tags": ["migration", "rollback", "database", "alembic"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {"source": "file:app/db/alembic/versions/20260830_0001_initial.py", "target": "function:app/db/alembic/versions/20260830_0001_initial.py:upgrade", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:app/db/alembic/versions/20260830_0001_initial.py", "target": "function:app/db/alembic/versions/20260830_0001_initial.py:downgrade", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:app/db/alembic/versions/20260902_0002_widen_feed_strings.py", "target": "function:app/db/alembic/versions/20260902_0002_widen_feed_strings.py:upgrade", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:app/db/alembic/versions/20260902_0002_widen_feed_strings.py", "target": "function:app/db/alembic/versions/20260902_0002_widen_feed_strings.py:downgrade", "type": "contains", "direction": "forward", "weight": 1.0},
+
+    {"source": "file:app/db/alembic/versions/20260830_0001_initial.py", "target": "function:app/db/alembic/versions/20260830_0001_initial.py:upgrade", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:app/db/alembic/versions/20260830_0001_initial.py", "target": "function:app/db/alembic/versions/20260830_0001_initial.py:downgrade", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:app/db/alembic/versions/20260902_0002_widen_feed_strings.py", "target": "function:app/db/alembic/versions/20260902_0002_widen_feed_strings.py:upgrade", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:app/db/alembic/versions/20260902_0002_widen_feed_strings.py", "target": "function:app/db/alembic/versions/20260902_0002_widen_feed_strings.py:downgrade", "type": "exports", "direction": "forward", "weight": 0.8},
+
+    {"source": "file:app/db/alembic/versions/20260830_0001_initial.py", "target": "table:app/db/alembic/versions/20260830_0001_initial.py:sources", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "file:app/db/alembic/versions/20260830_0001_initial.py", "target": "table:app/db/alembic/versions/20260830_0001_initial.py:items", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "file:app/db/alembic/versions/20260830_0001_initial.py", "target": "table:app/db/alembic/versions/20260830_0001_initial.py:decisions", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "file:app/db/alembic/versions/20260830_0001_initial.py", "target": "table:app/db/alembic/versions/20260830_0001_initial.py:summaries", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "file:app/db/alembic/versions/20260830_0001_initial.py", "target": "table:app/db/alembic/versions/20260830_0001_initial.py:notifications", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "file:app/db/alembic/versions/20260830_0001_initial.py", "target": "table:app/db/alembic/versions/20260830_0001_initial.py:feedback", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "file:app/db/alembic/versions/20260902_0002_widen_feed_strings.py", "target": "table:app/db/alembic/versions/20260830_0001_initial.py:items", "type": "migrates", "direction": "forward", "weight": 0.7},
+
+    {"source": "file:app/db/alembic/versions/20260830_0001_initial.py", "target": "file:app/db/models.py", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "file:app/db/alembic/versions/20260902_0002_widen_feed_strings.py", "target": "file:app/db/models.py", "type": "migrates", "direction": "forward", "weight": 0.7},
+    {"source": "file:app/db/alembic/versions/20260902_0002_widen_feed_strings.py", "target": "file:app/db/alembic/versions/20260830_0001_initial.py", "type": "depends_on", "direction": "forward", "weight": 0.6},
+    {"source": "file:app/db/alembic/script.py.mako", "target": "file:app/db/alembic/versions/20260902_0002_widen_feed_strings.py", "type": "related", "direction": "forward", "weight": 0.5},
+
+    {"source": "config:config/rules.yaml", "target": "file:app/pipeline/rules.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:config/rules.yaml", "target": "file:app/pipeline/scoring.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:config/rules.yaml", "target": "file:app/pipeline/triage.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:config/rules.yaml", "target": "file:app/pipeline/dedupe.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:config/rules.yaml", "target": "file:app/pipeline/llm.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:config/rules.yaml", "target": "file:app/notify/policy.py", "type": "configures", "direction": "forward", "weight": 0.6},
+
+    {"source": "config:config/sources.yaml", "target": "file:app/jobs/scheduler.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:config/sources.yaml", "target": "file:app/sources/base.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:config/sources.yaml", "target": "file:app/sources/rss.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:config/sources.yaml", "target": "file:app/sources/github_release.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:config/sources.yaml", "target": "file:app/sources/youtube.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:config/sources.yaml", "target": "file:app/jobs/collect.py", "type": "configures", "direction": "forward", "weight": 0.6},
+
+    {"source": "service:Caddyfile", "target": "file:app/main.py", "type": "serves", "direction": "forward", "weight": 0.7},
+
+    {"source": "config:tests/fixtures/github_release.json", "target": "file:tests/sources/test_github_release.py", "type": "related", "direction": "forward", "weight": 0.5},
+    {"source": "config:tests/fixtures/rss_blog.xml", "target": "file:tests/sources/test_rss.py", "type": "related", "direction": "forward", "weight": 0.5}
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "nodes": [
+    {
+      "id": "config:.env.example",
+      "type": "config",
+      "name": ".env.example",
+      "filePath": ".env.example",
+      "summary": "커밋 가능한 시크릿 참조본. DB 접속(Neon), Anthropic LLM 모델·일일 상한, 임베딩 제공자(Voyage/OpenAI), 텔레그램·디스코드 발송 채널, GitHub 토큰·웹훅 시크릿, 스케줄러 on/off·로그 레벨까지 18개 환경 변수를 예시 값과 함께 나열한다.",
+      "tags": ["configuration", "environment", "secrets", "security"],
+      "complexity": "simple",
+      "languageNotes": "실제 값은 .env 로 로컬 관리하고 이 파일만 커밋한다. pydantic-settings 가 읽는 키 목록의 사실상 스키마 역할을 한다."
+    },
+    {
+      "id": "document:CLAUDE.md",
+      "type": "document",
+      "name": "CLAUDE.md",
+      "filePath": "CLAUDE.md",
+      "summary": "Claude Code 용 레포 안내서. 코딩 규칙 11개조, 프로젝트 개요와 파이프라인 요약, 실행·테스트·마이그레이션 커맨드, 폴더 구조와 데이터 모델·상태 전이, 브랜치·커밋·시크릿 컨벤션, 옵시디언 작업 기록 양식과 Codex 리뷰 절차를 담는다.",
+      "tags": ["documentation", "conventions", "entry-point", "workflow"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:alembic.ini",
+      "type": "config",
+      "name": "alembic.ini",
+      "filePath": "alembic.ini",
+      "summary": "Alembic 마이그레이션 설정. 스크립트 위치를 app/db/alembic 으로 지정하고 리비전 파일명을 날짜_시각_슬러그 형식으로 강제하며, sqlalchemy·alembic 로거를 stderr 핸들러에 연결한다. DB URL 은 여기 두지 않고 env.py 가 설정에서 읽는다.",
+      "tags": ["configuration", "migration", "database", "build-system"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:pyproject.toml",
+      "type": "config",
+      "name": "pyproject.toml",
+      "filePath": "pyproject.toml",
+      "summary": "프로젝트 메타데이터와 의존성 정의(FastAPI·APScheduler·SQLAlchemy async·asyncpg·Alembic·Anthropic SDK 등), dev 그룹(pytest·respx·ruff·mypy), 그리고 ruff(line-length 100, E/F/I/UP/B/SIM)·mypy(strict, pydantic 플러그인)·pytest(asyncio_mode auto, testpaths=tests) 도구 설정과 hatchling 빌드 설정을 한 파일에 모았다.",
+      "tags": ["configuration", "build-system", "dependencies", "lint", "test"],
+      "complexity": "simple",
+      "languageNotes": "설계서·구현서의 코드 블록이 검사에 걸리지 않도록 ruff 가 *.md 를 extend-exclude 한다."
+    },
+    {
+      "id": "document:검증파이프라인-v2-구현서.md",
+      "type": "document",
+      "name": "검증파이프라인-v2-구현서.md",
+      "filePath": "검증파이프라인-v2-구현서.md",
+      "summary": "설계서를 4단계 15개 Task 로 쪼갠 실행 계획서. 파일 지도로 각 모듈의 책임을 배정하고, 마이그레이션 0003·Vector 타입·임베딩 어댑터·벡터 중복 판정·reserve_call 예산·LLM 선별 배치·3국면 파이프라인·피드백 사례·탐색 슬롯·신뢰도 보정·주간 리포트까지 코드 스케치와 체크박스 단계로 서술한다.",
+      "tags": ["documentation", "implementation-plan", "pipeline", "specification"],
+      "complexity": "complex",
+      "languageNotes": "3,000줄 규모의 태스크 단위 계획서로, 임베딩 1024차원 고정·벡터 인덱스 없음·일일 호출 상한 같은 전역 제약을 맨 앞에 못 박아 각 Task 가 이를 전제로 쓰였다."
+    },
+    {
+      "id": "document:검증파이프라인-v2-설계서.md",
+      "type": "document",
+      "name": "검증파이프라인-v2-설계서.md",
+      "filePath": "검증파이프라인-v2-설계서.md",
+      "summary": "키워드 목록 관문을 정책 기반 관문으로 바꾸는 v2 파이프라인 설계 원문. 맥락 없음·새 용어 누락·한국어/영상 취약이라는 실데이터 결함에서 출발해 임베딩 기반 중복·관련 판정, LLM 선별 배치, 피드백 되먹임(사례 주입·신뢰도 보정·탐색 슬롯)을 결정 요약·상태 전이·임계값·예산·테스트 계획까지 정리한다.",
+      "tags": ["documentation", "design-spec", "pipeline", "architecture"],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:구현도.md",
+      "type": "document",
+      "name": "구현도.md",
+      "filePath": "구현도.md",
+      "summary": "기획서를 실행 가능한 시스템으로 옮긴 v0.2 구현 설계서. 프로세스 하나 + Neon 하나 구성과 그 선택 이유(대안 비교), 기술 스택, 7개 테이블 데이터 모델, 수집→정규화→규칙→점수→LLM→발송 워크플로우, 폴더 구조, 배포·관측, 단계별 로드맵과 남은 결정 사항을 다룬다.",
+      "tags": ["documentation", "architecture", "design-spec", "roadmap"],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:기획서.md",
+      "type": "document",
+      "name": "기획서.md",
+      "filePath": "기획서.md",
+      "summary": "프로젝트의 출발점이 된 v0.1 기획서. 금융 앱 신상품 알림 UX 를 개발 정보에 적용한다는 한 줄 정의에서 시작해 배경·문제, 목표와 비목표, 정보 카테고리와 수집 소스 후보, 핵심 기능과 알림 UX 원칙, 실시간성·노이즈 제어 방안, 개발 단계와 MVP 성공 기준, 리스크·미결 질문을 정리한다.",
+      "tags": ["documentation", "product-spec", "requirements", "overview"],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {"source": "config:.env.example", "target": "file:app/config.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:.env.example", "target": "file:app/db/session.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:.env.example", "target": "file:app/pipeline/embedding.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:.env.example", "target": "file:app/pipeline/llm.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:.env.example", "target": "file:app/notify/telegram.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:.env.example", "target": "file:app/notify/discord.py", "type": "configures", "direction": "forward", "weight": 0.6},
+
+    {"source": "config:alembic.ini", "target": "file:app/db/alembic/env.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:alembic.ini", "target": "file:app/db/alembic/script.py.mako", "type": "configures", "direction": "forward", "weight": 0.6},
+
+    {"source": "config:pyproject.toml", "target": "file:app/main.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:pyproject.toml", "target": "file:app/config.py", "type": "configures", "direction": "forward", "weight": 0.6},
+    {"source": "config:pyproject.toml", "target": "file:tests/conftest.py", "type": "configures", "direction": "forward", "weight": 0.6},
+
+    {"source": "document:CLAUDE.md", "target": "file:app/main.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:CLAUDE.md", "target": "file:app/jobs/pipeline.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:CLAUDE.md", "target": "file:app/db/models.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:CLAUDE.md", "target": "file:app/notify/policy.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:CLAUDE.md", "target": "document:구현도.md", "type": "related", "direction": "forward", "weight": 0.5},
+    {"source": "document:CLAUDE.md", "target": "document:기획서.md", "type": "related", "direction": "forward", "weight": 0.5},
+    {"source": "document:CLAUDE.md", "target": "document:검증파이프라인-v2-설계서.md", "type": "related", "direction": "forward", "weight": 0.5},
+
+    {"source": "document:기획서.md", "target": "document:구현도.md", "type": "related", "direction": "forward", "weight": 0.5},
+    {"source": "document:기획서.md", "target": "file:app/jobs/pipeline.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:기획서.md", "target": "file:app/notify/policy.py", "type": "documents", "direction": "forward", "weight": 0.5},
+
+    {"source": "document:구현도.md", "target": "file:app/main.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:구현도.md", "target": "file:app/db/models.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:구현도.md", "target": "file:app/jobs/scheduler.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:구현도.md", "target": "file:app/jobs/collect.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:구현도.md", "target": "file:app/jobs/pipeline.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:구현도.md", "target": "file:app/jobs/notify.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:구현도.md", "target": "file:app/sources/base.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:구현도.md", "target": "file:app/notify/base.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:구현도.md", "target": "file:app/notify/policy.py", "type": "documents", "direction": "forward", "weight": 0.5},
+
+    {"source": "document:검증파이프라인-v2-설계서.md", "target": "file:app/pipeline/embedding.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-설계서.md", "target": "file:app/pipeline/dedupe.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-설계서.md", "target": "file:app/pipeline/triage.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-설계서.md", "target": "file:app/pipeline/scoring.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-설계서.md", "target": "file:app/pipeline/feedback.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-설계서.md", "target": "file:app/pipeline/trust.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-설계서.md", "target": "file:app/db/budget.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-설계서.md", "target": "file:app/jobs/pipeline.py", "type": "documents", "direction": "forward", "weight": 0.5},
+
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "document:검증파이프라인-v2-설계서.md", "type": "related", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/db/alembic/versions/20260906_0003_embeddings.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/db/types.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/db/models.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/db/budget.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/db/feedback.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/pipeline/embedding.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/pipeline/dedupe.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/pipeline/rules.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/pipeline/scoring.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/pipeline/triage.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/pipeline/llm.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/pipeline/feedback.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/pipeline/trust.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/jobs/collect.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/jobs/pipeline.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/jobs/notify.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/api/discord.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/api/telegram.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/notify/discord.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/config.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:app/schemas.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:scripts/backfill_embeddings.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:scripts/calibrate_dedupe.py", "type": "documents", "direction": "forward", "weight": 0.5},
+    {"source": "document:검증파이프라인-v2-구현서.md", "target": "file:scripts/weekly_report.py", "type": "documents", "direction": "forward", "weight": 0.5}
+  ]
+}

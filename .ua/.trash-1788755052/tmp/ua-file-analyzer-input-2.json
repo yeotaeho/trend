@@ -1,0 +1,186 @@
+{
+ "projectRoot": "C:/Users/COM-KMAB/Documents/trend",
+ "batchFiles": [
+  {
+   "path": "app/config.py",
+   "language": "python",
+   "sizeLines": 146,
+   "fileCategory": "code"
+  },
+  {
+   "path": "app/jobs/__init__.py",
+   "language": "python",
+   "sizeLines": 0,
+   "fileCategory": "code"
+  },
+  {
+   "path": "app/jobs/pipeline.py",
+   "language": "python",
+   "sizeLines": 366,
+   "fileCategory": "code"
+  },
+  {
+   "path": "app/pipeline/__init__.py",
+   "language": "python",
+   "sizeLines": 0,
+   "fileCategory": "code"
+  },
+  {
+   "path": "app/pipeline/dedupe.py",
+   "language": "python",
+   "sizeLines": 125,
+   "fileCategory": "code"
+  },
+  {
+   "path": "app/pipeline/llm.py",
+   "language": "python",
+   "sizeLines": 126,
+   "fileCategory": "code"
+  },
+  {
+   "path": "app/pipeline/rules.py",
+   "language": "python",
+   "sizeLines": 53,
+   "fileCategory": "code"
+  },
+  {
+   "path": "app/pipeline/scoring.py",
+   "language": "python",
+   "sizeLines": 64,
+   "fileCategory": "code"
+  },
+  {
+   "path": "app/pipeline/triage.py",
+   "language": "python",
+   "sizeLines": 109,
+   "fileCategory": "code"
+  },
+  {
+   "path": "tests/integration/conftest.py",
+   "language": "python",
+   "sizeLines": 26,
+   "fileCategory": "code"
+  },
+  {
+   "path": "tests/integration/test_dedupe_db.py",
+   "language": "python",
+   "sizeLines": 62,
+   "fileCategory": "code"
+  },
+  {
+   "path": "tests/integration/test_pipeline_db.py",
+   "language": "python",
+   "sizeLines": 152,
+   "fileCategory": "code"
+  },
+  {
+   "path": "tests/test_dedupe.py",
+   "language": "python",
+   "sizeLines": 74,
+   "fileCategory": "code"
+  },
+  {
+   "path": "tests/test_rules.py",
+   "language": "python",
+   "sizeLines": 42,
+   "fileCategory": "code"
+  },
+  {
+   "path": "tests/test_scoring.py",
+   "language": "python",
+   "sizeLines": 88,
+   "fileCategory": "code"
+  },
+  {
+   "path": "tests/test_telegram_api.py",
+   "language": "python",
+   "sizeLines": 42,
+   "fileCategory": "code"
+  },
+  {
+   "path": "tests/test_triage.py",
+   "language": "python",
+   "sizeLines": 61,
+   "fileCategory": "code"
+  }
+ ],
+ "batchImportData": {
+  "app/config.py": [],
+  "app/jobs/__init__.py": [],
+  "app/jobs/pipeline.py": [
+   "app/config.py",
+   "app/db/budget.py",
+   "app/db/models.py",
+   "app/db/session.py",
+   "app/log.py",
+   "app/notify/discord.py",
+   "app/pipeline/__init__.py",
+   "app/pipeline/dedupe.py",
+   "app/pipeline/embedding.py",
+   "app/pipeline/feedback.py",
+   "app/pipeline/llm.py",
+   "app/pipeline/rules.py",
+   "app/pipeline/scoring.py",
+   "app/pipeline/triage.py",
+   "app/schemas.py"
+  ],
+  "app/pipeline/__init__.py": [],
+  "app/pipeline/dedupe.py": [
+   "app/config.py",
+   "app/schemas.py"
+  ],
+  "app/pipeline/llm.py": [
+   "app/config.py",
+   "app/db/models.py",
+   "app/log.py",
+   "app/schemas.py"
+  ],
+  "app/pipeline/rules.py": [
+   "app/config.py"
+  ],
+  "app/pipeline/scoring.py": [
+   "app/config.py"
+  ],
+  "app/pipeline/triage.py": [
+   "app/config.py",
+   "app/pipeline/llm.py"
+  ],
+  "tests/integration/conftest.py": [
+   "app/config.py",
+   "app/db/session.py"
+  ],
+  "tests/integration/test_dedupe_db.py": [
+   "app/config.py",
+   "app/db/models.py",
+   "app/db/session.py",
+   "app/pipeline/dedupe.py"
+  ],
+  "tests/integration/test_pipeline_db.py": [
+   "app/config.py",
+   "app/db/models.py",
+   "app/db/session.py",
+   "app/jobs/__init__.py",
+   "app/jobs/pipeline.py",
+   "app/pipeline/triage.py"
+  ],
+  "tests/test_dedupe.py": [
+   "app/config.py",
+   "app/pipeline/dedupe.py"
+  ],
+  "tests/test_rules.py": [
+   "app/config.py",
+   "app/pipeline/rules.py"
+  ],
+  "tests/test_scoring.py": [
+   "app/config.py",
+   "app/pipeline/scoring.py"
+  ],
+  "tests/test_telegram_api.py": [
+   "app/config.py",
+   "app/notify/telegram.py"
+  ],
+  "tests/test_triage.py": [
+   "app/pipeline/triage.py"
+  ]
+ }
+}

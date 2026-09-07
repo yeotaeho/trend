@@ -1,0 +1,394 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 3,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 3,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 3,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "app/pipeline/feedback.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 42,
+      "nonEmptyLines": 32,
+      "functions": [
+        {
+          "name": "format_examples",
+          "startLine": 34,
+          "endLine": 35,
+          "params": [
+            "examples"
+          ]
+        },
+        {
+          "name": "nearest_feedback",
+          "startLine": 38,
+          "endLine": 42,
+          "params": [
+            "session",
+            "item_id",
+            "k",
+            "min_sim"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "FeedbackExample",
+          "startLine": 29,
+          "endLine": 31,
+          "methods": [],
+          "properties": [
+            "verdict",
+            "title_ko"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "FeedbackExample",
+          "line": 28,
+          "isDefault": false
+        },
+        {
+          "name": "format_examples",
+          "line": 34,
+          "isDefault": false
+        },
+        {
+          "name": "nearest_feedback",
+          "line": 38,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "format_examples",
+          "callee": "\" · \".join",
+          "lineNumber": 35
+        },
+        {
+          "caller": "nearest_feedback",
+          "callee": "(await session.execute(_SQL, {\"item_id\": item_id, \"min_sim\": min_sim, \"k\": k})).all",
+          "lineNumber": 41
+        },
+        {
+          "caller": "nearest_feedback",
+          "callee": "session.execute",
+          "lineNumber": 41
+        },
+        {
+          "caller": "nearest_feedback",
+          "callee": "FeedbackExample",
+          "lineNumber": 42
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 3,
+        "functionCount": 2,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "tests/integration/test_feedback_db.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 90,
+      "nonEmptyLines": 83,
+      "functions": [
+        {
+          "name": "test_nearest_feedback_finds_identical_vector",
+          "startLine": 14,
+          "endLine": 90,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "test_nearest_feedback_finds_identical_vector",
+          "line": 14,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "datetime.now",
+          "lineNumber": 15
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "SessionLocal",
+          "lineNumber": 16
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "s.begin",
+          "lineNumber": 16
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "Source",
+          "lineNumber": 17
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "s.add",
+          "lineNumber": 18
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "s.flush",
+          "lineNumber": 19
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "Item",
+          "lineNumber": 20
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "Item",
+          "lineNumber": 29
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "Item",
+          "lineNumber": 38
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "s.add_all",
+          "lineNumber": 47
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "s.flush",
+          "lineNumber": 48
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "s.execute",
+          "lineNumber": 49
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "update(Item)\r\n            .where(Item.id.in_([a.id, b.id]))\r\n            .values",
+          "lineNumber": 50
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "update(Item)\r\n            .where",
+          "lineNumber": 50
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "update",
+          "lineNumber": 50
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "Item.id.in_",
+          "lineNumber": 51
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "s.execute",
+          "lineNumber": 56
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "update(Item).where(Item.id == c.id).values",
+          "lineNumber": 57
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "update(Item).where",
+          "lineNumber": 57
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "update",
+          "lineNumber": 57
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "s.add",
+          "lineNumber": 60
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "Summary",
+          "lineNumber": 61
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "s.add_all",
+          "lineNumber": 70
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "Feedback",
+          "lineNumber": 71
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "Feedback",
+          "lineNumber": 71
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "s.add",
+          "lineNumber": 74
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "Feedback",
+          "lineNumber": 74
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "SessionLocal",
+          "lineNumber": 78
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "nearest_feedback",
+          "lineNumber": 79
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "nearest_feedback",
+          "lineNumber": 80
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "nearest_feedback",
+          "lineNumber": 81
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "SessionLocal",
+          "lineNumber": 88
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "s.begin",
+          "lineNumber": 88
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "s.execute",
+          "lineNumber": 89
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "delete(Item).where",
+          "lineNumber": 89
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "delete",
+          "lineNumber": 89
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "Item.id.in_",
+          "lineNumber": 89
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "s.execute",
+          "lineNumber": 90
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "delete(Source).where",
+          "lineNumber": 90
+        },
+        {
+          "caller": "test_nearest_feedback_finds_identical_vector",
+          "callee": "delete",
+          "lineNumber": 90
+        }
+      ],
+      "metrics": {
+        "importCount": 3,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "tests/test_feedback_examples.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 14,
+      "nonEmptyLines": 9,
+      "functions": [
+        {
+          "name": "test_format_examples",
+          "startLine": 6,
+          "endLine": 10,
+          "params": []
+        },
+        {
+          "name": "test_empty_is_empty_string",
+          "startLine": 13,
+          "endLine": 14,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "test_format_examples",
+          "line": 6,
+          "isDefault": false
+        },
+        {
+          "name": "test_empty_is_empty_string",
+          "line": 13,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "test_format_examples",
+          "callee": "format_examples",
+          "lineNumber": 7
+        },
+        {
+          "caller": "test_format_examples",
+          "callee": "FeedbackExample",
+          "lineNumber": 8
+        },
+        {
+          "caller": "test_format_examples",
+          "callee": "FeedbackExample",
+          "lineNumber": 8
+        },
+        {
+          "caller": "test_empty_is_empty_string",
+          "callee": "format_examples",
+          "lineNumber": 14
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 2,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    }
+  ]
+}

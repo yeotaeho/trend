@@ -1,0 +1,118 @@
+{
+  "nodes": [
+    {
+      "id": "file:app/pipeline/trust.py",
+      "type": "file",
+      "name": "trust.py",
+      "filePath": "app/pipeline/trust.py",
+      "summary": "소스 신뢰도를 사용자 피드백으로 베이즈 보정하고, 주간 리포트가 쓰는 정밀도·점수 구간 집계를 제공하는 순수 함수 모듈. DB·IO 의존이 전혀 없어 단위 테스트로 바로 검증된다.",
+      "tags": ["pipeline", "scoring", "utility", "pure-function", "statistics"],
+      "complexity": "simple",
+      "languageNotes": "부동소수 오차(0.45/0.05 = 8.999…)를 막으려고 score_band 가 나눗셈 결과를 소수 9자리에서 반올림한 뒤 floor 를 적용한다."
+    },
+    {
+      "id": "function:app/pipeline/trust.py:adjust_trust",
+      "type": "function",
+      "name": "adjust_trust",
+      "filePath": "app/pipeline/trust.py",
+      "lineRange": [9, 12],
+      "summary": "useful/useless 라벨 수로 소스 신뢰도를 베이즈 평활(사전 가중치 10)한다. 라벨이 없으면 base 를 그대로 두고 결과는 [0.2, 1.0] 으로 자른다.",
+      "tags": ["scoring", "bayesian", "trust", "pure-function"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:app/pipeline/trust.py:precision",
+      "type": "function",
+      "name": "precision",
+      "filePath": "app/pipeline/trust.py",
+      "lineRange": [15, 18],
+      "summary": "useful/(useful+useless) 정밀도를 소수 둘째 자리로 계산한다. 라벨이 하나도 없으면 0 으로 나누지 않고 None 을 돌려준다.",
+      "tags": ["metrics", "utility", "pure-function", "validation"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:app/pipeline/trust.py:score_band",
+      "type": "function",
+      "name": "score_band",
+      "filePath": "app/pipeline/trust.py",
+      "lineRange": [21, 23],
+      "summary": "점수를 width(기본 0.05) 단위 구간의 하한값으로 내림한다. 부동소수 오차 때문에 나눗셈 결과를 소수 9자리에서 먼저 반올림한다.",
+      "tags": ["metrics", "binning", "pure-function", "utility"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:app/pipeline/trust.py:band_table",
+      "type": "function",
+      "name": "band_table",
+      "filePath": "app/pipeline/trust.py",
+      "lineRange": [26, 38],
+      "summary": "(score, verdict) 행들을 점수 구간별로 묶어 (band, sent, useful, useless, precision) 표를 만든다. 주간 리포트의 점수 구간 섹션 집계를 담당한다.",
+      "tags": ["aggregation", "metrics", "pure-function", "report"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:scripts/weekly_report.py",
+      "type": "file",
+      "name": "weekly_report.py",
+      "filePath": "scripts/weekly_report.py",
+      "summary": "파이프라인 튜닝 근거를 뽑는 주간 리포트 CLI. decisions·notifications·feedback 을 SQL 로 집계해 깔때기·탈락 사유·소스별 정밀도·강도·점수 구간·선별 대 판정 표를 출력하고, --apply 면 보정된 신뢰도를 sources.trust_adjusted 에 기록한다.",
+      "tags": ["script", "entry-point", "report", "analytics", "cli"],
+      "complexity": "complex",
+      "languageNotes": "모든 집계를 모듈 상수 SQLAlchemy text() 쿼리로 선언해 두고 main 이 세션 하나에서 순서대로 실행한다."
+    },
+    {
+      "id": "function:scripts/weekly_report.py:table",
+      "type": "function",
+      "name": "table",
+      "filePath": "scripts/weekly_report.py",
+      "lineRange": [123, 132],
+      "summary": "결과 행 목록을 제목과 함께 파이프 구분 표로 콘솔에 출력한다. 헤더를 주지 않으면 Row 의 _mapping 키에서 뽑아 쓴다.",
+      "tags": ["formatting", "cli", "utility", "report"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:scripts/weekly_report.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "scripts/weekly_report.py",
+      "lineRange": [135, 192],
+      "summary": "세션 하나에서 리포트 쿼리 전부를 실행해 섹션별 표를 찍고, 신뢰도 보정값을 계산해 apply 인자가 참이면 sources.trust_adjusted 에 UPDATE 한다. 끝나면 engine 을 dispose 한다.",
+      "tags": ["entry-point", "report", "database", "async", "cli"],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:tests/test_trust.py",
+      "type": "file",
+      "name": "test_trust.py",
+      "filePath": "tests/test_trust.py",
+      "summary": "trust 모듈 순수 함수 6건 단위 테스트. 라벨 없을 때 base 유지, 사전 가중치 반반 지점, [0.2,1.0] 클램프, precision 의 None 처리, 구간 내림, 구간별 합산을 검증한다.",
+      "tags": ["test", "unit-test", "pipeline", "scoring"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {"source": "file:app/pipeline/trust.py", "target": "function:app/pipeline/trust.py:adjust_trust", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:app/pipeline/trust.py", "target": "function:app/pipeline/trust.py:precision", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:app/pipeline/trust.py", "target": "function:app/pipeline/trust.py:score_band", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:app/pipeline/trust.py", "target": "function:app/pipeline/trust.py:band_table", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:app/pipeline/trust.py", "target": "function:app/pipeline/trust.py:adjust_trust", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:app/pipeline/trust.py", "target": "function:app/pipeline/trust.py:precision", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:app/pipeline/trust.py", "target": "function:app/pipeline/trust.py:score_band", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:app/pipeline/trust.py", "target": "function:app/pipeline/trust.py:band_table", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "function:app/pipeline/trust.py:band_table", "target": "function:app/pipeline/trust.py:score_band", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:app/pipeline/trust.py:band_table", "target": "function:app/pipeline/trust.py:precision", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "file:scripts/weekly_report.py", "target": "function:scripts/weekly_report.py:table", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:scripts/weekly_report.py", "target": "function:scripts/weekly_report.py:main", "type": "contains", "direction": "forward", "weight": 1.0},
+    {"source": "file:scripts/weekly_report.py", "target": "function:scripts/weekly_report.py:main", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:scripts/weekly_report.py", "target": "function:scripts/weekly_report.py:table", "type": "exports", "direction": "forward", "weight": 0.8},
+    {"source": "file:scripts/weekly_report.py", "target": "file:app/db/session.py", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:scripts/weekly_report.py", "target": "file:app/pipeline/trust.py", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "file:tests/test_trust.py", "target": "file:app/pipeline/trust.py", "type": "imports", "direction": "forward", "weight": 0.7},
+    {"source": "function:scripts/weekly_report.py:main", "target": "function:app/pipeline/trust.py:adjust_trust", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:scripts/weekly_report.py:main", "target": "function:app/pipeline/trust.py:precision", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:scripts/weekly_report.py:main", "target": "function:app/pipeline/trust.py:band_table", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:scripts/weekly_report.py:main", "target": "function:app/db/session.py:session_scope", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "function:scripts/weekly_report.py:main", "target": "function:scripts/weekly_report.py:table", "type": "calls", "direction": "forward", "weight": 0.8},
+    {"source": "file:app/pipeline/trust.py", "target": "file:tests/test_trust.py", "type": "tested_by", "direction": "forward", "weight": 0.5}
+  ]
+}
