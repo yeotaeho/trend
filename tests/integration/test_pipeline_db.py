@@ -10,6 +10,7 @@ from app.db.models import Decision, Item, LlmCall, Source
 from app.db.session import SessionLocal
 from app.jobs import pipeline
 from app.pipeline.triage import TriageBatch, TriageItem
+from app.schemas import Kind
 
 
 @pytest.fixture
@@ -65,7 +66,12 @@ async def test_item_failure_twice_drops_only_that_item(items, monkeypatch):
         # 첫 항목만 relevance 범위 밖(항목 실패), 나머지 정상. 개수·idx 는 맞아 배치 실패가 아니다.
         return TriageBatch(
             items=[
-                TriageItem(idx=e.idx, relevance=5.0 if e.idx == ids[0] else 0.5, reason="r")
+                TriageItem(
+                    idx=e.idx,
+                    relevance=5.0 if e.idx == ids[0] else 0.5,
+                    reason="r",
+                    kind=Kind.NEWS,
+                )
                 for e in entries
             ]
         )
@@ -139,7 +145,9 @@ async def test_existing_relevance_is_reused_without_a_call(items, monkeypatch):
     async def fake_triage(_rules, entries):
         calls.append(len(entries))
         return TriageBatch(
-            items=[TriageItem(idx=e.idx, relevance=0.4, reason="r") for e in entries]
+            items=[
+                TriageItem(idx=e.idx, relevance=0.4, reason="r", kind=Kind.NEWS) for e in entries
+            ]
         )
 
     monkeypatch.setattr(pipeline, "call_triage", fake_triage)
