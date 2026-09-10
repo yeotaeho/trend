@@ -7,6 +7,7 @@ import asyncio
 
 from app.db.session import engine
 from app.jobs.collect import run_all_sources
+from app.jobs.feedback import run_feedback
 from app.jobs.notify import run_notify
 from app.jobs.pipeline import run_pipeline
 from app.jobs.scheduler import sync_sources
@@ -17,6 +18,7 @@ JOBS = {
     "collect": run_all_sources,
     "pipeline": run_pipeline,
     "notify": run_notify,
+    "feedback": run_feedback,
 }
 
 
