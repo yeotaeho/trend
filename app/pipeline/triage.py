@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from app.config import Rules, get_settings
 from app.pipeline.llm import client, render_policy
@@ -106,20 +106,25 @@ async def call_triage(rules: Rules, entries: list[TriageEntry]) -> TriageBatch:
     시스템 블록에 cache_control 을 건다. 다만 캐시는 모델별 최소 접두(수백~수천 토큰) 이상일 때만
     걸리므로 정책 문장이 짧으면 그냥 통과한다. 비용은 없다.
     """
-    response = await client().messages.parse(
-        model=get_settings().llm_model,
-        max_tokens=2048,
-        system=[
-            {
-                "type": "text",
-                "text": SYSTEM_PROMPT.format(policy=render_policy(rules.policy)),
-                "cache_control": {"type": "ephemeral"},
-            }
-        ],
-        messages=[{"role": "user", "content": build_user_content(entries)}],
-        output_format=TriageBatch,
-    )
-    parsed = response.parsed_output
+    try:
+        response = await client().messages.parse(
+            model=get_settings().llm_model,
+            max_tokens=2048,
+            system=[
+                {
+                    "type": "text",
+                    "text": SYSTEM_PROMPT.format(policy=render_policy(rules.policy)),
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ],
+            messages=[{"role": "user", "content": build_user_content(entries)}],
+            output_format=TriageBatch,
+        )
+        parsed = response.parsed_output
+    except ValidationError as exc:
+        # 응답은 왔는데 스키마(예: enum 밖 kind)에 안 맞는다. 25건 공통의 프로토콜 실패라
+        # 기반 실패가 아니라 배치 실패다 — 호출자가 1회 재시도한다.
+        raise TriageBatchError(f"구조화 출력 검증 실패: {exc.error_count()}건") from exc
     if parsed is None:
         raise TriageBatchError("구조화 출력이 비어 있음")
     return parsed

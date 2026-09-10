@@ -9,9 +9,11 @@ from app.pipeline.triage import (
     TriageEntry,
     TriageItem,
     build_user_content,
+    call_triage,
     parse_triage,
 )
 from app.schemas import Kind
+from tests.test_rules import RULES
 
 
 def entries():
@@ -73,3 +75,22 @@ def test_parse_keeps_kind():
 
 def test_prompt_lists_every_kind():
     assert all(k.value in SYSTEM_PROMPT for k in Kind)
+
+
+async def test_invalid_kind_from_model_is_a_batch_error(monkeypatch):
+    """enum 밖 kind 는 SDK 의 pydantic 검증에서 터진다. 기반 실패가 아니라 배치 실패다."""
+    import app.pipeline.triage as triage
+
+    class _Messages:
+        async def parse(self, **_kwargs):
+            TriageBatch.model_validate(
+                {"items": [{"idx": 1, "relevance": 0.5, "reason": "r", "kind": "nope"}]}
+            )
+            raise AssertionError("unreachable")
+
+    class _Client:
+        messages = _Messages()
+
+    monkeypatch.setattr(triage, "client", lambda: _Client())
+    with pytest.raises(TriageBatchError, match="검증"):
+        await call_triage(RULES, entries())
