@@ -2,10 +2,11 @@
 
 from datetime import UTC, datetime
 
-from sqlalchemy import delete, update
+from sqlalchemy import delete, select, update
 
-from app.db.models import Feedback, Item, Source, Summary
+from app.db.models import Feedback, Item, Notification, Source, Summary
 from app.db.session import SessionLocal
+from app.jobs.feedback import sync_feedback
 from app.pipeline.feedback import nearest_feedback
 
 VEC_LIST = [0.03] * 1024
@@ -88,3 +89,40 @@ async def test_nearest_feedback_finds_identical_vector():
         async with SessionLocal() as s, s.begin():
             await s.execute(delete(Item).where(Item.id.in_(ids[:3])))
             await s.execute(delete(Source).where(Source.id == ids[3]))
+
+
+async def test_sync_feedback_writes_only_changes():
+    """리액션 폴링이 같은 판정을 매번 다시 쓰면 created_at 이 밀린다. 바뀐 것만 쓴다."""
+    now = datetime.now(UTC)
+    async with SessionLocal() as s, s.begin():
+        src = Source(name="test:fb-sync", type="rss", config={})
+        s.add(src)
+        await s.flush()
+        a = Item(
+            source_id=src.id,
+            external_id="s",
+            url="https://t/s",
+            url_normalized="https://t/s",
+            url_hash="fb-sync-a",
+            title="S",
+            published_at=now,
+        )
+        s.add(a)
+        await s.flush()
+        s.add(Notification(item_id=a.id, channel="discord", level="push", message_id="m-sync-1"))
+        ids = (a.id, src.id)
+
+    try:
+        async with SessionLocal() as s, s.begin():
+            # 모르는 메시지 id 는 무시한다
+            assert await sync_feedback(s, {"m-sync-1": "useful", "m-unknown": "useless"}) == 1
+        async with SessionLocal() as s, s.begin():
+            assert await sync_feedback(s, {"m-sync-1": "useful"}) == 0
+            assert await sync_feedback(s, {"m-sync-1": "useless"}) == 1
+        async with SessionLocal() as s:
+            verdict = await s.scalar(select(Feedback.verdict).where(Feedback.item_id == ids[0]))
+        assert verdict == "useless"
+    finally:
+        async with SessionLocal() as s, s.begin():
+            await s.execute(delete(Item).where(Item.id == ids[0]))
+            await s.execute(delete(Source).where(Source.id == ids[1]))

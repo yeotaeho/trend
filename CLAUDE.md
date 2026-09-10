@@ -30,7 +30,7 @@
 | 구성 요소 | 파일 | 역할 |
 | --- | --- | --- |
 | API 서버 (FastAPI) | `app/main.py` | 웹훅 수신(GitHub release, 텔레그램 봇 콜백), 헬스체크, 이후 앱용 REST API. 같은 프로세스에서 스케줄러 기동 |
-| Scheduler/Worker (APScheduler) | `app/jobs/` | 소스별 폴링 잡(`run_source`), 파이프라인 잡(`run_pipeline`), 발송 잡(`run_notify`) |
+| Scheduler/Worker (APScheduler) | `app/jobs/` | 소스별 폴링 잡(`run_source`), 파이프라인 잡(`run_pipeline`), 발송 잡(`run_notify`), 피드백 폴링 잡(`run_feedback`) |
 | Neon (Postgres) | — | 모든 상태의 단일 진실 원천. `status` 컬럼 + `FOR UPDATE SKIP LOCKED` 로 큐 역할도 겸함 (Redis·MQ 없음) |
 
 **Stack** — Python 3.12+ · uv · FastAPI/uvicorn · APScheduler 3.x(AsyncIOScheduler, Postgres jobstore) · httpx + tenacity · feedparser · trafilatura(본문 보강 단계에서만) · Neon(Postgres 16/17, pg_trgm) · SQLAlchemy 2.x async(asyncpg, `statement_cache_size=0`) + Alembic · Pydantic v2 / pydantic-settings · Anthropic SDK(Claude Haiku 급, 구조화 JSON 출력) · python-telegram-bot 21.x · structlog · pytest + pytest-asyncio + respx · ruff + mypy · Docker Compose + Caddy · GitHub Actions
@@ -41,7 +41,7 @@
 [소스] → [수집기 sources/*] → [적재 + 임베딩] → NEW
 1국면 (항목별)   stale(72h) → 중복·관련 (벡터 코사인, 생존자 기준) → exclude 규칙
 2국면 (25건 배치) LLM 선별 — 정책 문장을 읽고 관련도 0~1 + 이유
-3국면 (항목별)   점수(src·rel·hot·multi·fresh ≥ 0.45) → 본문 보강* → LLM 판정·요약 → SCORED
+3국면 (항목별)   점수(src·rel·hot·multi·fresh + kind 감점 ≥ 0.45) → 본문 보강* → LLM 판정·요약 → SCORED
 발송 잡          강도·상한·무음 → 디스코드 (+ 🧪 탐색 슬롯 1건/일)
 ```
 
@@ -76,7 +76,7 @@ uv run ruff check . && uv run ruff format .
 uv run mypy app
 
 # 수동 실행·백필·튜닝 리포트
-uv run python scripts/run_job.py collect pipeline notify   # 잡을 순서대로 한 번씩
+uv run python scripts/run_job.py collect pipeline notify feedback   # 잡을 순서대로 한 번씩
 uv run python scripts/backfill_embeddings.py               # 임베딩 NULL·모델 불일치 행 재계산 (멱등)
 uv run python scripts/calibrate_dedupe.py                  # 유사도 구간별 쌍 표본 → dedupe 임계값 보정
 uv run python scripts/weekly_report.py [--apply]           # 주간 튜닝 표, --apply 면 소스 신뢰도 보정 기록

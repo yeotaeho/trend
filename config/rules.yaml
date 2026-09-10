@@ -40,13 +40,27 @@ triage:
   daily_cap_calls: 60
 
 scoring:
-  w_src: 0.25
-  w_rel: 0.25
+  # 2026-09-10 조정 0.25/0.25 → 0.20/0.30. 신뢰도 0.5 인 arXiv 는 관련도 0.83 부터 통과한다
+  # (실측 0.8 대 28건/2.5일). 0.9 만 통과하던 때는 3일간 1건뿐이었다.
+  w_src: 0.20
+  w_rel: 0.30
   w_hot: 0.2
   w_multi: 0.2
   w_fresh: 0.1
   threshold: 0.45
   max_age_hours: 72
+  # 선별이 매긴 kind 별 가점·감점. 곱이 아니라 그대로 더한다. 0 이면 영향 없음.
+  # 감점만 둔다. 2026-09-09 실측: technique +0.10 은 arXiv 154건/2.5일을 판정으로 보낸다.
+  # release_patch 감점은 신뢰도 1.0 소스에서 관련도 1.0 을 요구하게 되어 두지 않는다.
+  kind_weights:
+    release_major: 0.0
+    release_patch: 0.0
+    technique: 0.0
+    survey: -0.15
+    news: 0.0
+    tutorial: -0.05
+    promo: -0.30
+    other: 0.0
 
 notify:
   daily_push_cap: 15

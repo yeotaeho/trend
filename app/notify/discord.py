@@ -7,13 +7,17 @@ import re
 import time
 from datetime import datetime
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
 from app.config import get_settings
 from app.db.models import Item, Summary
+from app.log import get_logger
 from app.notify.base import RateLimited, feedback_callback_data, relative_time
 from app.schemas import Level
+
+log = get_logger(__name__)
 
 API = "https://discord.com/api/v10"
 TIMEOUT = httpx.Timeout(15.0)
@@ -116,11 +120,12 @@ def _extend_gate(wait: float) -> None:
     _blocked_until = max(_blocked_until, time.monotonic() + wait)
 
 
-async def _call(method: str, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+async def _call(method: str, path: str, payload: dict[str, Any] | None = None) -> Any:
     """네트워크 오류·5xx·429 만 재시도한다. 429 는 디스코드가 알려준 시간만큼 기다린다.
 
     401·403·404 같은 영구 4xx 를 반복하면 디스코드가 봇을 제한할 수 있어 즉시 실패시킨다.
     토큰은 헤더에만 들어가므로 예외 메시지에 새지 않는다. 디스코드 오류 본문은 남긴다.
+    응답은 JSON 그대로다 (객체 또는 배열). 204 처럼 본문이 없으면 빈 dict.
     """
     headers = {
         "Authorization": f"Bot {get_settings().discord_bot_token}",
@@ -148,8 +153,7 @@ async def _call(method: str, path: str, payload: dict[str, Any]) -> dict[str, An
 
         status = response.status_code
         if status < 400:
-            body: dict[str, Any] = response.json()
-            return body
+            return response.json() if response.content else {}
         detail = f"discord {method} {path} HTTP {status}: {response.text[:200]}"
         if status == 429:
             wait = _retry_after_seconds(response)
@@ -171,6 +175,48 @@ async def _call(method: str, path: str, payload: dict[str, Any]) -> dict[str, An
     raise AssertionError("unreachable")
 
 
+# 피드백 리액션. 발송 직후 봇이 먼저 달아 두면 사용자는 한 번 눌러 답한다.
+# 버튼(인터랙션)은 공개 URL 이 있어야 도착하지만 리액션은 봇이 REST 로 읽어 온다.
+FEEDBACK_REACTIONS = {"👍": "useful", "👎": "useless"}
+
+
+async def add_feedback_reactions(channel_id: str, message_id: str) -> None:
+    """실패해도 예외를 올리지 않는다. 메시지는 이미 나갔으므로 항목을 FAILED 로 만들면 안 된다."""
+    for emoji in FEEDBACK_REACTIONS:
+        path = f"/channels/{channel_id}/messages/{message_id}/reactions/{quote(emoji)}/@me"
+        try:
+            await _call("PUT", path)
+        except Exception as exc:
+            log.warning("discord.reaction_seed_failed", message_id=message_id, error=str(exc))
+            return
+
+
+async def fetch_recent_messages(channel_id: str, limit: int = 100) -> list[dict[str, Any]]:
+    """채널의 최근 메시지. reactions 필드에 이모지별 count 와 봇 자신의 반응 여부(me)가 있다."""
+    messages: list[dict[str, Any]] = await _call(
+        "GET", f"/channels/{channel_id}/messages?limit={limit}"
+    )
+    return messages
+
+
+def reaction_verdicts(messages: list[dict[str, Any]]) -> dict[str, str]:
+    """메시지 id → useful | useless. 봇이 단 시드(me)는 빼고 센다.
+
+    👍👎 가 둘 다 있으면 👎 다. 리액션엔 순서가 없고, 부정이 걸러내기에 더 유용한 신호다.
+    """
+    verdicts: dict[str, str] = {}
+    for message in messages:
+        pressed: set[str] = set()
+        for reaction in message.get("reactions", []):
+            verdict = FEEDBACK_REACTIONS.get(reaction.get("emoji", {}).get("name", ""))
+            users = int(reaction.get("count", 0)) - (1 if reaction.get("me") else 0)
+            if verdict and users >= 1:
+                pressed.add(verdict)
+        if pressed:
+            verdicts[str(message["id"])] = "useless" if "useless" in pressed else "useful"
+    return verdicts
+
+
 class DiscordNotifier:
     channel = "discord"
 
@@ -181,7 +227,9 @@ class DiscordNotifier:
             f"/channels/{channel_id}/messages",
             build_payload(item, summary, level, source_name),
         )
-        return str(body["id"])
+        message_id = str(body["id"])
+        await add_feedback_reactions(channel_id, message_id)
+        return message_id
 
 
 async def send_ops_alert(text: str) -> None:

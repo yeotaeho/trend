@@ -9,12 +9,14 @@ from app.config import get_source_configs
 from app.db.models import Source
 from app.db.session import session_scope
 from app.jobs.collect import run_source
+from app.jobs.feedback import run_feedback
 from app.jobs.notify import run_notify
 from app.jobs.pipeline import run_pipeline
 from app.log import get_logger
 
 PIPELINE_INTERVAL_SEC = 120
 NOTIFY_INTERVAL_SEC = 180
+FEEDBACK_INTERVAL_SEC = 600  # 디스코드 GET 1회. 리액션은 몇 분 늦게 반영돼도 된다
 log = get_logger(__name__)
 
 
@@ -60,6 +62,9 @@ async def start_scheduler() -> AsyncIOScheduler:
     )
     scheduler.add_job(
         run_notify, "interval", seconds=NOTIFY_INTERVAL_SEC, id="notify", max_instances=1
+    )
+    scheduler.add_job(
+        run_feedback, "interval", seconds=FEEDBACK_INTERVAL_SEC, id="feedback", max_instances=1
     )
     scheduler.start()
     log.info("scheduler.started", jobs=[job.id for job in scheduler.get_jobs()])

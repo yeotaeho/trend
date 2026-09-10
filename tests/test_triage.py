@@ -3,13 +3,17 @@
 import pytest
 
 from app.pipeline.triage import (
+    SYSTEM_PROMPT,
     TriageBatch,
     TriageBatchError,
     TriageEntry,
     TriageItem,
     build_user_content,
+    call_triage,
     parse_triage,
 )
+from app.schemas import Kind
+from tests.test_rules import RULES
 
 
 def entries():
@@ -20,7 +24,9 @@ def entries():
 
 
 def items(*pairs: tuple[int, float]) -> TriageBatch:
-    return TriageBatch(items=[TriageItem(idx=i, relevance=r, reason="r") for i, r in pairs])
+    return TriageBatch(
+        items=[TriageItem(idx=i, relevance=r, reason="r", kind=Kind.NEWS) for i, r in pairs]
+    )
 
 
 def test_user_content_numbers_items_and_appends_examples():
@@ -56,6 +62,35 @@ def test_out_of_range_relevance_is_item_failure():
 
 
 def test_reason_is_truncated_to_200_chars():
-    batch = TriageBatch(items=[TriageItem(idx=1, relevance=0.5, reason="x" * 500)])
+    batch = TriageBatch(items=[TriageItem(idx=1, relevance=0.5, reason="x" * 500, kind=Kind.NEWS)])
     ok, _ = parse_triage(batch, [1])
     assert len(ok[1].reason) == 200
+
+
+def test_parse_keeps_kind():
+    batch = TriageBatch(items=[TriageItem(idx=1, relevance=0.5, reason="r", kind=Kind.SURVEY)])
+    ok, failed = parse_triage(batch, [1])
+    assert failed == [] and ok[1].kind is Kind.SURVEY
+
+
+def test_prompt_lists_every_kind():
+    assert all(k.value in SYSTEM_PROMPT for k in Kind)
+
+
+async def test_invalid_kind_from_model_is_a_batch_error(monkeypatch):
+    """enum 밖 kind 는 SDK 의 pydantic 검증에서 터진다. 기반 실패가 아니라 배치 실패다."""
+    import app.pipeline.triage as triage
+
+    class _Messages:
+        async def parse(self, **_kwargs):
+            TriageBatch.model_validate(
+                {"items": [{"idx": 1, "relevance": 0.5, "reason": "r", "kind": "nope"}]}
+            )
+            raise AssertionError("unreachable")
+
+    class _Client:
+        messages = _Messages()
+
+    monkeypatch.setattr(triage, "client", lambda: _Client())
+    with pytest.raises(TriageBatchError, match="검증"):
+        await call_triage(RULES, entries())
