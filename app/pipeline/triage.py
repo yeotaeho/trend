@@ -8,23 +8,36 @@ from pydantic import BaseModel
 
 from app.config import Rules, get_settings
 from app.pipeline.llm import client, render_policy
+from app.schemas import Kind
 
 REASON_CHARS = 200
 
 SYSTEM_PROMPT = """\
-너는 개인용 개발 트렌드 알림기의 선별 단계다. 항목마다 "이 사용자가 읽을 후보인가" 를 0~1 로 매긴다.
-정독·요약은 다음 단계가 하니 여기서는 관련도만 빠르게 판단한다.
+너는 개인용 개발 트렌드 알림기의 선별 단계다. 항목마다 relevance 와 kind 를 매긴다.
+정독·요약은 다음 단계가 하니 여기서는 빠르게 판단한다.
 
 사용자 정책:
 {policy}
 
-relevance 눈금
+1) relevance (0~1) — 이 사용자가 읽을 후보인가.
 - 0.9 이상: 새 모델·릴리즈·기법·도구의 직접적인 변화. 사용자가 알아야 할 것.
 - 0.6: 관심 주제의 일반적인 글. 읽으면 도움이 되지만 변화는 아님.
 - 0.3: 주변부. 관심 주제와 스치는 정도.
 - 0: 무관, 홍보, 구인, 스폰서, 잡담.
 목록에 없는 새 이름·용어라도 문맥이 정책과 맞으면 높게 준다. 키워드가 아니라 뜻으로 판단한다.
-"유사 피드백" 이 붙은 항목은 사용자가 비슷한 글에 남긴 👍/👎 이니 강하게 참고한다.
+
+2) kind — 변화의 종류. 반드시 하나.
+- release_major: 메이저 버전, 새 제품·모델 출시, 큰 기능 추가
+- release_patch: 패치·유지보수·보안 백포트·마이너 정비
+- technique: 구체적인 방법과 결과 수치가 있는 기법·논문
+- survey: 서베이·종합·전망·포지션·프레임워크 제안 (수치 없는 논의)
+- news: 정책·가격·장애·인수 등 사건
+- tutorial: 사용법·입문·따라하기
+- promo: 홍보·구인·스폰서
+- other: 위 어디에도 맞지 않음
+
+"유사 피드백" 이 붙은 항목은 사용자가 비슷한 글에 남긴 👍/👎 이다.
+참고하되, 항목 자체의 변화 크기를 우선한다.
 reason 은 20단어 이내 한국어 한 문장.
 모든 항목에 대해 idx 를 그대로 돌려준다.
 """
@@ -43,6 +56,7 @@ class TriageItem(BaseModel):
     idx: int
     relevance: float
     reason: str
+    kind: Kind
 
 
 class TriageBatch(BaseModel):
@@ -79,7 +93,9 @@ def parse_triage(
     for it in batch.items:
         if it.idx in ok or not 0.0 <= it.relevance <= 1.0:
             continue
-        ok[it.idx] = TriageItem(idx=it.idx, relevance=it.relevance, reason=it.reason[:REASON_CHARS])
+        ok[it.idx] = TriageItem(
+            idx=it.idx, relevance=it.relevance, reason=it.reason[:REASON_CHARS], kind=it.kind
+        )
     failed = [idx for idx in expected if idx not in ok]
     return ok, failed
 

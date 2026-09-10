@@ -26,7 +26,7 @@ from app.pipeline.triage import (
     call_triage,
     parse_triage,
 )
-from app.schemas import ItemStatus, Stage
+from app.schemas import ItemStatus, Kind, Stage
 
 BATCH_SIZE = 50
 SNIPPET_CHARS = 300
@@ -135,7 +135,11 @@ async def _existing_relevance(session: AsyncSession, item_ids: list[int]) -> dic
     for item_id, details in (await session.execute(stmt)).all():
         if item_id not in found and "relevance" in details:
             found[item_id] = TriageItem(
-                idx=item_id, relevance=float(details["relevance"]), reason=str(details["reason"])
+                idx=item_id,
+                relevance=float(details["relevance"]),
+                reason=str(details["reason"]),
+                # kind 도입 전 행은 필드가 없다. 다시 호출하지 않고 중립값으로 채운다.
+                kind=Kind(details.get("kind", Kind.OTHER)),
             )
     return found
 
@@ -220,7 +224,12 @@ async def _triage(
                         item,
                         Stage.TRIAGE,
                         True,
-                        {"relevance": res.relevance, "reason": res.reason, "batch_id": batch_id},
+                        {
+                            "relevance": res.relevance,
+                            "reason": res.reason,
+                            "kind": res.kind.value,
+                            "batch_id": batch_id,
+                        },
                     )
                 )
             else:
@@ -251,6 +260,7 @@ async def _judge(
         rules.scoring,
         trust=trust,
         relevance=tri.relevance,
+        kind=tri.kind,
         metrics=metrics if isinstance(metrics, dict) else {},
         mention_count=verdict.mention_count,
         published_at=item.published_at,

@@ -3,9 +3,11 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from pydantic import ValidationError
 
 from app.config import ScoringConfig
 from app.pipeline.scoring import freshness, hotness, is_stale, score_item
+from app.schemas import Kind
 
 NOW = datetime(2026, 8, 30, 12, 0, tzinfo=UTC)
 CFG = ScoringConfig()
@@ -32,6 +34,7 @@ def test_trusted_fresh_relevant_item_passes():
         CFG,
         trust=1.0,
         relevance=1.0,
+        kind=Kind.NEWS,
         metrics={},
         mention_count=1,
         published_at=NOW - timedelta(hours=1),
@@ -50,7 +53,14 @@ def test_relevance_needed_to_pass_alone_within_a_day(trust, needed):
 
     def score(rel):
         return score_item(
-            CFG, trust=trust, relevance=rel, metrics={}, mention_count=1, published_at=NOW, now=NOW
+            CFG,
+            trust=trust,
+            relevance=rel,
+            kind=Kind.NEWS,
+            metrics={},
+            mention_count=1,
+            published_at=NOW,
+            now=NOW,
         )
 
     assert score(needed).passed
@@ -62,6 +72,7 @@ def test_weak_item_drops():
         CFG,
         trust=0.3,
         relevance=0.3,
+        kind=Kind.NEWS,
         metrics={},
         mention_count=1,
         published_at=NOW - timedelta(days=6),
@@ -74,6 +85,7 @@ def test_multi_source_mentions_lift_score():
     kwargs = {
         "trust": 0.5,
         "relevance": 0.3,
+        "kind": Kind.NEWS,
         "metrics": {},
         "published_at": NOW,
         "now": NOW,
@@ -86,3 +98,37 @@ def test_multi_source_mentions_lift_score():
 def test_stale_boundary():
     assert not is_stale(NOW - timedelta(hours=71), 72, now=NOW)
     assert is_stale(NOW - timedelta(hours=73), 72, now=NOW)
+
+
+def _arxiv(kind: Kind):
+    return score_item(
+        CFG,
+        trust=0.5,
+        relevance=0.9,
+        kind=kind,
+        metrics={},
+        mention_count=1,
+        published_at=NOW,
+        now=NOW,
+    )
+
+
+def test_kind_weight_is_added_not_multiplied():
+    base, survey = _arxiv(Kind.NEWS), _arxiv(Kind.SURVEY)
+    assert survey.breakdown["kind"] == CFG.kind_weights[Kind.SURVEY]
+    assert survey.score == pytest.approx(base.score + CFG.kind_weights[Kind.SURVEY])
+
+
+def test_arxiv_survey_drops_where_news_passes():
+    """2026-09-08 SDLC 서베이 사례. trust 0.5 · rel 0.9 · 24h 이내: news 통과, survey 탈락."""
+    assert _arxiv(Kind.NEWS).passed
+    assert not _arxiv(Kind.SURVEY).passed
+
+
+def test_kind_without_weight_is_neutral():
+    assert _arxiv(Kind.OTHER).breakdown["kind"] == 0.0
+
+
+def test_unknown_kind_in_weights_is_rejected():
+    with pytest.raises(ValidationError):
+        ScoringConfig(kind_weights={"nope": 0.1})

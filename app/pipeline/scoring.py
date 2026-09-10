@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from app.config import ScoringConfig
+from app.schemas import Kind
 
 FRESH_HALF_LIFE_HOURS = 24.0
 HOTNESS_SATURATION = 500.0  # points/stars 가 이 정도면 hotness 1.0 에 근접
@@ -47,6 +48,7 @@ def score_item(
     *,
     trust: float,
     relevance: float,
+    kind: Kind,
     metrics: dict[str, float],
     mention_count: int,
     published_at: datetime,
@@ -58,6 +60,8 @@ def score_item(
         "hot": cfg.w_hot * hotness(metrics),
         "multi": cfg.w_multi * min(max(mention_count - 1, 0), 2) / 2,
         "fresh": cfg.w_fresh * freshness(published_at, now=now),
+        # 가중치 곱이 아니라 덧셈. 설정에 없는 kind 는 영향 없음.
+        "kind": cfg.kind_weights.get(kind, 0.0),
     }
     total = sum(breakdown.values())
     # 부동소수 합이 0.4499999 로 떨어져 경계 케이스가 어긋나지 않게 소수 6자리에서 비교한다.

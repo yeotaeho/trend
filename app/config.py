@@ -10,6 +10,8 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.schemas import Kind
+
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
 
 
@@ -96,6 +98,11 @@ class ScoringConfig(_Strict):
     threshold: float = 0.45
     # 모든 소스 공통. 이보다 오래된 항목은 선별 호출 없이 stale 로 버린다.
     max_age_hours: int = 72
+    # kind 별 가점·감점. 곱이 아니라 그대로 더한다. 없는 kind 는 0. 키가 Kind 밖이면 기동 실패.
+    # 감점만 둔다 — 가점(technique +0.10)은 실측으로 arXiv 154건/2.5일을 판정에 보냈다.
+    kind_weights: dict[Kind, float] = Field(
+        default_factory=lambda: {Kind.SURVEY: -0.15, Kind.TUTORIAL: -0.05, Kind.PROMO: -0.30}
+    )
 
 
 class NotifyConfig(_Strict):

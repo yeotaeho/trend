@@ -42,6 +42,19 @@ class Level(StrEnum):
     EXPLORE = "explore"  # 하루 1건 경계 항목 실험. push 상한에서 제외
 
 
+class Kind(StrEnum):
+    """선별이 매기는 변화의 종류. 점수 관문이 kind_weights 로 가점·감점한다."""
+
+    RELEASE_MAJOR = "release_major"
+    RELEASE_PATCH = "release_patch"
+    TECHNIQUE = "technique"
+    SURVEY = "survey"
+    NEWS = "news"
+    TUTORIAL = "tutorial"
+    PROMO = "promo"
+    OTHER = "other"
+
+
 class NormalizedItem(BaseModel):
     """수집기가 소스와 무관하게 돌려주는 공통 형태."""
 

@@ -47,6 +47,18 @@ scoring:
   w_fresh: 0.1
   threshold: 0.45
   max_age_hours: 72
+  # 선별이 매긴 kind 별 가점·감점. 곱이 아니라 그대로 더한다. 0 이면 영향 없음.
+  # 감점만 둔다. 2026-09-09 실측: technique +0.10 은 arXiv 154건/2.5일을 판정으로 보낸다.
+  # release_patch 감점은 신뢰도 1.0 소스에서 관련도 1.0 을 요구하게 되어 두지 않는다.
+  kind_weights:
+    release_major: 0.0
+    release_patch: 0.0
+    technique: 0.0
+    survey: -0.15
+    news: 0.0
+    tutorial: -0.05
+    promo: -0.30
+    other: 0.0
 
 notify:
   daily_push_cap: 15

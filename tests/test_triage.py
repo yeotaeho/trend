@@ -3,6 +3,7 @@
 import pytest
 
 from app.pipeline.triage import (
+    SYSTEM_PROMPT,
     TriageBatch,
     TriageBatchError,
     TriageEntry,
@@ -10,6 +11,7 @@ from app.pipeline.triage import (
     build_user_content,
     parse_triage,
 )
+from app.schemas import Kind
 
 
 def entries():
@@ -20,7 +22,9 @@ def entries():
 
 
 def items(*pairs: tuple[int, float]) -> TriageBatch:
-    return TriageBatch(items=[TriageItem(idx=i, relevance=r, reason="r") for i, r in pairs])
+    return TriageBatch(
+        items=[TriageItem(idx=i, relevance=r, reason="r", kind=Kind.NEWS) for i, r in pairs]
+    )
 
 
 def test_user_content_numbers_items_and_appends_examples():
@@ -56,6 +60,16 @@ def test_out_of_range_relevance_is_item_failure():
 
 
 def test_reason_is_truncated_to_200_chars():
-    batch = TriageBatch(items=[TriageItem(idx=1, relevance=0.5, reason="x" * 500)])
+    batch = TriageBatch(items=[TriageItem(idx=1, relevance=0.5, reason="x" * 500, kind=Kind.NEWS)])
     ok, _ = parse_triage(batch, [1])
     assert len(ok[1].reason) == 200
+
+
+def test_parse_keeps_kind():
+    batch = TriageBatch(items=[TriageItem(idx=1, relevance=0.5, reason="r", kind=Kind.SURVEY)])
+    ok, failed = parse_triage(batch, [1])
+    assert failed == [] and ok[1].kind is Kind.SURVEY
+
+
+def test_prompt_lists_every_kind():
+    assert all(k.value in SYSTEM_PROMPT for k in Kind)
