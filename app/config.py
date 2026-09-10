@@ -90,8 +90,9 @@ class TriageConfig(_Strict):
 
 
 class ScoringConfig(_Strict):
-    w_src: float = 0.25
-    w_rel: float = 0.25
+    # 2026-09-10 조정. 소스 신뢰도가 arXiv 의 신호 밀도를 대신 벌하고 있어 비중을 관련도로 옮겼다.
+    w_src: float = 0.20
+    w_rel: float = 0.30
     w_hot: float = 0.2
     w_multi: float = 0.2
     w_fresh: float = 0.1

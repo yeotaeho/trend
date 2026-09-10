@@ -46,10 +46,14 @@ def test_trusted_fresh_relevant_item_passes():
 
 @pytest.mark.parametrize(
     ("trust", "needed"),
-    [(1.0, 0.4), (0.9, 0.5), (0.8, 0.6), (0.7, 0.7), (0.6, 0.8), (0.5, 0.9)],
+    [(1.0, 0.5), (0.9, 0.6), (0.8, 0.65), (0.7, 0.7), (0.6, 0.8), (0.5, 0.85)],
 )
 def test_relevance_needed_to_pass_alone_within_a_day(trust, needed):
-    """설계서 §8 의 표. hot·multi 없이 24시간 이내면 rel ≥ 1.4 − trust."""
+    """hot·multi 없이 24시간 이내면 rel ≥ (0.35 − 0.2·trust) / 0.3.
+
+    2026-09-10 조정 (w_src 0.20 · w_rel 0.30). arXiv(0.5) 는 0.85 부터 통과해
+    관련도 0.8 대 논문만 판정으로 간다 — 실측 2.5일에 28건.
+    """
 
     def score(rel):
         return score_item(
@@ -92,7 +96,7 @@ def test_multi_source_mentions_lift_score():
     }
     one = score_item(CFG, mention_count=1, **kwargs).score
     three = score_item(CFG, mention_count=3, **kwargs).score
-    assert three == one + CFG.w_multi
+    assert three == pytest.approx(one + CFG.w_multi)
 
 
 def test_stale_boundary():
