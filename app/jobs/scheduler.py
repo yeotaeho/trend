@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+from typing import Any
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
 
@@ -45,27 +48,36 @@ async def sync_sources() -> list[Source]:
         return [s for s in (await session.execute(select(Source))).scalars() if s.enabled]
 
 
+def _interval(seconds: int) -> dict[str, Any]:
+    """모든 잡 공통 옵션.
+
+    - next_run_time=now: interval 트리거 기본은 첫 실행이 등록 + 한 주기라, 기동 뒤 arXiv 는
+      한 시간을 기다렸다. 기동 직후 한 번 돌고 그 뒤 주기대로 간다.
+    - coalesce + grace 무제한: 절전에서 깨어나거나 루프가 밀려도 그 잡은 늦게라도 한 번은 돈다.
+      기본 grace 1초는 밀린 회차를 통째로 버렸다. 밀린 회차가 여럿이면 한 번으로 합친다.
+    """
+    return {
+        "trigger": "interval",
+        "seconds": seconds,
+        "next_run_time": datetime.now(UTC),
+        "coalesce": True,
+        "misfire_grace_time": None,
+        "max_instances": 1,
+    }
+
+
 async def start_scheduler() -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler(timezone="UTC")
     for source in await sync_sources():
         scheduler.add_job(
             run_source,
-            "interval",
-            seconds=source.poll_interval_sec,
             args=[source.id],
             id=f"source:{source.name}",
-            max_instances=1,
-            coalesce=True,
+            **_interval(source.poll_interval_sec),
         )
-    scheduler.add_job(
-        run_pipeline, "interval", seconds=PIPELINE_INTERVAL_SEC, id="pipeline", max_instances=1
-    )
-    scheduler.add_job(
-        run_notify, "interval", seconds=NOTIFY_INTERVAL_SEC, id="notify", max_instances=1
-    )
-    scheduler.add_job(
-        run_feedback, "interval", seconds=FEEDBACK_INTERVAL_SEC, id="feedback", max_instances=1
-    )
+    scheduler.add_job(run_pipeline, id="pipeline", **_interval(PIPELINE_INTERVAL_SEC))
+    scheduler.add_job(run_notify, id="notify", **_interval(NOTIFY_INTERVAL_SEC))
+    scheduler.add_job(run_feedback, id="feedback", **_interval(FEEDBACK_INTERVAL_SEC))
     scheduler.start()
     log.info("scheduler.started", jobs=[job.id for job in scheduler.get_jobs()])
     return scheduler
