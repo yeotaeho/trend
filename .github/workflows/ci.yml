@@ -69,6 +69,8 @@ jobs:
             mv compose.new docker-compose.yml
             # Caddyfile 은 컨테이너에 "파일"로 바인드돼 inode 가 고정이다. mv 로 갈아치우면 실행 중인
             # caddy 는 옛 inode 를 계속 보고 뒤의 reload 가 헛돈다. 같은 inode 에 내용만 덮어쓴다.
+            # truncate 먼저라 원자적이지 않지만, 40바이트 한 번 쓰기이고 아래 reload 가 곧 검증한다.
+            # 반토막이면 배포가 실패하고 caddy 는 메모리에 올린 옛 설정으로 계속 서비스한다.
             cat caddy.new > Caddyfile && rm caddy.new
             docker compose pull
             # --wait 는 healthcheck 통과까지 기다리고 실패하면 0 이 아닌 코드를 낸다.
