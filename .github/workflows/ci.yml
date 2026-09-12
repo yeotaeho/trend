@@ -5,8 +5,14 @@ on:
     branches: [main]
   pull_request:
 
+# 연속 푸시 때 배포가 겹치면 옛 이미지가 나중에 올라갈 수 있다. 앞 실행을 취소한다.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+  IMAGE: ghcr.io/${{ github.repository_owner }}/tech-radar
 
 jobs:
   check:
@@ -40,11 +46,28 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/tech-radar:latest
+          # latest 만 올리면 되돌릴 이미지가 없다. SHA 태그를 같이 남겨 롤백 대상을 만든다.
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
       - name: Deploy to VM
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
-          script: cd ~/tech-radar && docker compose pull && docker compose up -d
+          script: |
+            set -e
+            mkdir -p ~/tech-radar && cd ~/tech-radar
+            # compose·Caddyfile 의 원본은 레포다. VM 에만 두면 조용히 어긋난다.
+            # 배포하는 SHA 로 고정해 이미지와 설정이 같은 커밋에서 오도록 한다 (public 레포라 인증 불필요).
+            for f in docker-compose.yml Caddyfile; do
+              curl -fsSL -o "$f" "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/$f"
+            done
+            docker compose pull
+            # --wait 는 healthcheck 통과까지 기다리고 실패하면 0 이 아닌 코드를 낸다.
+            if ! docker compose up -d --wait --wait-timeout 150; then
+              docker compose logs --tail 80 app
+              exit 1
+            fi
+            docker image prune -f

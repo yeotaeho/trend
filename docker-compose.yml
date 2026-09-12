@@ -6,6 +6,22 @@ services:
     env_file: .env
     expose:
       - "8000"
+    # 배포 잡이 `up -d --wait` 로 이 판정을 기다린다. 컨테이너가 죽어도 배포가 초록색이면 안 된다.
+    # slim 이미지에 curl 이 없어 python 으로 확인한다. 2xx 가 아니면 urlopen 이 예외를 낸다.
+    # start_period 는 시작 시 alembic upgrade 와 Neon 콜드 스타트를 감당할 만큼 둔다.
+    healthcheck:
+      test:
+        ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+    # 기본 json-file 드라이버는 한도가 없어 몇 달이면 디스크를 채운다.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   caddy:
     image: caddy:2-alpine
@@ -21,6 +37,11 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   caddy_data:
