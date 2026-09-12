@@ -61,11 +61,15 @@ jobs:
             mkdir -p ~/tech-radar && cd ~/tech-radar
             # compose·Caddyfile 의 원본은 레포다. VM 에만 두면 조용히 어긋난다.
             # 배포하는 SHA 로 고정해 이미지와 설정이 같은 커밋에서 오도록 한다 (public 레포라 인증 불필요).
-            # 임시 파일로 받아 성공한 뒤에만 교체한다. 곧바로 덮어쓰면 전송이 끊길 때 운영 파일이 반토막으로 남는다.
-            for f in docker-compose.yml Caddyfile; do
-              curl -fsSL -o "$f.new" "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/$f"
-              mv "$f.new" "$f"
-            done
+            # 먼저 임시 파일로 받는다. 운영 파일에 곧바로 쓰면 전송이 끊길 때 반토막으로 남는다.
+            base="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}"
+            curl -fsSL -o compose.new "$base/docker-compose.yml"
+            curl -fsSL -o caddy.new "$base/Caddyfile"
+            # compose 는 호스트의 docker 가 읽는다. 원자적 교체가 맞다.
+            mv compose.new docker-compose.yml
+            # Caddyfile 은 컨테이너에 "파일"로 바인드돼 inode 가 고정이다. mv 로 갈아치우면 실행 중인
+            # caddy 는 옛 inode 를 계속 보고 뒤의 reload 가 헛돈다. 같은 inode 에 내용만 덮어쓴다.
+            cat caddy.new > Caddyfile && rm caddy.new
             docker compose pull
             # --wait 는 healthcheck 통과까지 기다리고 실패하면 0 이 아닌 코드를 낸다.
             if ! docker compose up -d --wait --wait-timeout 150; then
