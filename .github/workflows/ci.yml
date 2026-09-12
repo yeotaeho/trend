@@ -61,8 +61,10 @@ jobs:
             mkdir -p ~/tech-radar && cd ~/tech-radar
             # compose·Caddyfile 의 원본은 레포다. VM 에만 두면 조용히 어긋난다.
             # 배포하는 SHA 로 고정해 이미지와 설정이 같은 커밋에서 오도록 한다 (public 레포라 인증 불필요).
+            # 임시 파일로 받아 성공한 뒤에만 교체한다. 곧바로 덮어쓰면 전송이 끊길 때 운영 파일이 반토막으로 남는다.
             for f in docker-compose.yml Caddyfile; do
-              curl -fsSL -o "$f" "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/$f"
+              curl -fsSL -o "$f.new" "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/$f"
+              mv "$f.new" "$f"
             done
             docker compose pull
             # --wait 는 healthcheck 통과까지 기다리고 실패하면 0 이 아닌 코드를 낸다.
@@ -70,4 +72,7 @@ jobs:
               docker compose logs --tail 80 app
               exit 1
             fi
+            # Caddyfile 은 바인드 마운트라 내용이 바뀌어도 compose 가 caddy 를 재생성하지 않는다.
+            # 무중단 reload 를 건다. Caddyfile 이 잘못됐으면 여기서 배포가 실패한다.
+            docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile
             docker image prune -f
