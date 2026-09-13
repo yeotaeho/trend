@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # 실행이 GitHub 장애로 멈추면 재실행·취소가 모두 막힌다. 코드 변경 없이 새 실행을 만드는 통로.
+  # deploy 잡은 ref 로 거르므로 main 에서 실행할 때만 배포한다 (gh workflow run ci --ref main).
+  workflow_dispatch:
 
 # 연속 푸시 때 배포가 겹치면 옛 이미지가 나중에 올라갈 수 있다. 앞 실행을 취소한다.
 concurrency:
