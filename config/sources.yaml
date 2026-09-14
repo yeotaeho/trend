@@ -48,6 +48,14 @@ sources:
     poll_interval_sec: 3600
     trust_score: 0.5
 
+  # --- Hugging Face Daily Papers (큐레이션 10~30건/일. arXiv URL 로 적재돼 위 arXiv 항목에 upvotes 가 병합된다) ---
+  - name: hf_papers:daily
+    type: hf_papers
+    config:
+      limit: 50
+    poll_interval_sec: 3600
+    trust_score: 0.7
+
   # --- GitHub Releases (웹훅이 주 경로, 이 폴링은 누락 보정) ---
   - name: github_release:watchlist
     type: github_release
