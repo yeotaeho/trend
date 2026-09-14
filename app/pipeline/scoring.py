@@ -38,22 +38,33 @@ def hotness(metrics: dict[str, float]) -> float:
     return min(1.0, math.log1p(raw) / math.log1p(HOTNESS_SATURATION))
 
 
+def score_terms(
+    cfg: ScoringConfig, metrics: dict[str, float], mentions: int
+) -> tuple[float, float]:
+    """(hot 항, multi 항). score_item 의 breakdown 과 같은 눈금.
+
+    mentions 는 자기 소스를 뺀 개수다.
+    """
+    return cfg.w_hot * hotness(metrics), cfg.w_multi * min(mentions, 2) / 2
+
+
 def revive_gain(
     cfg: ScoringConfig,
-    old_metrics: dict[str, float],
     new_metrics: dict[str, float],
-    old_mentions: int,
     new_mentions: int,
+    *,
+    base_hot: float,
+    base_multi: float,
 ) -> float:
-    """재관측으로 점수가 최대 얼마나 오를 수 있나. hot·multi 항의 변화량만 더한다.
+    """지금 관측의 hot·multi 항이 기준(마지막 점수 결정의 breakdown)보다 얼마나 높나.
 
-    되살림은 이 값이 임계값까지의 거리 이상일 때만 한다. 몇 점 오른 재관측(HN 10분 폴링)은
-    거의 0 이라 결정 행을 쌓지 않고, 포화된 hotness 는 0 이라 영원히 되살아나지 않는다.
-    mentions 는 자기 소스를 뺀 개수다. score_item 의 multi 항과 같은 눈금이다.
+    되살림은 마지막 점수 + 이 값이 임계값 이상일 때만 한다. 기준을 직전 관측이 아니라 마지막
+    점수 결정에 두어야 폴링마다 조금씩 오르는 HN 점수가 누적된다. 포화된 hotness 는 0 이라
+    영원히 되살아나지 않는다. dedupe 쪽 관련 소스 수가 mentions 보다 클 때는 실제 multi 항이
+    이미 상한이라 이 값이 과대평가될 수 있다. 그 방향은 한 번 더 재점수하는 쪽이라 안전하다.
     """
-    hot = cfg.w_hot * (hotness(new_metrics) - hotness(old_metrics))
-    multi = cfg.w_multi * (min(new_mentions, 2) - min(old_mentions, 2)) / 2
-    return hot + multi
+    hot, multi = score_terms(cfg, new_metrics, new_mentions)
+    return (hot - base_hot) + (multi - base_multi)
 
 
 def is_stale(published_at: datetime, max_age_hours: int, *, now: datetime | None = None) -> bool:

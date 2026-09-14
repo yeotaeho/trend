@@ -14,6 +14,7 @@ from app.pipeline.scoring import (
     merged_mentions,
     revive_gain,
     score_item,
+    score_terms,
 )
 from app.schemas import Kind
 
@@ -155,27 +156,62 @@ def test_merged_mentions_takes_larger_side_and_tolerates_missing():
     assert merged_mentions(1, {"mentions": "bad"}) == 1
 
 
+def test_score_terms_matches_score_item_breakdown():
+    """score_terms 는 score_item 의 hot·multi 항과 같은 눈금이어야 한다."""
+    hot, multi = score_terms(CFG, {"points": 50.0}, 2)
+    result = score_item(
+        CFG,
+        trust=0.5,
+        relevance=0.5,
+        kind=Kind.NEWS,
+        metrics={"points": 50.0},
+        mention_count=3,  # score_terms 의 mentions=2 는 자기 소스를 뺀 값
+        published_at=NOW,
+        now=NOW,
+    )
+    assert hot == pytest.approx(result.breakdown["hot"])
+    assert multi == pytest.approx(result.breakdown["multi"])
+
+
 def test_revive_gain_is_zero_without_change():
-    assert revive_gain(CFG, {"points": 10.0}, {"points": 10.0}, 0, 0) == 0.0
+    base_hot, base_multi = score_terms(CFG, {"points": 10.0}, 0)
+    gain = revive_gain(CFG, {"points": 10.0}, 0, base_hot=base_hot, base_multi=base_multi)
+    assert gain == 0.0
 
 
 def test_revive_gain_is_zero_once_hotness_is_saturated():
     """1000 도 1075 도 로그 스케일에서 이미 1.0 이라 hot 항이 오르지 않는다."""
-    gain = revive_gain(CFG, {"points": 1000.0}, {"points": 1075.0}, 0, 0)
+    base_hot, base_multi = score_terms(CFG, {"points": 1000.0}, 0)
+    gain = revive_gain(CFG, {"points": 1075.0}, 0, base_hot=base_hot, base_multi=base_multi)
     assert gain == pytest.approx(0.0)
 
 
 def test_revive_gain_from_hotness_climb():
-    gain = revive_gain(CFG, {"points": 10.0}, {"points": 400.0}, 0, 0)
+    base_hot, base_multi = score_terms(CFG, {"points": 10.0}, 0)
+    gain = revive_gain(CFG, {"points": 400.0}, 0, base_hot=base_hot, base_multi=base_multi)
     expected = CFG.w_hot * (math.log1p(400) - math.log1p(10)) / math.log1p(500)
     assert gain == pytest.approx(expected)
 
 
 def test_revive_gain_from_new_mention():
-    gain = revive_gain(CFG, {"points": 10.0}, {"points": 10.0}, 0, 1)
+    base_hot, base_multi = score_terms(CFG, {"points": 10.0}, 0)
+    gain = revive_gain(CFG, {"points": 10.0}, 1, base_hot=base_hot, base_multi=base_multi)
     assert gain == pytest.approx(0.1)
 
 
 def test_revive_gain_from_mentions_is_capped_at_two():
-    gain = revive_gain(CFG, {"points": 10.0}, {"points": 10.0}, 2, 3)
+    base_hot, base_multi = score_terms(CFG, {"points": 10.0}, 2)
+    gain = revive_gain(CFG, {"points": 10.0}, 3, base_hot=base_hot, base_multi=base_multi)
     assert gain == pytest.approx(0.0)
+
+
+def test_revive_gain_accumulates_regardless_of_intermediate_observation():
+    """기준이 마지막 점수 결정의 breakdown 이라, 중간 관측(30→200 등)과 무관하게 누적된다.
+
+    HN 점수가 폴링마다 조금씩(30 → 500) 올라도 매번 직전 관측과 비교하면 각 이득이 작아
+    임계값을 못 넘는다. 기준을 마지막 점수 결정에 고정해야 총 누적분(약 0.0895)이 온전히 잡힌다.
+    """
+    base_hot, base_multi = score_terms(CFG, {"points": 30.0}, 0)
+    gain = revive_gain(CFG, {"points": 500.0}, 0, base_hot=base_hot, base_multi=base_multi)
+    expected = CFG.w_hot * (math.log1p(500) - math.log1p(30)) / math.log1p(500)
+    assert gain == pytest.approx(expected)

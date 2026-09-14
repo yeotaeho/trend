@@ -4,10 +4,12 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import delete, select
 
+from app.config import get_rules
 from app.db.models import Decision, Item, Source
 from app.db.session import SessionLocal
 from app.pipeline.ingest import store_items
 from app.pipeline.normalize import normalize_url, url_hash
+from app.pipeline.scoring import score_terms
 from app.schemas import NormalizedItem
 
 URL = "https://example.com/merge-test"
@@ -29,6 +31,8 @@ async def _seed(
     last_stage: str,
     *,
     age_hours: int = 1,
+    # 0.42 + revive_gain(10 → 50점) ≈ 0.42 + 0.049 ≥ 0.45.
+    # 가중치를 바꾸면 score_terms 로 다시 계산한다.
     last_score: float = 0.42,
     family: str | None = None,
     points: float = 10.0,
@@ -39,6 +43,7 @@ async def _seed(
     (hot·multi 합 약 0.149)이면 넘어선다.
     """
     normalized = normalize_url(URL)
+    hot, multi = score_terms(get_rules().scoring, {"points": points}, 0)
     async with SessionLocal() as s, s.begin():
         # 이전 실행이 중간에 죽으면 같은 URL·소스명이 남아 unique 제약을 건드린다.
         # 새로 심기 전에 잔여물을 정리해 다음 실행이 그 흔적으로 실패하지 않게 한다.
@@ -63,7 +68,13 @@ async def _seed(
         s.add(item)
         await s.flush()
         s.add(
-            Decision(item_id=item.id, stage=last_stage, passed=False, score=last_score, details={})
+            Decision(
+                item_id=item.id,
+                stage=last_stage,
+                passed=False,
+                score=last_score,
+                details={"breakdown": {"hot": hot, "multi": multi}},
+            )
         )
         return item.id, a.id, b.id
 
@@ -187,6 +198,25 @@ async def test_saturated_hotness_does_not_revive():
         row = await _load(item_id)
         assert row.raw["metrics"] == {"points": 1075.0}
         assert row.status == "DROPPED"
+    finally:
+        await _cleanup(item_id, a_id, b_id)
+
+
+async def test_gain_accumulates_across_polls():
+    """직전 관측이 아니라 마지막 점수 결정의 breakdown 을 기준으로 삼아야 누적된다.
+
+    10 → 20 → 50 으로 조금씩 오르는 관측에서, 매번 직전 관측과 비교하면(20→50 의 gain
+    약 0.029) 임계값을 못 넘는다. 기준을 마지막 점수 결정(10점)에 고정해야 최종 gain 이
+    약 0.049 로 커져 되살아난다.
+    """
+    item_id, a_id, b_id = await _seed("DROPPED", "score", last_score=0.42)
+    try:
+        await _observe(a_id, observation("test:merge-a", 20.0))
+        row = await _load(item_id)
+        assert row.status == "DROPPED"  # gain ≈ 0.021, 아직 임계값 미달
+
+        await _observe(a_id, observation("test:merge-a", 50.0))
+        assert (await _load(item_id)).status == "NEW"  # 10점 기준 gain ≈ 0.049
     finally:
         await _cleanup(item_id, a_id, b_id)
 

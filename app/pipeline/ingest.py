@@ -6,11 +6,11 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import get_rules
+from app.config import ScoringConfig, get_rules
 from app.db.models import Decision, Item, Source
 from app.log import get_logger
 from app.pipeline.normalize import normalize_url, url_hash
-from app.pipeline.scoring import is_stale, revive_gain
+from app.pipeline.scoring import is_stale, revive_gain, score_terms
 from app.schemas import Category, ItemStatus, NormalizedItem, Stage
 
 SUMMARY_LIMIT = 3000
@@ -81,13 +81,16 @@ def is_same_source(row_source_id: int, source_id: int, families: dict[int, str |
     return family is not None and family == families.get(source_id)
 
 
-async def _last_score_fail(session: AsyncSession, item_id: int) -> float | None:
-    """마지막 결정이 점수 탈락이면 그 점수, 아니면 None.
+async def _last_score_fail(
+    session: AsyncSession, item_id: int
+) -> tuple[float, dict[str, object]] | None:
+    """마지막 결정이 점수 탈락이면 (그 점수, details), 아니면 None.
 
-    판정 false·중복·exclude·선별 폐기는 되살리지 않는다.
+    판정 false·중복·exclude·선별 폐기는 되살리지 않는다. details 는 되살림 이득의 기준
+    (breakdown 의 hot·multi) 을 찾는 데 쓴다.
     """
     stmt = (
-        select(Decision.stage, Decision.passed, Decision.score)
+        select(Decision.stage, Decision.passed, Decision.score, Decision.details)
         .where(Decision.item_id == item_id)
         .order_by(Decision.created_at.desc(), Decision.id.desc())
         .limit(1)
@@ -95,9 +98,9 @@ async def _last_score_fail(session: AsyncSession, item_id: int) -> float | None:
     row = (await session.execute(stmt)).first()
     if row is None:
         return None
-    stage, passed, score = row
+    stage, passed, score, details = row
     if stage == Stage.SCORE.value and not passed and score is not None:
-        return float(score)
+        return float(score), details if isinstance(details, dict) else {}
     return None
 
 
@@ -111,6 +114,21 @@ def _mention_len(raw: dict[str, object]) -> int:
     """raw 의 mentions 목록 길이, 없거나 list 가 아니면 0."""
     mentions = raw.get("mentions")
     return len(mentions) if isinstance(mentions, list) else 0
+
+
+def _base_terms(
+    cfg: ScoringConfig, details: dict[str, object], existing_raw: dict[str, object]
+) -> tuple[float, float]:
+    """되살림 이득의 기준.
+
+    마지막 점수 결정의 breakdown 이 있으면 그 hot·multi, 없으면 직전 관측의 항.
+    """
+    breakdown = details.get("breakdown")
+    if isinstance(breakdown, dict):
+        hot, multi = breakdown.get("hot"), breakdown.get("multi")
+        if isinstance(hot, int | float) and isinstance(multi, int | float):
+            return float(hot), float(multi)
+    return score_terms(cfg, _metrics(existing_raw), _mention_len(existing_raw))
 
 
 async def store_items(
@@ -172,24 +190,28 @@ async def store_items(
         if row.status == ItemStatus.DROPPED.value and not is_stale(row.published_at, max_age):
             last = await _last_score_fail(session, row.id)
             if last is not None:
+                last_score, details = last
+                base_hot, base_multi = _base_terms(rules.scoring, details, existing_raw)
                 gain = revive_gain(
                     rules.scoring,
-                    _metrics(existing_raw),
                     _metrics(raw),
-                    _mention_len(existing_raw),
                     _mention_len(raw),
+                    base_hot=base_hot,
+                    base_multi=base_multi,
                 )
                 # 부동소수 합이 0.4499999 로 떨어지지 않게 소수 6자리에서 비교한다
                 # (score_item 과 같은 규칙).
-                if round(last + gain, 6) >= rules.scoring.threshold:
+                if round(last_score + gain, 6) >= rules.scoring.threshold:
                     row.status = ItemStatus.NEW.value
                     revived += 1
                     log.info(
                         "ingest.revived",
                         item_id=row.id,
                         source=item.source,
-                        last_score=last,
+                        last_score=last_score,
                         gain=round(gain, 4),
+                        base_hot=round(base_hot, 4),
+                        base_multi=round(base_multi, 4),
                         mentions=raw.get("mentions"),
                         metrics=raw.get("metrics"),
                     )
