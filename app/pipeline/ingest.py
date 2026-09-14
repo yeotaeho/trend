@@ -10,7 +10,7 @@ from app.config import get_rules
 from app.db.models import Decision, Item, Source
 from app.log import get_logger
 from app.pipeline.normalize import normalize_url, url_hash
-from app.pipeline.scoring import NEAR_THRESHOLD_BAND, is_stale
+from app.pipeline.scoring import is_stale, revive_gain
 from app.schemas import Category, ItemStatus, NormalizedItem, Stage
 
 SUMMARY_LIMIT = 3000
@@ -73,7 +73,7 @@ def merge_raw(
     return {**existing, "metrics": metrics, "mentions": sorted(mentions)}, True
 
 
-def same_source(row_source_id: int, source_id: int, families: dict[int, str | None]) -> bool:
+def is_same_source(row_source_id: int, source_id: int, families: dict[int, str | None]) -> bool:
     """같은 소스이거나 같은 family(sources.yaml config.family)면 멘션으로 세지 않는다."""
     if row_source_id == source_id:
         return True
@@ -81,14 +81,10 @@ def same_source(row_source_id: int, source_id: int, families: dict[int, str | No
     return family is not None and family == families.get(source_id)
 
 
-async def _last_decision_is_near_miss(
-    session: AsyncSession, item_id: int, threshold: float
-) -> bool:
-    """되살림은 점수 임계값 바로 아래(근접 실패)만 한다. 판정 false·중복·exclude·선별 폐기는 둔다.
+async def _last_score_fail(session: AsyncSession, item_id: int) -> float | None:
+    """마지막 결정이 점수 탈락이면 그 점수, 아니면 None.
 
-    HN points·HF upvotes 는 폴링마다 오르기만 한다. 임계값에서 멀리 떨어진 항목까지 되살리면
-    그 항목이 식지 않는 한 폴링마다 재관문·재점수·재탈락을 반복해 decisions 에 행만 계속 쌓인다.
-    근접 실패만 되살려야 다음 재점수에서 뒤집힐 여지가 있다.
+    판정 false·중복·exclude·선별 폐기는 되살리지 않는다.
     """
     stmt = (
         select(Decision.stage, Decision.passed, Decision.score)
@@ -98,14 +94,23 @@ async def _last_decision_is_near_miss(
     )
     row = (await session.execute(stmt)).first()
     if row is None:
-        return False
+        return None
     stage, passed, score = row
-    return (
-        stage == Stage.SCORE.value
-        and not passed
-        and score is not None
-        and score >= threshold - NEAR_THRESHOLD_BAND
-    )
+    if stage == Stage.SCORE.value and not passed and score is not None:
+        return float(score)
+    return None
+
+
+def _metrics(raw: dict[str, object]) -> dict[str, float]:
+    """raw 의 metrics 딕셔너리, 없거나 dict 가 아니면 빈 딕셔너리."""
+    metrics = raw.get("metrics")
+    return metrics if isinstance(metrics, dict) else {}
+
+
+def _mention_len(raw: dict[str, object]) -> int:
+    """raw 의 mentions 목록 길이, 없거나 list 가 아니면 0."""
+    mentions = raw.get("mentions")
+    return len(mentions) if isinstance(mentions, list) else 0
 
 
 async def store_items(
@@ -113,9 +118,9 @@ async def store_items(
 ) -> list[int]:
     """새로 INSERT 된 항목의 id 만 돌려준다 (임베딩 대상).
 
-    이미 아는 URL 은 버리지 않고 raw 를 병합한다. 값이 바뀌었고 점수 임계값 근처
-    (NEAR_THRESHOLD_BAND 폭)에서 떨어졌던 항목이 72h 안이면 NEW 로 되돌린다. 선별 결과는
-    decisions 캐시라 다시 호출하지 않고 점수만 새 metrics·mentions 로 다시 매긴다.
+    이미 아는 URL 은 버리지 않고 raw 를 병합한다. 값이 바뀌었고 72h 안인 점수 탈락 항목은
+    마지막 점수 + hot·multi 변화량이 임계값 이상이면 NEW 로 되돌린다. 선별 결과는 decisions
+    캐시라 다시 호출하지 않고 점수만 새 metrics·mentions 로 다시 매긴다.
     """
     accepted = [item for item in items if is_web_url(item.url)]
     if len(accepted) != len(items):
@@ -154,29 +159,40 @@ async def store_items(
     merged = revived = 0
     for hash_, row in known.items():
         item = by_hash[hash_]
+        existing_raw = row.raw if isinstance(row.raw, dict) else {}
         raw, changed = merge_raw(
-            row.raw if isinstance(row.raw, dict) else {},
+            existing_raw,
             item,
-            same_source=same_source(row.source_id, source_id, families),
+            same_source=is_same_source(row.source_id, source_id, families),
         )
         if not changed:
             continue
         row.raw = raw
         merged += 1
-        if (
-            row.status == ItemStatus.DROPPED.value
-            and not is_stale(row.published_at, max_age)
-            and await _last_decision_is_near_miss(session, row.id, rules.scoring.threshold)
-        ):
-            row.status = ItemStatus.NEW.value
-            revived += 1
-            log.info(
-                "ingest.revived",
-                item_id=row.id,
-                source=item.source,
-                mentions=raw.get("mentions"),
-                metrics=raw.get("metrics"),
-            )
+        if row.status == ItemStatus.DROPPED.value and not is_stale(row.published_at, max_age):
+            last = await _last_score_fail(session, row.id)
+            if last is not None:
+                gain = revive_gain(
+                    rules.scoring,
+                    _metrics(existing_raw),
+                    _metrics(raw),
+                    _mention_len(existing_raw),
+                    _mention_len(raw),
+                )
+                # 부동소수 합이 0.4499999 로 떨어지지 않게 소수 6자리에서 비교한다
+                # (score_item 과 같은 규칙).
+                if round(last + gain, 6) >= rules.scoring.threshold:
+                    row.status = ItemStatus.NEW.value
+                    revived += 1
+                    log.info(
+                        "ingest.revived",
+                        item_id=row.id,
+                        source=item.source,
+                        last_score=last,
+                        gain=round(gain, 4),
+                        mentions=raw.get("mentions"),
+                        metrics=raw.get("metrics"),
+                    )
     if merged:
         log.info("ingest.merged", source_id=source_id, merged=merged, revived=revived)
 

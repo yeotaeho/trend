@@ -29,12 +29,14 @@ async def _seed(
     last_stage: str,
     *,
     age_hours: int = 1,
-    last_score: float = 0.40,
+    last_score: float = 0.42,
     family: str | None = None,
+    points: float = 10.0,
 ) -> tuple[int, int, int]:
     """항목 하나를 소스 a 로 넣고 마지막 결정을 심는다. (item_id, source_a_id, source_b_id).
 
-    0.40 은 rules.yaml 의 threshold(0.45) 바로 아래 — 되살림 밴드(0.10) 안이다.
+    0.42 는 rules.yaml 의 threshold(0.45) 바로 아래 — points 10→50 관측 하나의 되살림 변화량
+    (hot·multi 합 약 0.149)이면 넘어선다.
     """
     normalized = normalize_url(URL)
     async with SessionLocal() as s, s.begin():
@@ -56,7 +58,7 @@ async def _seed(
             title="t",
             published_at=datetime.now(UTC) - timedelta(hours=age_hours),
             status=status,
-            raw={"metrics": {"points": 10.0}, "source": "test:merge-a"},
+            raw={"metrics": {"points": points}, "source": "test:merge-a"},
         )
         s.add(item)
         await s.flush()
@@ -156,13 +158,35 @@ async def test_locked_row_is_skipped_and_merged_on_next_poll():
 
 
 async def test_far_below_threshold_is_merged_but_not_revived():
-    """점수 0.20 은 임계값(0.45) 에서 밴드(0.10) 밖이라 병합만 하고 되살리지 않는다."""
+    """점수 0.20 은 관측 하나의 변화량(약 0.149)을 더해도 임계값(0.45)에 못 미친다."""
     item_id, a_id, b_id = await _seed("DROPPED", "score", last_score=0.20)
     try:
         await _observe(b_id, observation("test:merge-b", 50.0))
         row = await _load(item_id)
         assert row.status == "DROPPED"
         assert row.raw["metrics"] == {"points": 50.0}
+    finally:
+        await _cleanup(item_id, a_id, b_id)
+
+
+async def test_large_single_step_gain_revives_far_below_item():
+    """마지막 점수가 낮아도 hot 변화량이 크면(HN 프론트 진입) 되살아난다."""
+    item_id, a_id, b_id = await _seed("DROPPED", "score", last_score=0.305)
+    try:
+        await _observe(b_id, observation("test:merge-b", 400.0))
+        assert (await _load(item_id)).status == "NEW"
+    finally:
+        await _cleanup(item_id, a_id, b_id)
+
+
+async def test_saturated_hotness_does_not_revive():
+    """hotness 가 이미 포화된 항목은 값이 더 올라도 되살아나지 않는다."""
+    item_id, a_id, b_id = await _seed("DROPPED", "score", last_score=0.42, points=1000.0)
+    try:
+        await _observe(a_id, observation("test:merge-a", 1075.0))
+        row = await _load(item_id)
+        assert row.raw["metrics"] == {"points": 1075.0}
+        assert row.status == "DROPPED"
     finally:
         await _cleanup(item_id, a_id, b_id)
 

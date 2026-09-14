@@ -19,12 +19,11 @@ from app.notify.discord import DiscordNotifier
 from app.notify.policy import decide, in_quiet_hours
 from app.pipeline import llm
 from app.pipeline.feedback import format_examples, nearest_feedback
-from app.pipeline.scoring import NEAR_THRESHOLD_BAND
 from app.schemas import ItemStatus, Level, Stage
 
 BATCH_SIZE = 20
 PENDING = (ItemStatus.SCORED.value, ItemStatus.QUEUED.value)
-EXPLORE_BAND = NEAR_THRESHOLD_BAND  # 임계값 바로 아래 이 폭 안에서 떨어진 항목이 탐색 후보
+EXPLORE_BAND = 0.10  # 임계값 바로 아래 이 폭 안에서 떨어진 항목이 탐색 후보
 log = get_logger(__name__)
 
 

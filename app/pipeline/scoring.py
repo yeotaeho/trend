@@ -12,7 +12,6 @@ from app.schemas import Kind
 FRESH_HALF_LIFE_HOURS = 24.0
 HOTNESS_SATURATION = 500.0  # points/stars 가 이 정도면 hotness 1.0 에 근접
 HOTNESS_KEYS = ("points", "stars", "upvotes", "comments")
-NEAR_THRESHOLD_BAND = 0.10  # 임계값 바로 아래 이 폭. 탐색 슬롯 후보와 되살림이 같은 눈금을 쓴다.
 
 
 @dataclass(slots=True)
@@ -37,6 +36,24 @@ def hotness(metrics: dict[str, float]) -> float:
     if raw <= 0:
         return 0.0
     return min(1.0, math.log1p(raw) / math.log1p(HOTNESS_SATURATION))
+
+
+def revive_gain(
+    cfg: ScoringConfig,
+    old_metrics: dict[str, float],
+    new_metrics: dict[str, float],
+    old_mentions: int,
+    new_mentions: int,
+) -> float:
+    """재관측으로 점수가 최대 얼마나 오를 수 있나. hot·multi 항의 변화량만 더한다.
+
+    되살림은 이 값이 임계값까지의 거리 이상일 때만 한다. 몇 점 오른 재관측(HN 10분 폴링)은
+    거의 0 이라 결정 행을 쌓지 않고, 포화된 hotness 는 0 이라 영원히 되살아나지 않는다.
+    mentions 는 자기 소스를 뺀 개수다. score_item 의 multi 항과 같은 눈금이다.
+    """
+    hot = cfg.w_hot * (hotness(new_metrics) - hotness(old_metrics))
+    multi = cfg.w_multi * (min(new_mentions, 2) - min(old_mentions, 2)) / 2
+    return hot + multi
 
 
 def is_stale(published_at: datetime, max_age_hours: int, *, now: datetime | None = None) -> bool:

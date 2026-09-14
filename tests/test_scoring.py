@@ -1,12 +1,20 @@
-# 점수화 테스트 — freshness 감쇠, hotness 포화, 신뢰도별 통과 관련도, stale 경계
+# 점수화 테스트 — freshness 감쇠, hotness 포화, 신뢰도별 통과 관련도, stale 경계, 되살림 변화량
 
+import math
 from datetime import UTC, datetime, timedelta
 
 import pytest
 from pydantic import ValidationError
 
 from app.config import ScoringConfig
-from app.pipeline.scoring import freshness, hotness, is_stale, merged_mentions, score_item
+from app.pipeline.scoring import (
+    freshness,
+    hotness,
+    is_stale,
+    merged_mentions,
+    revive_gain,
+    score_item,
+)
 from app.schemas import Kind
 
 NOW = datetime(2026, 8, 30, 12, 0, tzinfo=UTC)
@@ -145,3 +153,29 @@ def test_merged_mentions_takes_larger_side_and_tolerates_missing():
     assert merged_mentions(2, {}) == 2
     assert merged_mentions(1, None) == 1
     assert merged_mentions(1, {"mentions": "bad"}) == 1
+
+
+def test_revive_gain_is_zero_without_change():
+    assert revive_gain(CFG, {"points": 10.0}, {"points": 10.0}, 0, 0) == 0.0
+
+
+def test_revive_gain_is_zero_once_hotness_is_saturated():
+    """1000 도 1075 도 로그 스케일에서 이미 1.0 이라 hot 항이 오르지 않는다."""
+    gain = revive_gain(CFG, {"points": 1000.0}, {"points": 1075.0}, 0, 0)
+    assert gain == pytest.approx(0.0)
+
+
+def test_revive_gain_from_hotness_climb():
+    gain = revive_gain(CFG, {"points": 10.0}, {"points": 400.0}, 0, 0)
+    expected = CFG.w_hot * (math.log1p(400) - math.log1p(10)) / math.log1p(500)
+    assert gain == pytest.approx(expected)
+
+
+def test_revive_gain_from_new_mention():
+    gain = revive_gain(CFG, {"points": 10.0}, {"points": 10.0}, 0, 1)
+    assert gain == pytest.approx(0.1)
+
+
+def test_revive_gain_from_mentions_is_capped_at_two():
+    gain = revive_gain(CFG, {"points": 10.0}, {"points": 10.0}, 2, 3)
+    assert gain == pytest.approx(0.0)
