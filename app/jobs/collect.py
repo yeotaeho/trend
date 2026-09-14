@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
-from app.config import SourceConfig
+from app.config import SourceConfig, get_rules
 from app.db.models import Source
 from app.db.session import session_scope
 from app.log import get_logger
@@ -17,6 +17,17 @@ from app.sources import build_source
 
 FAIL_ALERT_THRESHOLD = 5
 log = get_logger(__name__)
+
+
+def poll_since(
+    last_polled_at: datetime | None, max_age_hours: int, *, now: datetime | None = None
+) -> datetime:
+    """첫 폴링은 신선도 가드와 같은 창만 본다.
+
+    since 가 None 이면 RSS 수집기가 피드 전체를 돌려주고, 그 백로그는 임베딩까지 한 뒤
+    파이프라인의 72h 가드에서 버려진다. 어차피 버릴 항목에 임베딩 예산을 쓰지 않는다.
+    """
+    return last_polled_at or (now or datetime.now(UTC)) - timedelta(hours=max_age_hours)
 
 
 async def run_source(source_id: int) -> int:
@@ -34,7 +45,8 @@ async def run_source(source_id: int) -> int:
             trust_score=source.trust_score,
         )
         try:
-            items = await build_source(cfg).fetch(source.last_polled_at)
+            since = poll_since(source.last_polled_at, get_rules().scoring.max_age_hours)
+            items = await build_source(cfg).fetch(since)
             # 적재 실패도 수집 실패로 다룬다. savepoint 로 감싸야 예외 뒤에도 세션이
             # 살아 있어 아래 실패 기록을 커밋할 수 있다. 예외를 밖으로 흘리면
             # 이 소스의 실패가 기록되지 않고 run_all_sources 의 나머지 소스까지 죽는다.
