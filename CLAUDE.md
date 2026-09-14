@@ -39,7 +39,7 @@
 
 ```
 [소스] → [수집기 sources/*] → [적재 + 임베딩] → NEW
-                └ 아는 URL 이면 버리지 않고 raw.metrics(키별 max)·mentions 병합. 점수 근접 탈락(임계값−0.10)이면 NEW 로 되살림 (선별 캐시, LLM 재호출 없음)
+                └ 아는 URL 이면 버리지 않고 raw.metrics(키별 max)·mentions 병합. 점수 탈락 항목은 마지막 점수 + hot·multi 이득(마지막 결정의 breakdown 기준)이 임계값 이상이면 NEW 로 되살림 (선별 캐시, LLM 재호출 없음)
 1국면 (항목별)   stale(72h) → 중복·관련 (벡터 코사인, 생존자 기준) → exclude 규칙
 2국면 (25건 배치) LLM 선별 — 정책 문장을 읽고 관련도 0~1 + 이유
 3국면 (항목별)   점수(src·rel·hot·multi·fresh + kind 감점 ≥ 0.45) → 본문 보강* → LLM 판정·요약 → SCORED
@@ -117,7 +117,7 @@ tech-radar/
 │   │  # 파이프라인 — NEW 항목을 단계별 관문으로 통과
 │   ├── pipeline/
 │   │   ├── normalize.py      # URL 정규화(utm 제거 등) → SHA-256 url_hash
-│   │   ├── ingest.py         # url_hash 적재. 아는 URL 은 metrics·mentions 병합(같은 family 는 제외), 점수 근접 탈락은 되살림
+│   │   ├── ingest.py         # url_hash 적재. 아는 URL 은 metrics·mentions 병합(같은 family 는 제외), hot·multi 이득이 임계값을 넘길 수 있는 점수 탈락은 되살림
 │   │   ├── embedding.py      # Voyage/OpenAI 임베딩 어댑터, 적재 직후·보충 계산
 │   │   ├── dedupe.py         # 72h 창 벡터 코사인 → 중복(≥0.96, 생존자 기준)·관련(≥0.88) → cluster_id
 │   │   ├── rules.py          # exclude 키워드·도메인만 (config/rules.yaml)
