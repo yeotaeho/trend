@@ -67,6 +67,14 @@ sources:
     poll_interval_sec: 1800
     trust_score: 1.0
 
+  # --- Hacker News (프론트 페이지 = 커뮤니티가 고른 30건. 링크 글은 원문 URL 로 적재돼 기존 항목과 병합) ---
+  - name: hackernews:front
+    type: hackernews
+    config:
+      hits_per_page: 30
+    poll_interval_sec: 600
+    trust_score: 0.6
+
   # --- YouTube 채널 ---
   - name: youtube:jocoding
     type: youtube
