@@ -1,13 +1,14 @@
 # 적재 테스트 — 링크 스킴 가드, 같은 URL 재관측의 raw 병합, 되살림 기준 항 선택 (순수 함수)
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from app.config import ScoringConfig
 from app.pipeline.ingest import _base_terms, is_same_source, is_web_url, merge_raw
-from app.pipeline.scoring import score_terms
+from app.pipeline.scoring import freshness, score_terms
 from app.schemas import NormalizedItem
 
 CFG = ScoringConfig()
+PUBLISHED_AT = datetime.now(UTC) - timedelta(hours=1)
 
 
 def test_only_http_schemes_pass():
@@ -111,16 +112,36 @@ def test_is_same_source_returns_false_when_families_dict_missing_an_id():
 
 
 def test_base_terms_uses_breakdown_when_present():
-    details = {"breakdown": {"hot": 0.123, "multi": 0.05}}
-    assert _base_terms(CFG, details, {"metrics": {"points": 999.0}}) == (0.123, 0.05)
+    details = {"breakdown": {"hot": 0.123, "multi": 0.05, "fresh": 0.08}}
+    assert _base_terms(CFG, details, {"metrics": {"points": 999.0}}, PUBLISHED_AT) == (
+        0.123,
+        0.05,
+        0.08,
+    )
 
 
 def test_base_terms_falls_back_to_existing_raw_without_breakdown():
     existing_raw = {"metrics": {"points": 10.0}, "mentions": ["a"]}
-    assert _base_terms(CFG, {}, existing_raw) == score_terms(CFG, {"points": 10.0}, 1)
+    assert _base_terms(CFG, {}, existing_raw, PUBLISHED_AT) == (
+        *score_terms(CFG, {"points": 10.0}, 1),
+        CFG.w_fresh * freshness(PUBLISHED_AT),
+    )
 
 
 def test_base_terms_falls_back_when_breakdown_has_non_numeric_values():
-    details = {"breakdown": {"hot": "n/a", "multi": 0.05}}
+    details = {"breakdown": {"hot": "n/a", "multi": 0.05, "fresh": 0.08}}
     existing_raw = {"metrics": {"points": 10.0}}
-    assert _base_terms(CFG, details, existing_raw) == score_terms(CFG, {"points": 10.0}, 0)
+    assert _base_terms(CFG, details, existing_raw, PUBLISHED_AT) == (
+        *score_terms(CFG, {"points": 10.0}, 0),
+        CFG.w_fresh * freshness(PUBLISHED_AT),
+    )
+
+
+def test_base_terms_falls_back_when_breakdown_missing_fresh():
+    """breakdown 에 hot·multi 는 있어도 fresh 가 없으면(구버전 기록) 전체를 재계산한다."""
+    details = {"breakdown": {"hot": 0.123, "multi": 0.05}}
+    existing_raw = {"metrics": {"points": 10.0}}
+    assert _base_terms(CFG, details, existing_raw, PUBLISHED_AT) == (
+        *score_terms(CFG, {"points": 10.0}, 0),
+        CFG.w_fresh * freshness(PUBLISHED_AT),
+    )

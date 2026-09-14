@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +12,7 @@ from app.config import ScoringConfig, get_rules
 from app.db.models import Decision, Item, Source
 from app.log import get_logger
 from app.pipeline.normalize import normalize_url, url_hash
-from app.pipeline.scoring import is_stale, revive_gain, score_terms
+from app.pipeline.scoring import freshness, is_stale, revive_gain, score_terms
 from app.schemas import Category, ItemStatus, NormalizedItem, Stage
 
 SUMMARY_LIMIT = 3000
@@ -117,18 +119,29 @@ def _mention_len(raw: dict[str, object]) -> int:
 
 
 def _base_terms(
-    cfg: ScoringConfig, details: dict[str, object], existing_raw: dict[str, object]
-) -> tuple[float, float]:
+    cfg: ScoringConfig,
+    details: dict[str, object],
+    existing_raw: dict[str, object],
+    published_at: datetime,
+) -> tuple[float, float, float]:
     """되살림 이득의 기준.
 
-    마지막 점수 결정의 breakdown 이 있으면 그 hot·multi, 없으면 직전 관측의 항.
+    마지막 점수 결정의 breakdown 이 있으면 그 hot·multi·fresh, 없으면 직전 관측의 hot·multi 와
+    지금 기준 fresh(기록된 결정 항이 없으니 감쇠분은 0 으로 둔다).
     """
     breakdown = details.get("breakdown")
     if isinstance(breakdown, dict):
-        hot, multi = breakdown.get("hot"), breakdown.get("multi")
-        if isinstance(hot, int | float) and isinstance(multi, int | float):
-            return float(hot), float(multi)
-    return score_terms(cfg, _metrics(existing_raw), _mention_len(existing_raw))
+        hot, multi, fresh = breakdown.get("hot"), breakdown.get("multi"), breakdown.get("fresh")
+        if (
+            isinstance(hot, int | float)
+            and isinstance(multi, int | float)
+            and isinstance(fresh, int | float)
+        ):
+            return float(hot), float(multi), float(fresh)
+    return (
+        *score_terms(cfg, _metrics(existing_raw), _mention_len(existing_raw)),
+        cfg.w_fresh * freshness(published_at),
+    )
 
 
 async def store_items(
@@ -191,13 +204,17 @@ async def store_items(
             last = await _last_score_fail(session, row.id)
             if last is not None:
                 last_score, details = last
-                base_hot, base_multi = _base_terms(rules.scoring, details, existing_raw)
+                base_hot, base_multi, base_fresh = _base_terms(
+                    rules.scoring, details, existing_raw, row.published_at
+                )
                 gain = revive_gain(
                     rules.scoring,
                     _metrics(raw),
                     _mention_len(raw),
+                    row.published_at,
                     base_hot=base_hot,
                     base_multi=base_multi,
+                    base_fresh=base_fresh,
                 )
                 # 부동소수 합이 0.4499999 로 떨어지지 않게 소수 6자리에서 비교한다
                 # (score_item 과 같은 규칙).
@@ -212,6 +229,7 @@ async def store_items(
                         gain=round(gain, 4),
                         base_hot=round(base_hot, 4),
                         base_multi=round(base_multi, 4),
+                        base_fresh=round(base_fresh, 4),
                         mentions=raw.get("mentions"),
                         metrics=raw.get("metrics"),
                     )

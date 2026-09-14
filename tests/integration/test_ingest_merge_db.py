@@ -9,7 +9,7 @@ from app.db.models import Decision, Item, Source
 from app.db.session import SessionLocal
 from app.pipeline.ingest import store_items
 from app.pipeline.normalize import normalize_url, url_hash
-from app.pipeline.scoring import score_terms
+from app.pipeline.scoring import freshness, score_terms
 from app.schemas import NormalizedItem
 
 URL = "https://example.com/merge-test"
@@ -36,14 +36,21 @@ async def _seed(
     last_score: float = 0.42,
     family: str | None = None,
     points: float = 10.0,
+    decided_age_hours: float | None = None,
 ) -> tuple[int, int, int]:
     """항목 하나를 소스 a 로 넣고 마지막 결정을 심는다. (item_id, source_a_id, source_b_id).
 
     0.42 는 rules.yaml 의 threshold(0.45) 바로 아래 — points 10→50 관측 하나의 되살림 변화량
-    (hot·multi 합 약 0.149)이면 넘어선다.
+    (hot·multi 합 약 0.149)이면 넘어선다. decided_age_hours 는 마지막 점수 결정 당시 항목의
+    나이(시간). 기본값 None 은 "지금과 같음" — 재관측 시점 신선도와 같아 fresh 변화량이 0 이 된다.
     """
     normalized = normalize_url(URL)
-    hot, multi = score_terms(get_rules().scoring, {"points": points}, 0)
+    cfg = get_rules().scoring
+    hot, multi = score_terms(cfg, {"points": points}, 0)
+    decided_hours = age_hours if decided_age_hours is None else decided_age_hours
+    # 실제 시각 흐름과 분리해 결정 시점 fresh 를 결정론적으로 계산한다 (임의의 기준 시각 사용).
+    reference = datetime(2026, 1, 1, tzinfo=UTC)
+    fresh = cfg.w_fresh * freshness(reference - timedelta(hours=decided_hours), now=reference)
     async with SessionLocal() as s, s.begin():
         # 이전 실행이 중간에 죽으면 같은 URL·소스명이 남아 unique 제약을 건드린다.
         # 새로 심기 전에 잔여물을 정리해 다음 실행이 그 흔적으로 실패하지 않게 한다.
@@ -73,7 +80,7 @@ async def _seed(
                 stage=last_stage,
                 passed=False,
                 score=last_score,
-                details={"breakdown": {"hot": hot, "multi": multi}},
+                details={"breakdown": {"hot": hot, "multi": multi, "fresh": fresh}},
             )
         )
         return item.id, a.id, b.id
@@ -217,6 +224,26 @@ async def test_gain_accumulates_across_polls():
 
         await _observe(a_id, observation("test:merge-a", 50.0))
         assert (await _load(item_id)).status == "NEW"  # 10점 기준 gain ≈ 0.049
+    finally:
+        await _cleanup(item_id, a_id, b_id)
+
+
+async def test_decayed_freshness_blocks_revive():
+    """결정 뒤 신선도가 감쇠한 만큼 되살림 이득에서 빠져, 그만큼은 임계값을 못 넘는다.
+
+    결정 당시 1h 짜리라 breakdown fresh = 0.1, 지금은 48h 라 fresh = 0.05 — 게이트가 0.05 를
+    깎는다. 같은 소스(a) 재관측이라 mentions 는 늘지 않고 hot 변화량만(약 0.049) 더해져
+    0.42 + 0.049 − 0.05 < 0.45 라 되살아나지 않는다. (다른 소스로 관측하면 mentions 도 늘어
+    fresh 감쇠를 뒤덮으므로 이 테스트는 일부러 같은 소스를 쓴다.)
+    """
+    item_id, a_id, b_id = await _seed(
+        "DROPPED", "score", last_score=0.42, age_hours=48, decided_age_hours=1
+    )
+    try:
+        await _observe(a_id, observation("test:merge-a", 50.0))
+        row = await _load(item_id)
+        assert row.raw["metrics"] == {"points": 50.0}
+        assert row.status == "DROPPED"
     finally:
         await _cleanup(item_id, a_id, b_id)
 

@@ -52,19 +52,26 @@ def revive_gain(
     cfg: ScoringConfig,
     new_metrics: dict[str, float],
     new_mentions: int,
+    published_at: datetime,
     *,
     base_hot: float,
     base_multi: float,
+    base_fresh: float,
+    now: datetime | None = None,
 ) -> float:
-    """지금 관측의 hot·multi 항이 기준(마지막 점수 결정의 breakdown)보다 얼마나 높나.
+    """지금 관측이 마지막 점수 결정(breakdown 기준)보다 점수를 얼마나 올리나.
 
     되살림은 마지막 점수 + 이 값이 임계값 이상일 때만 한다. 기준을 직전 관측이 아니라 마지막
     점수 결정에 두어야 폴링마다 조금씩 오르는 HN 점수가 누적된다. 포화된 hotness 는 0 이라
-    영원히 되살아나지 않는다. dedupe 쪽 관련 소스 수가 mentions 보다 클 때는 실제 multi 항이
-    이미 상한이라 이 값이 과대평가될 수 있다. 그 방향은 한 번 더 재점수하는 쪽이라 안전하다.
+    영원히 되살아나지 않는다.
+    - multi 는 0 아래로 내리지 않는다. 기준 multi 가 dedupe 쪽 관련 소스 수로 계산됐으면
+      raw.mentions 만 보는 새 값이 더 작을 수 있는데, 그 차이로 hot 상승을 지우면 안 된다.
+    - fresh 는 감쇠분(0 이하)만 더한다. 결정 뒤 지난 시간만큼 점수가 내려간 것을 반영해야
+      되살렸다가 바로 다시 떨어지는 헛순환이 없다.
     """
     hot, multi = score_terms(cfg, new_metrics, new_mentions)
-    return (hot - base_hot) + (multi - base_multi)
+    fresh = cfg.w_fresh * freshness(published_at, now=now)
+    return (hot - base_hot) + max(multi - base_multi, 0.0) + min(fresh - base_fresh, 0.0)
 
 
 def is_stale(published_at: datetime, max_age_hours: int, *, now: datetime | None = None) -> bool:
