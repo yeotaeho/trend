@@ -43,6 +43,16 @@ def is_stale(published_at: datetime, max_age_hours: int, *, now: datetime | None
     return (now or datetime.now(UTC)) - published_at > timedelta(hours=max_age_hours)
 
 
+def merged_mentions(embedding_mentions: int, raw: object) -> int:
+    """벡터 관련 소스 수와 적재 병합이 기록한 raw.mentions 중 큰 쪽.
+
+    둘 다 자기 소스 1 을 포함한 값으로 맞춘다. mentions 는 자기 소스를 뺀 목록이라 1 을 더한다.
+    """
+    mentions = raw.get("mentions") if isinstance(raw, dict) else None
+    extra = len(mentions) if isinstance(mentions, list) else 0
+    return max(embedding_mentions, 1 + extra)
+
+
 def score_item(
     cfg: ScoringConfig,
     *,

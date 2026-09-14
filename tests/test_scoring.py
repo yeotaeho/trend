@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.config import ScoringConfig
-from app.pipeline.scoring import freshness, hotness, is_stale, score_item
+from app.pipeline.scoring import freshness, hotness, is_stale, merged_mentions, score_item
 from app.schemas import Kind
 
 NOW = datetime(2026, 8, 30, 12, 0, tzinfo=UTC)
@@ -136,3 +136,12 @@ def test_kind_without_weight_is_neutral():
 def test_unknown_kind_in_weights_is_rejected():
     with pytest.raises(ValidationError):
         ScoringConfig(kind_weights={"nope": 0.1})
+
+
+def test_merged_mentions_takes_larger_side_and_tolerates_missing():
+    """벡터 관련 소스 수(자기 포함)와 적재 병합의 raw.mentions(자기 제외) 중 큰 쪽."""
+    assert merged_mentions(1, {"mentions": ["a", "b"]}) == 3
+    assert merged_mentions(3, {"mentions": ["a"]}) == 3
+    assert merged_mentions(2, {}) == 2
+    assert merged_mentions(1, None) == 1
+    assert merged_mentions(1, {"mentions": "bad"}) == 1

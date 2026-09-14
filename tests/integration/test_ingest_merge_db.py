@@ -1,0 +1,119 @@
+# 적재 병합·되살림 통합 테스트 — 같은 URL 의 재관측이 raw 를 합치고 점수 탈락만 NEW 로 되돌린다
+
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import delete, select
+
+from app.db.models import Decision, Item, Source
+from app.db.session import SessionLocal
+from app.pipeline.ingest import store_items
+from app.pipeline.normalize import normalize_url, url_hash
+from app.schemas import NormalizedItem
+
+URL = "https://example.com/merge-test"
+
+
+def observation(source: str, points: float) -> NormalizedItem:
+    return NormalizedItem(
+        source=source,
+        external_id=f"{source}-1",
+        url=URL,
+        title="t",
+        published_at=datetime.now(UTC),
+        metrics={"points": points},
+    )
+
+
+async def _seed(status: str, last_stage: str, *, age_hours: int = 1) -> tuple[int, int, int]:
+    """항목 하나를 소스 a 로 넣고 마지막 결정을 심는다. (item_id, source_a_id, source_b_id)."""
+    async with SessionLocal() as s, s.begin():
+        a = Source(name="test:merge-a", type="rss", config={})
+        b = Source(name="test:merge-b", type="hackernews", config={})
+        s.add_all([a, b])
+        await s.flush()
+        normalized = normalize_url(URL)
+        item = Item(
+            source_id=a.id,
+            external_id="a-1",
+            url=URL,
+            url_normalized=normalized,
+            url_hash=url_hash(normalized),
+            title="t",
+            published_at=datetime.now(UTC) - timedelta(hours=age_hours),
+            status=status,
+            raw={"metrics": {"points": 10.0}, "source": "test:merge-a"},
+        )
+        s.add(item)
+        await s.flush()
+        s.add(Decision(item_id=item.id, stage=last_stage, passed=False, details={}))
+        return item.id, a.id, b.id
+
+
+async def _cleanup(item_id: int, a_id: int, b_id: int) -> None:
+    async with SessionLocal() as s, s.begin():
+        await s.execute(delete(Item).where(Item.id == item_id))
+        await s.execute(delete(Source).where(Source.id.in_([a_id, b_id])))
+
+
+async def _load(item_id: int) -> Item:
+    async with SessionLocal() as s:
+        return (await s.execute(select(Item).where(Item.id == item_id))).scalar_one()
+
+
+async def _observe(source_id: int, item: NormalizedItem) -> list[int]:
+    async with SessionLocal() as s, s.begin():
+        return await store_items(s, source_id, [item])
+
+
+async def test_second_source_merges_metrics_and_mentions_without_new_row():
+    item_id, a_id, b_id = await _seed("SENT", "llm")
+    try:
+        assert await _observe(b_id, observation("test:merge-b", 50.0)) == []
+        row = await _load(item_id)
+        assert row.raw["metrics"] == {"points": 50.0}
+        assert row.raw["mentions"] == ["test:merge-b"]
+        assert row.status == "SENT"  # 살아 있는 항목은 병합만 한다
+    finally:
+        await _cleanup(item_id, a_id, b_id)
+
+
+async def test_score_dropped_item_is_revived():
+    item_id, a_id, b_id = await _seed("DROPPED", "score")
+    try:
+        await _observe(b_id, observation("test:merge-b", 50.0))
+        assert (await _load(item_id)).status == "NEW"
+    finally:
+        await _cleanup(item_id, a_id, b_id)
+
+
+async def test_judge_dropped_item_is_merged_but_not_revived():
+    item_id, a_id, b_id = await _seed("DROPPED", "llm")
+    try:
+        await _observe(b_id, observation("test:merge-b", 50.0))
+        row = await _load(item_id)
+        assert row.status == "DROPPED"
+        assert row.raw["metrics"] == {"points": 50.0}
+    finally:
+        await _cleanup(item_id, a_id, b_id)
+
+
+async def test_same_values_from_same_source_change_nothing():
+    item_id, a_id, b_id = await _seed("DROPPED", "score")
+    try:
+        await _observe(a_id, observation("test:merge-a", 10.0))
+        row = await _load(item_id)
+        assert row.status == "DROPPED"
+        assert "mentions" not in row.raw
+    finally:
+        await _cleanup(item_id, a_id, b_id)
+
+
+async def test_stale_item_is_merged_but_not_revived():
+    item_id, a_id, b_id = await _seed("DROPPED", "score", age_hours=73)
+    try:
+        await _observe(b_id, observation("test:merge-b", 50.0))
+        row = await _load(item_id)
+        assert row.status == "DROPPED"
+        assert row.raw["mentions"] == ["test:merge-b"]
+    finally:
+        await _cleanup(item_id, a_id, b_id)
