@@ -89,3 +89,11 @@ async def test_public_redirect_then_page_is_extracted():
 @respx.mock
 async def test_non_http_scheme_is_blocked():
     assert await enrich_body("ftp://pub.example/a") is None
+
+
+@respx.mock
+async def test_mixed_public_and_private_resolution_is_blocked():
+    """dual.example 은 공인·사설 주소가 섞여 해석된다. 하나라도 사설이면 요청 자체를 막는다."""
+    route = respx.get("https://dual.example/a").mock(return_value=httpx.Response(200, text="x"))
+    assert await enrich_body("https://dual.example/a") is None
+    assert not route.called

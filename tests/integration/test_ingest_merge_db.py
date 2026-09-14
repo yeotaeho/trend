@@ -38,6 +38,10 @@ async def _seed(
     """
     normalized = normalize_url(URL)
     async with SessionLocal() as s, s.begin():
+        # 이전 실행이 중간에 죽으면 같은 URL·소스명이 남아 unique 제약을 건드린다.
+        # 새로 심기 전에 잔여물을 정리해 다음 실행이 그 흔적으로 실패하지 않게 한다.
+        await s.execute(delete(Item).where(Item.url_hash == url_hash(normalized)))
+        await s.execute(delete(Source).where(Source.name.in_(("test:merge-a", "test:merge-b"))))
         config: dict[str, object] = {"family": family} if family else {}
         a = Source(name="test:merge-a", type="rss", config=config)
         b = Source(name="test:merge-b", type="hackernews", config=config)
