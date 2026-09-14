@@ -106,10 +106,16 @@ async def store_items(
     for item in accepted:
         by_hash.setdefault(url_hash(normalize_url(item.url)), item)
 
+    # 파이프라인(_claim_batch)이 같은 행을 FOR UPDATE 로 잡고 LLM 호출 내내 들고 있을 수 있다.
+    # 잠긴 행은 SKIP LOCKED 로 건너뛴다. 병합은 다음 폴링으로 미루고, INSERT 는 충돌로 no-op 된다.
     known = {
         row.url_hash: row
         for row in (
-            await session.execute(select(Item).where(Item.url_hash.in_(list(by_hash))))
+            await session.execute(
+                select(Item)
+                .where(Item.url_hash.in_(list(by_hash)))
+                .with_for_update(skip_locked=True)
+            )
         ).scalars()
     }
     max_age = get_rules().scoring.max_age_hours

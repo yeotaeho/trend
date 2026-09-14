@@ -117,3 +117,22 @@ async def test_stale_item_is_merged_but_not_revived():
         assert row.raw["mentions"] == ["test:merge-b"]
     finally:
         await _cleanup(item_id, a_id, b_id)
+
+
+async def test_locked_row_is_skipped_and_merged_on_next_poll():
+    """파이프라인이 FOR UPDATE 로 잠근 행은 SKIP LOCKED 로 건너뛰고 다음 폴링에 병합한다."""
+    item_id, a_id, b_id = await _seed("DROPPED", "score")
+    try:
+        async with SessionLocal() as locker, locker.begin():
+            await locker.execute(select(Item).where(Item.id == item_id).with_for_update())
+            assert await _observe(b_id, observation("test:merge-b", 50.0)) == []
+        row = await _load(item_id)
+        assert row.raw["metrics"] == {"points": 10.0}
+        assert row.status == "DROPPED"
+
+        await _observe(b_id, observation("test:merge-b", 50.0))
+        row = await _load(item_id)
+        assert row.status == "NEW"
+        assert row.raw["metrics"] == {"points": 50.0}
+    finally:
+        await _cleanup(item_id, a_id, b_id)
