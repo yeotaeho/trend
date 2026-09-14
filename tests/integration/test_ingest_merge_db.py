@@ -24,14 +24,25 @@ def observation(source: str, points: float) -> NormalizedItem:
     )
 
 
-async def _seed(status: str, last_stage: str, *, age_hours: int = 1) -> tuple[int, int, int]:
-    """항목 하나를 소스 a 로 넣고 마지막 결정을 심는다. (item_id, source_a_id, source_b_id)."""
+async def _seed(
+    status: str,
+    last_stage: str,
+    *,
+    age_hours: int = 1,
+    last_score: float = 0.40,
+    family: str | None = None,
+) -> tuple[int, int, int]:
+    """항목 하나를 소스 a 로 넣고 마지막 결정을 심는다. (item_id, source_a_id, source_b_id).
+
+    0.40 은 rules.yaml 의 threshold(0.45) 바로 아래 — 되살림 밴드(0.10) 안이다.
+    """
+    normalized = normalize_url(URL)
     async with SessionLocal() as s, s.begin():
-        a = Source(name="test:merge-a", type="rss", config={})
-        b = Source(name="test:merge-b", type="hackernews", config={})
+        config: dict[str, object] = {"family": family} if family else {}
+        a = Source(name="test:merge-a", type="rss", config=config)
+        b = Source(name="test:merge-b", type="hackernews", config=config)
         s.add_all([a, b])
         await s.flush()
-        normalized = normalize_url(URL)
         item = Item(
             source_id=a.id,
             external_id="a-1",
@@ -45,7 +56,9 @@ async def _seed(status: str, last_stage: str, *, age_hours: int = 1) -> tuple[in
         )
         s.add(item)
         await s.flush()
-        s.add(Decision(item_id=item.id, stage=last_stage, passed=False, details={}))
+        s.add(
+            Decision(item_id=item.id, stage=last_stage, passed=False, score=last_score, details={})
+        )
         return item.id, a.id, b.id
 
 
@@ -134,5 +147,30 @@ async def test_locked_row_is_skipped_and_merged_on_next_poll():
         row = await _load(item_id)
         assert row.status == "NEW"
         assert row.raw["metrics"] == {"points": 50.0}
+    finally:
+        await _cleanup(item_id, a_id, b_id)
+
+
+async def test_far_below_threshold_is_merged_but_not_revived():
+    """점수 0.20 은 임계값(0.45) 에서 밴드(0.10) 밖이라 병합만 하고 되살리지 않는다."""
+    item_id, a_id, b_id = await _seed("DROPPED", "score", last_score=0.20)
+    try:
+        await _observe(b_id, observation("test:merge-b", 50.0))
+        row = await _load(item_id)
+        assert row.status == "DROPPED"
+        assert row.raw["metrics"] == {"points": 50.0}
+    finally:
+        await _cleanup(item_id, a_id, b_id)
+
+
+async def test_same_family_source_is_not_a_mention():
+    """같은 family(arxiv) 의 다른 소스 관측은 mentions 에 남기지 않는다."""
+    item_id, a_id, b_id = await _seed("DROPPED", "score", family="arxiv")
+    try:
+        await _observe(b_id, observation("test:merge-b", 50.0))
+        row = await _load(item_id)
+        assert "mentions" not in row.raw
+        assert row.raw["metrics"] == {"points": 50.0}
+        assert row.status == "NEW"
     finally:
         await _cleanup(item_id, a_id, b_id)

@@ -7,10 +7,10 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_rules
-from app.db.models import Decision, Item
+from app.db.models import Decision, Item, Source
 from app.log import get_logger
 from app.pipeline.normalize import normalize_url, url_hash
-from app.pipeline.scoring import is_stale
+from app.pipeline.scoring import NEAR_THRESHOLD_BAND, is_stale
 from app.schemas import Category, ItemStatus, NormalizedItem, Stage
 
 SUMMARY_LIMIT = 3000
@@ -68,13 +68,30 @@ def merge_raw(
 
     if metrics == old_m and mentions == old_s:
         return existing, False
+    if not mentions:
+        return {**existing, "metrics": metrics}, True
     return {**existing, "metrics": metrics, "mentions": sorted(mentions)}, True
 
 
-async def _last_decision_is_score_fail(session: AsyncSession, item_id: int) -> bool:
-    """되살림은 점수에서만 떨어진 항목에 한한다. 판정 false·중복·exclude·선별 폐기는 그대로 둔다."""
+def same_source(row_source_id: int, source_id: int, families: dict[int, str | None]) -> bool:
+    """같은 소스이거나 같은 family(sources.yaml config.family)면 멘션으로 세지 않는다."""
+    if row_source_id == source_id:
+        return True
+    family = families.get(row_source_id)
+    return family is not None and family == families.get(source_id)
+
+
+async def _last_decision_is_near_miss(
+    session: AsyncSession, item_id: int, threshold: float
+) -> bool:
+    """되살림은 점수 임계값 바로 아래(근접 실패)만 한다. 판정 false·중복·exclude·선별 폐기는 둔다.
+
+    HN points·HF upvotes 는 폴링마다 오르기만 한다. 임계값에서 멀리 떨어진 항목까지 되살리면
+    그 항목이 식지 않는 한 폴링마다 재관문·재점수·재탈락을 반복해 decisions 에 행만 계속 쌓인다.
+    근접 실패만 되살려야 다음 재점수에서 뒤집힐 여지가 있다.
+    """
     stmt = (
-        select(Decision.stage, Decision.passed)
+        select(Decision.stage, Decision.passed, Decision.score)
         .where(Decision.item_id == item_id)
         .order_by(Decision.created_at.desc(), Decision.id.desc())
         .limit(1)
@@ -82,8 +99,13 @@ async def _last_decision_is_score_fail(session: AsyncSession, item_id: int) -> b
     row = (await session.execute(stmt)).first()
     if row is None:
         return False
-    stage, passed = row
-    return stage == Stage.SCORE.value and not passed
+    stage, passed, score = row
+    return (
+        stage == Stage.SCORE.value
+        and not passed
+        and score is not None
+        and score >= threshold - NEAR_THRESHOLD_BAND
+    )
 
 
 async def store_items(
@@ -91,9 +113,9 @@ async def store_items(
 ) -> list[int]:
     """새로 INSERT 된 항목의 id 만 돌려준다 (임베딩 대상).
 
-    이미 아는 URL 은 버리지 않고 raw 를 병합한다. 값이 바뀌었고 점수에서 떨어졌던 항목이
-    72h 안이면 NEW 로 되돌린다. 선별 결과는 decisions 캐시라 다시 호출하지 않고
-    점수만 새 metrics·mentions 로 다시 매긴다.
+    이미 아는 URL 은 버리지 않고 raw 를 병합한다. 값이 바뀌었고 점수 임계값 근처
+    (NEAR_THRESHOLD_BAND 폭)에서 떨어졌던 항목이 72h 안이면 NEW 로 되돌린다. 선별 결과는
+    decisions 캐시라 다시 호출하지 않고 점수만 새 metrics·mentions 로 다시 매긴다.
     """
     accepted = [item for item in items if is_web_url(item.url)]
     if len(accepted) != len(items):
@@ -118,14 +140,24 @@ async def store_items(
             )
         ).scalars()
     }
-    max_age = get_rules().scoring.max_age_hours
+    rules = get_rules()
+    max_age = rules.scoring.max_age_hours
+    # known 이 비어 있지 않을 때만 소스 family 를 한 번에 조회한다. 같은 family(예: arXiv 두
+    # 피드)는 교차 등재로 인한 관측이라 서로 멘션으로 세지 않는다.
+    families: dict[int, str | None] = {}
+    if known:
+        ids = {row.source_id for row in known.values()} | {source_id}
+        rows = await session.execute(select(Source.id, Source.config).where(Source.id.in_(ids)))
+        for sid, config in rows:
+            family = config.get("family") if isinstance(config, dict) else None
+            families[sid] = family if isinstance(family, str) else None
     merged = revived = 0
     for hash_, row in known.items():
         item = by_hash[hash_]
         raw, changed = merge_raw(
             row.raw if isinstance(row.raw, dict) else {},
             item,
-            same_source=row.source_id == source_id,
+            same_source=same_source(row.source_id, source_id, families),
         )
         if not changed:
             continue
@@ -134,7 +166,7 @@ async def store_items(
         if (
             row.status == ItemStatus.DROPPED.value
             and not is_stale(row.published_at, max_age)
-            and await _last_decision_is_score_fail(session, row.id)
+            and await _last_decision_is_near_miss(session, row.id, rules.scoring.threshold)
         ):
             row.status = ItemStatus.NEW.value
             revived += 1

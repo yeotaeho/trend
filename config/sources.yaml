@@ -63,11 +63,13 @@ sources:
     trust_score: 1.0
 
   # --- arXiv (하루 1회 갱신이라 1시간 주기면 충분) ---
+  # 같은 family 는 적재 병합에서 같은 소스로 본다. 교차 등재 논문이 multi 신호를 만들지 않게.
   - name: rss:arxiv-cs-ai
     type: rss
     config:
       url: https://rss.arxiv.org/rss/cs.AI
       category_hint: technique
+      family: arxiv
     poll_interval_sec: 3600
     trust_score: 0.5
 
@@ -76,6 +78,7 @@ sources:
     config:
       url: https://rss.arxiv.org/rss/cs.CL
       category_hint: technique
+      family: arxiv
     poll_interval_sec: 3600
     trust_score: 0.5
 

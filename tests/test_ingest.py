@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from app.pipeline.ingest import is_web_url, merge_raw
+from app.pipeline.ingest import is_web_url, merge_raw, same_source
 from app.schemas import NormalizedItem
 
 
@@ -74,3 +74,33 @@ def test_lower_metric_does_not_change():
 def test_existing_keys_are_kept():
     raw, _ = merge_raw({"repo": "a/b", "metrics": {}}, obs(points=1.0), same_source=False)
     assert raw["repo"] == "a/b"
+
+
+def test_same_source_metric_bump_does_not_add_mentions_key():
+    raw, changed = merge_raw({"metrics": {"points": 1.0}}, obs(points=5.0), same_source=True)
+    assert changed
+    assert raw == {"metrics": {"points": 5.0}}
+    assert "mentions" not in raw
+
+
+def test_same_source_returns_true_for_identical_ids():
+    assert same_source(1, 1, {})
+
+
+def test_same_source_returns_true_for_shared_family():
+    families = {1: "arxiv", 2: "arxiv"}
+    assert same_source(1, 2, families)
+
+
+def test_same_source_returns_false_when_one_family_is_none():
+    families = {1: "arxiv", 2: None}
+    assert not same_source(1, 2, families)
+
+
+def test_same_source_returns_false_for_different_families():
+    families = {1: "arxiv", 2: "youtube"}
+    assert not same_source(1, 2, families)
+
+
+def test_same_source_returns_false_when_families_dict_missing_an_id():
+    assert not same_source(1, 2, {2: "arxiv"})

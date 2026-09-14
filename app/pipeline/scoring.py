@@ -12,6 +12,7 @@ from app.schemas import Kind
 FRESH_HALF_LIFE_HOURS = 24.0
 HOTNESS_SATURATION = 500.0  # points/stars 가 이 정도면 hotness 1.0 에 근접
 HOTNESS_KEYS = ("points", "stars", "upvotes", "comments")
+NEAR_THRESHOLD_BAND = 0.10  # 임계값 바로 아래 이 폭. 탐색 슬롯 후보와 되살림이 같은 눈금을 쓴다.
 
 
 @dataclass(slots=True)
