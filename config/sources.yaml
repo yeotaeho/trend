@@ -31,6 +31,37 @@ sources:
     poll_interval_sec: 1800
     trust_score: 0.7
 
+  # --- 커뮤니티·개인 블로그 (RSS) ---
+  - name: rss:geeknews
+    type: rss
+    config:
+      url: https://news.hada.io/rss/news
+    poll_interval_sec: 900
+    trust_score: 0.6
+
+  - name: rss:yozm
+    type: rss
+    config:
+      url: https://yozm.wishket.com/magazine/feed/
+    poll_interval_sec: 1800
+    trust_score: 0.5
+
+  - name: rss:simonwillison
+    type: rss
+    config:
+      url: https://simonwillison.net/atom/everything/
+    poll_interval_sec: 900
+    trust_score: 0.8
+
+  # rss:anthropic 과 같은 커뮤니티 미러의 engineering 피드. 외부 링크는 버린다.
+  - name: rss:anthropic-engineering
+    type: rss
+    config:
+      url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_engineering.xml
+      allowed_hosts: [anthropic.com]
+    poll_interval_sec: 900
+    trust_score: 1.0
+
   # --- arXiv (하루 1회 갱신이라 1시간 주기면 충분) ---
   - name: rss:arxiv-cs-ai
     type: rss
