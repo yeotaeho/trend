@@ -1,0 +1,38 @@
+[
+  {
+    "paper": {
+      "id": "2609.06107",
+      "authors": [
+        {"name": "Hao Liang"},
+        {"name": "Mingrui Chen"},
+        {"name": "Hengyi Feng"},
+        {"name": "Meiyi Qiang"}
+      ],
+      "publishedAt": "2026-09-05T00:00:00.000Z",
+      "title": "DataFlex-RL: An Evaluation Platform for RLVR Data Policies",
+      "summary": "Data policies for reinforcement learning with verifiable rewards (RLVR) determine which rollouts are used, how strongly they are weighted, and which domains contribute to subsequent training batches. We introduce DataFle",
+      "upvotes": 26
+    },
+    "publishedAt": "2026-09-04T20:00:00.000Z",
+    "title": "DataFlex-RL: An Evaluation Platform for RLVR Data Policies",
+    "numComments": 1
+  },
+  {
+    "paper": {
+      "id": "2609.03502",
+      "authors": [
+        {"name": "Kunat Pipatanakul"},
+        {"name": "Potsawee Manakul"},
+        {"name": "Warit Sirichotedumrong"},
+        {"name": "Sittipong Sripaisarnmongkol"}
+      ],
+      "publishedAt": "2026-09-03T00:00:00.000Z",
+      "title": "Building and Evaluating Fixed-Voice Thai TTS from Synthetic Speech",
+      "summary": "In low-resource settings, deploying TTS typically requires choosing between a large voice-cloning model with costly inference or a compact fixed-voice system that requires a speaker-specific corpus. We study a third rout",
+      "upvotes": 1
+    },
+    "publishedAt": "2026-09-02T20:00:00.000Z",
+    "title": "Building and Evaluating Fixed-Voice Thai TTS from Synthetic Speech",
+    "numComments": 1
+  }
+]

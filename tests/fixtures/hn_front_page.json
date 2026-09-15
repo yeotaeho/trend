@@ -1,0 +1,36 @@
+{
+  "hits": [
+    {
+      "author": "u1hcw9nx",
+      "created_at": "2026-09-13T21:06:13Z",
+      "created_at_i": 1789333573,
+      "num_comments": 480,
+      "objectID": "49688695",
+      "points": 1075,
+      "title": "Fable 5.1 Solves the Cyphral Distich, a 370-year-old cipher",
+      "url": "https://www.vals.ai/blogs/fable-solves-cyphral-distich"
+    },
+    {
+      "author": "david927",
+      "created_at": "2026-09-13T17:31:38Z",
+      "created_at_i": 1789320698,
+      "num_comments": 639,
+      "objectID": "49686380",
+      "points": 219,
+      "story_text": "What are you working on? What have you been curious about lately?",
+      "title": "Ask HN: What are you working on? (September 2026)"
+    },
+    {
+      "author": "callbacked",
+      "created_at": "2026-09-14T12:01:31Z",
+      "created_at_i": 1789387291,
+      "num_comments": 12,
+      "objectID": "49695408",
+      "points": 42,
+      "story_text": "a couple hours ago i had astra take on a 10 month old repo of mine <a href=\"https:&#x2F;&#x2F;github.com&#x2F;callbacked&#x2F;neural-band-poc&#x2F;\" rel=\"nofollow\">https:&#x2F;&#x2F;github.com&#x2F;ca",
+      "title": "Show HN: Kinesis – Control your Mac with the Meta Neural Band",
+      "url": "https://github.com/callbacked/kinesis"
+    }
+  ],
+  "nbHits": 30
+}

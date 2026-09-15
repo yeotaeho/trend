@@ -39,6 +39,7 @@
 
 ```
 [소스] → [수집기 sources/*] → [적재 + 임베딩] → NEW
+                └ 아는 URL 이면 버리지 않고 raw.metrics(키별 max)·mentions 병합. 점수 탈락 항목은 마지막 점수 + hot·multi 이득(마지막 결정의 breakdown 기준)이 임계값 이상이면 NEW 로 되살림 (선별 캐시, LLM 재호출 없음)
 1국면 (항목별)   stale(72h) → 중복·관련 (벡터 코사인, 생존자 기준) → exclude 규칙
 2국면 (25건 배치) LLM 선별 — 정책 문장을 읽고 관련도 0~1 + 이유
 3국면 (항목별)   점수(src·rel·hot·multi·fresh + kind 감점 ≥ 0.45) → 본문 보강* → LLM 판정·요약 → SCORED
@@ -107,14 +108,16 @@ tech-radar/
 │   │   ├── base.py           # Source 프로토콜, 등록 레지스트리
 │   │   ├── rss.py            # 기업 블로그·arXiv 공통
 │   │   ├── github_release.py # 관심 저장소 Releases (웹훅 + 보조 폴링)
-│   │   ├── github_trending.py
-│   │   ├── hackernews.py     # Algolia search_by_date
+│   │   ├── hackernews.py     # Algolia 프론트 페이지 30건 (since 무시, 재관측은 적재 병합이 처리)
+│   │   ├── hf_papers.py      # HF Daily Papers → arXiv URL 로 적재해 기존 arXiv 항목에 upvotes 병합
 │   │   ├── youtube.py        # 채널 RSS (조코딩·코딩애플 등)
-│   │   └── reddit.py         # asyncpraw (2단계)
+│   │   ├── github_trending.py# 미구현 (2차, Search API)
+│   │   └── reddit.py         # 미구현 (2차, OAuth 승인 후 httpx)
 │   │
 │   │  # 파이프라인 — NEW 항목을 단계별 관문으로 통과
 │   ├── pipeline/
 │   │   ├── normalize.py      # URL 정규화(utm 제거 등) → SHA-256 url_hash
+│   │   ├── ingest.py         # url_hash 적재. 아는 URL 은 metrics·mentions 병합(같은 family 는 제외), hot·multi 이득이 임계값을 넘길 수 있는 점수 탈락은 되살림
 │   │   ├── embedding.py      # Voyage/OpenAI 임베딩 어댑터, 적재 직후·보충 계산
 │   │   ├── dedupe.py         # 72h 창 벡터 코사인 → 중복(≥0.96, 생존자 기준)·관련(≥0.88) → cluster_id
 │   │   ├── rules.py          # exclude 키워드·도메인만 (config/rules.yaml)
@@ -186,6 +189,8 @@ NEW ──관문 통과──▶ (선별 배치: 관련도) ──▶ (점수) �
 - **시크릿** — `.env` 로컬 관리 (`ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`(또는 `OPENAI_API_KEY`), `DISCORD_*`, `TELEGRAM_*`, `GITHUB_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `DATABASE_URL`). 커밋 금지. `.env.example` 이 안전한 참조본.
 - **임베딩** — Voyage `voyage-3.5-lite` 1024차원 고정. 무료 등급은 분당 요청 3회·토큰 약 1만이라 배치 64건·간격 20초. 모델을 바꾸면 `backfill_embeddings.py` 로 전량 재계산하고, 불일치 행이 남아 있는 동안 파이프라인은 스스로 멈춘다.
 - **설정 분리** — 소스·키워드·임계값은 `config/*.yaml`, 시크릿은 `.env`. 코드에 하드코딩하지 않는다.
+- **소스 family** — `sources.yaml` 의 `config.family` 가 같은 소스(arXiv 두 피드)는 적재 병합에서 같은 소스로 본다. 교차 등재가 멘션·multi 신호를 만들지 않는다.
+- **본문 보강 가드** — `pipeline/llm.py` 의 `enrich_body` 는 사설·루프백·링크로컬 주소와 그리로 가는 리다이렉트(최대 5홉)를 열지 않는다. DNS 리바인딩은 막지 않는다.
 - **Neon 연결** — pooled 엔드포인트(pgbouncer, `sslmode=require`) 사용, 잡 단위로 커넥션을 열고 닫는다. 브랜치 `main`(운영) / `dev`(로컬·CI).
 - **LLM 호출 위치** — 선별은 `pipeline/triage.py`(25건 배치, 관문 통과 항목 전부), 판정은 점수 관문을 통과한 항목에만 `pipeline/llm.py`. 모든 호출 직전에 `db/budget.py` 의 `reserve_call` 로 예약한다(선별 60·판정 300·탐색 3, Asia/Seoul 달력일). 결과는 `summaries`·`decisions` 캐시.
 - **결정 로그** — 통과/탈락 판단은 반드시 `decisions` 에 남긴다 (매칭 키워드, 점수 내역, LLM 응답).

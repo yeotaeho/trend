@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
+import ipaddress
+import socket
 from dataclasses import dataclass
+from urllib.parse import urljoin, urlsplit
 
 import httpx
 import trafilatura
@@ -16,6 +20,7 @@ from app.schemas import LLMVerdict
 ENRICH_MIN_CHARS = 300
 ENRICH_TIMEOUT = 10.0
 PROMPT_BODY_CHARS = 2000
+MAX_REDIRECTS = 5
 
 SYSTEM_PROMPT = """\
 너는 개인용 개발 트렌드 알림기의 마지막 관문이다.
@@ -56,13 +61,51 @@ class LLMResult:
     tokens_out: int
 
 
-async def enrich_body(url: str) -> str | None:
-    """body 가 짧을 때만 원문을 받아 본문을 추출한다. 실패해도 예외를 올리지 않는다."""
+def all_global(addresses: list[str]) -> bool:
+    """전부 공인 주소여야 연다. 사설·루프백·링크로컬(VM 메타데이터)·예약 대역이
+    하나라도 있으면 막는다. 빈 목록(해석 실패)도 막는다.
+    """
+    return bool(addresses) and all(ipaddress.ip_address(a).is_global for a in addresses)
+
+
+async def resolve(host: str) -> list[str]:
+    """호스트의 주소 전부. 이벤트 루프의 getaddrinfo 라 블로킹하지 않는다."""
     try:
-        async with httpx.AsyncClient(timeout=ENRICH_TIMEOUT, follow_redirects=True) as client:
-            response = await client.get(url, headers={"User-Agent": "tech-radar/0.1"})
-            response.raise_for_status()
-        return trafilatura.extract(response.text) or None
+        infos = await asyncio.get_running_loop().getaddrinfo(host, None)
+    except socket.gaierror:
+        return []
+    return sorted({str(info[4][0]) for info in infos})
+
+
+async def _allowed(url: str) -> bool:
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        return False
+    return all_global(await resolve(parts.hostname))
+
+
+async def enrich_body(url: str) -> str | None:
+    """body 가 짧을 때만 원문을 받아 본문을 추출한다. 실패해도 예외를 올리지 않는다.
+
+    피드·HN 이 준 링크는 사용자 제출 URL 이다. 사설·링크로컬 주소를 가리킬 수 있으므로
+    리다이렉트를 직접 따라가며 홉마다 목적지를 검사한다.
+    ponytail: 해석과 연결 사이의 DNS 리바인딩은 막지 않는다. 필요해지면 연결된 소켓의
+    peer 주소를 재검사한다.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=ENRICH_TIMEOUT, follow_redirects=False) as client:
+            for _ in range(MAX_REDIRECTS + 1):
+                if not await _allowed(url):
+                    log.info("llm.enrich_blocked", url=url)
+                    return None
+                response = await client.get(url, headers={"User-Agent": "tech-radar/0.1"})
+                if response.is_redirect:
+                    url = urljoin(url, response.headers["location"])
+                    continue
+                response.raise_for_status()
+                return trafilatura.extract(response.text) or None
+        log.info("llm.enrich_too_many_redirects", url=url)
+        return None
     except Exception as exc:
         log.info("llm.enrich_failed", url=url, error=str(exc))
         return None

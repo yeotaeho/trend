@@ -31,12 +31,46 @@ sources:
     poll_interval_sec: 1800
     trust_score: 0.7
 
+  # --- 커뮤니티·개인 블로그 (RSS) ---
+  - name: rss:geeknews
+    type: rss
+    config:
+      url: https://news.hada.io/rss/news
+    poll_interval_sec: 900
+    trust_score: 0.6
+
+  - name: rss:yozm
+    type: rss
+    config:
+      url: https://yozm.wishket.com/magazine/feed/
+    poll_interval_sec: 1800
+    trust_score: 0.5
+
+  - name: rss:simonwillison
+    type: rss
+    config:
+      url: https://simonwillison.net/atom/everything/
+    poll_interval_sec: 900
+    trust_score: 0.8
+
+  # rss:anthropic 과 같은 커뮤니티 미러의 engineering 피드. 외부 링크는 버린다.
+  - name: rss:anthropic-engineering
+    type: rss
+    config:
+      url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_engineering.xml
+      allowed_hosts: [anthropic.com]
+    poll_interval_sec: 900
+    trust_score: 1.0
+
   # --- arXiv (하루 1회 갱신이라 1시간 주기면 충분) ---
+  # 같은 family 는 적재 병합에서 같은 소스로 본다. 교차 등재 논문이 multi 신호를 만들지 않게.
+  # 적재 병합에만 적용된다. dedupe 의 관련 판정은 별개다.
   - name: rss:arxiv-cs-ai
     type: rss
     config:
       url: https://rss.arxiv.org/rss/cs.AI
       category_hint: technique
+      family: arxiv
     poll_interval_sec: 3600
     trust_score: 0.5
 
@@ -45,8 +79,17 @@ sources:
     config:
       url: https://rss.arxiv.org/rss/cs.CL
       category_hint: technique
+      family: arxiv
     poll_interval_sec: 3600
     trust_score: 0.5
+
+  # --- Hugging Face Daily Papers (큐레이션 10~30건/일. arXiv URL 로 적재돼 위 arXiv 항목에 upvotes 가 병합된다) ---
+  - name: hf_papers:daily
+    type: hf_papers
+    config:
+      limit: 50
+    poll_interval_sec: 3600
+    trust_score: 0.7
 
   # --- GitHub Releases (웹훅이 주 경로, 이 폴링은 누락 보정) ---
   - name: github_release:watchlist
@@ -66,6 +109,14 @@ sources:
       per_page: 20
     poll_interval_sec: 1800
     trust_score: 1.0
+
+  # --- Hacker News (프론트 페이지 = 커뮤니티가 고른 30건. 링크 글은 원문 URL 로 적재돼 기존 항목과 병합) ---
+  - name: hackernews:front
+    type: hackernews
+    config:
+      hits_per_page: 30
+    poll_interval_sec: 600
+    trust_score: 0.6
 
   # --- YouTube 채널 ---
   - name: youtube:jocoding

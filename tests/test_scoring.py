@@ -1,12 +1,21 @@
-# 점수화 테스트 — freshness 감쇠, hotness 포화, 신뢰도별 통과 관련도, stale 경계
+# 점수화 테스트 — freshness 감쇠, hotness 포화, 신뢰도별 통과 관련도, stale 경계, 되살림 변화량
 
+import math
 from datetime import UTC, datetime, timedelta
 
 import pytest
 from pydantic import ValidationError
 
 from app.config import ScoringConfig
-from app.pipeline.scoring import freshness, hotness, is_stale, score_item
+from app.pipeline.scoring import (
+    freshness,
+    hotness,
+    is_stale,
+    merged_mentions,
+    revive_gain,
+    score_item,
+    score_terms,
+)
 from app.schemas import Kind
 
 NOW = datetime(2026, 8, 30, 12, 0, tzinfo=UTC)
@@ -136,3 +145,179 @@ def test_kind_without_weight_is_neutral():
 def test_unknown_kind_in_weights_is_rejected():
     with pytest.raises(ValidationError):
         ScoringConfig(kind_weights={"nope": 0.1})
+
+
+def test_merged_mentions_takes_larger_side_and_tolerates_missing():
+    """벡터 관련 소스 수(자기 포함)와 적재 병합의 raw.mentions(자기 제외) 중 큰 쪽."""
+    assert merged_mentions(1, {"mentions": ["a", "b"]}) == 3
+    assert merged_mentions(3, {"mentions": ["a"]}) == 3
+    assert merged_mentions(2, {}) == 2
+    assert merged_mentions(1, None) == 1
+    assert merged_mentions(1, {"mentions": "bad"}) == 1
+
+
+def test_score_terms_matches_score_item_breakdown():
+    """score_terms 는 score_item 의 hot·multi 항과 같은 눈금이어야 한다."""
+    hot, multi = score_terms(CFG, {"points": 50.0}, 2)
+    result = score_item(
+        CFG,
+        trust=0.5,
+        relevance=0.5,
+        kind=Kind.NEWS,
+        metrics={"points": 50.0},
+        mention_count=3,  # score_terms 의 mentions=2 는 자기 소스를 뺀 값
+        published_at=NOW,
+        now=NOW,
+    )
+    assert hot == pytest.approx(result.breakdown["hot"])
+    assert multi == pytest.approx(result.breakdown["multi"])
+
+
+REVIVE_PUBLISHED_AT = NOW - timedelta(hours=1)
+BASE_FRESH = CFG.w_fresh * 1.0  # 24시간 이내라 감쇠 없음, delta 0 으로 hot·multi 만 남긴다
+
+
+def test_revive_gain_is_zero_without_change():
+    base_hot, base_multi = score_terms(CFG, {"points": 10.0}, 0)
+    gain = revive_gain(
+        CFG,
+        {"points": 10.0},
+        0,
+        REVIVE_PUBLISHED_AT,
+        base_hot=base_hot,
+        base_multi=base_multi,
+        base_fresh=BASE_FRESH,
+        now=NOW,
+    )
+    assert gain == 0.0
+
+
+def test_revive_gain_is_zero_once_hotness_is_saturated():
+    """1000 도 1075 도 로그 스케일에서 이미 1.0 이라 hot 항이 오르지 않는다."""
+    base_hot, base_multi = score_terms(CFG, {"points": 1000.0}, 0)
+    gain = revive_gain(
+        CFG,
+        {"points": 1075.0},
+        0,
+        REVIVE_PUBLISHED_AT,
+        base_hot=base_hot,
+        base_multi=base_multi,
+        base_fresh=BASE_FRESH,
+        now=NOW,
+    )
+    assert gain == pytest.approx(0.0)
+
+
+def test_revive_gain_from_hotness_climb():
+    base_hot, base_multi = score_terms(CFG, {"points": 10.0}, 0)
+    gain = revive_gain(
+        CFG,
+        {"points": 400.0},
+        0,
+        REVIVE_PUBLISHED_AT,
+        base_hot=base_hot,
+        base_multi=base_multi,
+        base_fresh=BASE_FRESH,
+        now=NOW,
+    )
+    expected = CFG.w_hot * (math.log1p(400) - math.log1p(10)) / math.log1p(500)
+    assert gain == pytest.approx(expected)
+
+
+def test_revive_gain_from_new_mention():
+    base_hot, base_multi = score_terms(CFG, {"points": 10.0}, 0)
+    gain = revive_gain(
+        CFG,
+        {"points": 10.0},
+        1,
+        REVIVE_PUBLISHED_AT,
+        base_hot=base_hot,
+        base_multi=base_multi,
+        base_fresh=BASE_FRESH,
+        now=NOW,
+    )
+    assert gain == pytest.approx(0.1)
+
+
+def test_revive_gain_from_mentions_is_capped_at_two():
+    base_hot, base_multi = score_terms(CFG, {"points": 10.0}, 2)
+    gain = revive_gain(
+        CFG,
+        {"points": 10.0},
+        3,
+        REVIVE_PUBLISHED_AT,
+        base_hot=base_hot,
+        base_multi=base_multi,
+        base_fresh=BASE_FRESH,
+        now=NOW,
+    )
+    assert gain == pytest.approx(0.0)
+
+
+def test_revive_gain_accumulates_regardless_of_intermediate_observation():
+    """기준이 마지막 점수 결정의 breakdown 이라, 중간 관측(30→200 등)과 무관하게 누적된다.
+
+    HN 점수가 폴링마다 조금씩(30 → 500) 올라도 매번 직전 관측과 비교하면 각 이득이 작아
+    임계값을 못 넘는다. 기준을 마지막 점수 결정에 고정해야 총 누적분(약 0.0895)이 온전히 잡힌다.
+    """
+    base_hot, base_multi = score_terms(CFG, {"points": 30.0}, 0)
+    gain = revive_gain(
+        CFG,
+        {"points": 500.0},
+        0,
+        REVIVE_PUBLISHED_AT,
+        base_hot=base_hot,
+        base_multi=base_multi,
+        base_fresh=BASE_FRESH,
+        now=NOW,
+    )
+    expected = CFG.w_hot * (math.log1p(500) - math.log1p(30)) / math.log1p(500)
+    assert gain == pytest.approx(expected)
+
+
+def test_revive_gain_subtracts_freshness_decay():
+    """마지막 점수 결정 뒤 신선도가 감쇠한 만큼 되살림 이득에서 빠진다."""
+    base_hot, base_multi = score_terms(CFG, {"points": 10.0}, 0)
+    gain = revive_gain(
+        CFG,
+        {"points": 10.0},
+        0,
+        NOW - timedelta(hours=48),
+        base_hot=base_hot,
+        base_multi=base_multi,
+        base_fresh=BASE_FRESH,
+        now=NOW,
+    )
+    assert gain == pytest.approx(CFG.w_fresh * (0.5 - 1.0))
+
+
+def test_revive_gain_never_adds_freshness():
+    """기준 fresh 가 0 이면(기록된 결정 항이 없던 경우) 지금 신선해도 이득에 더하지 않는다."""
+    base_hot, base_multi = score_terms(CFG, {"points": 10.0}, 0)
+    gain = revive_gain(
+        CFG,
+        {"points": 10.0},
+        0,
+        REVIVE_PUBLISHED_AT,
+        base_hot=base_hot,
+        base_multi=base_multi,
+        base_fresh=0.0,
+        now=NOW,
+    )
+    assert gain == pytest.approx(0.0)
+
+
+def test_revive_gain_floors_multi_delta():
+    """기준 multi 가 dedupe 쪽 관련 소스 수로 더 크게 잡혔어도 새 값이 이를 깎지 않는다."""
+    base_hot, _ = score_terms(CFG, {"points": 10.0}, 0)
+    gain = revive_gain(
+        CFG,
+        {"points": 10.0},
+        0,
+        REVIVE_PUBLISHED_AT,
+        base_hot=base_hot,
+        base_multi=0.2,
+        base_fresh=BASE_FRESH,
+        now=NOW,
+    )
+    assert gain == pytest.approx(0.0)

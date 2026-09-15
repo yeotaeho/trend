@@ -18,7 +18,7 @@ from app.pipeline.dedupe import Verdict, classify, find_candidates
 from app.pipeline.embedding import EmbeddingDimError, alert_dim_error, embed_pending
 from app.pipeline.feedback import format_examples, nearest_feedback
 from app.pipeline.rules import apply_rules
-from app.pipeline.scoring import is_stale, score_item
+from app.pipeline.scoring import is_stale, merged_mentions, score_item
 from app.pipeline.triage import (
     TriageBatchError,
     TriageEntry,
@@ -262,7 +262,7 @@ async def _judge(
         relevance=tri.relevance,
         kind=tri.kind,
         metrics=metrics if isinstance(metrics, dict) else {},
-        mention_count=verdict.mention_count,
+        mention_count=merged_mentions(verdict.mention_count, item.raw),
         published_at=item.published_at,
     )
     item.score = score.score
