@@ -87,6 +87,8 @@ class DedupeConfig(_Strict):
 class TriageConfig(_Strict):
     batch_size: int = 25
     daily_cap_calls: int = 60
+    min_batch: int = 10
+    max_wait_minutes: int = 60
 
 
 class ScoringConfig(_Strict):

@@ -1,7 +1,12 @@
-# 선별 배치 테스트 — 사용자 블록 조립, 배치 실패와 항목 실패의 구분
+# 선별 배치 테스트 — 사용자 블록 조립, 배치 실패와 항목 실패의 구분, 호출 시점
+
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from app.config import TriageConfig
+from app.db.models import Item, Source
+from app.jobs.pipeline import _triage_due
 from app.pipeline.triage import (
     SYSTEM_PROMPT,
     TriageBatch,
@@ -94,3 +99,15 @@ async def test_invalid_kind_from_model_is_a_batch_error(monkeypatch):
     monkeypatch.setattr(triage, "client", lambda: _Client())
     with pytest.raises(TriageBatchError, match="검증"):
         await call_triage(RULES, entries())
+
+
+def test_triage_waits_until_batch_fills_or_oldest_waited_long_enough():
+    cfg = TriageConfig(min_batch=3, max_wait_minutes=60)
+    now = datetime(2026, 9, 18, tzinfo=UTC)
+
+    def pending(*minutes_ago: int) -> list[tuple[Item, Source]]:
+        return [(Item(fetched_at=now - timedelta(minutes=m)), Source()) for m in minutes_ago]
+
+    assert not _triage_due(cfg, pending(5, 59), now)
+    assert _triage_due(cfg, pending(5, 60), now)
+    assert _triage_due(cfg, pending(1, 1, 1), now)

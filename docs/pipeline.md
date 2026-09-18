@@ -10,7 +10,7 @@
                   점수 탈락 항목은 마지막 점수 + hot·multi 이득(마지막 결정의 breakdown 기준,
                   신선도 감쇠 반영)이 임계값 이상이면 NEW 로 되살림 (LLM 재호출 없음)
 1국면 (항목별)   stale(72h) → 중복·관련 (벡터 코사인, 생존자 기준) → exclude 규칙
-2국면 (25건 배치) LLM 선별 — 정책 문장을 읽고 관련도 0~1 + 이유
+2국면 (25건 배치) LLM 선별 — 10건이 모이거나 60분을 기다리면 호출. 관련도 0~1 + 이유
 3국면 (항목별)   점수(src·rel·hot·multi·fresh + kind 감점 ≥ 0.45) → 본문 보강 → LLM 판정·요약 → SCORED
 발송 잡          강도·상한·무음·클러스터당 1건 → 디스코드 (+ 🧪 탐색 슬롯 1건/일)
 ```
@@ -25,7 +25,7 @@
 | 임베딩 | `pipeline/embedding.py` | Voyage `voyage-3.5-lite` 1024차원. 적재 직후 계산, 모델 불일치 행이 남아 있으면 파이프라인이 스스로 멈춘다 |
 | 중복·관련 | `pipeline/dedupe.py` | 72h 창, 코사인 **≥ 0.96 중복**(FILTERED_OUT) · **≥ 0.88 관련**(같은 `cluster_id`). 생존자 기준 비교 |
 | exclude | `pipeline/rules.py` | `rules.yaml` 의 exclude 키워드·도메인만. 통과 관문이 아니라 배제 관문 |
-| 선별 | `pipeline/triage.py` | 25건 배치. `policy` 문장을 읽고 관련도 0~1 + 이유. `decisions(stage=triage)` |
+| 선별 | `pipeline/triage.py` | 25건 배치. 대기 항목이 10건 모이거나 가장 오래된 항목이 60분을 기다려야 호출하고, 그 전에는 `NEW` 로 둔다. `policy` 문장을 읽고 관련도 0~1 + 이유. `decisions(stage=triage)` |
 | 점수 | `pipeline/scoring.py` | trust·relevance·hotness·multi·freshness 가중합 + kind 감점. 임계값 **0.45** 미달 → DROPPED. `decisions(stage=score)` 에 breakdown |
 | 본문 보강 | `pipeline/llm.py` `enrich_body` | trafilatura. 사설·루프백·링크로컬 주소와 그리로 가는 리다이렉트(최대 5홉)를 열지 않는다. DNS 리바인딩은 막지 않는다 |
 | 판정·요약 | `pipeline/llm.py` | 구조화 출력 → `summaries`(`title_ko`, `summary_ko`, `tags`, `importance` 1~5, `worth_notifying`). 최근접 피드백 사례를 프롬프트에 주입 |

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import Rules, get_rules, get_settings
+from app.config import Rules, TriageConfig, get_rules, get_settings
 from app.db.budget import reserve_call
 from app.db.models import Decision, Item, Source, Summary
 from app.db.session import session_scope
@@ -169,12 +169,28 @@ async def _triage_once(
     return ok, failed, batch_id
 
 
+def _triage_due(cfg: TriageConfig, pending: list[tuple[Item, Source]], now: datetime) -> bool:
+    """모였거나 가장 오래 기다린 항목이 한도를 넘었을 때만 부른다.
+
+    2분마다 새로 들어온 1~2건씩 부르면 하루 호출 상한이 오전에 바닥나 나머지 항목이
+    자정까지 NEW 로 묶였다 (2026-09-18 실측: 호출당 중앙값 2건, 08:44 에 60회 소진).
+    """
+    if len(pending) >= cfg.min_batch:
+        return True
+    oldest = min(item.fetched_at for item, _ in pending)
+    return now - oldest >= timedelta(minutes=cfg.max_wait_minutes)
+
+
 async def _triage(
     session: AsyncSession, rules: Rules, survivors: list[tuple[Item, Source]]
 ) -> dict[int, TriageItem]:
     """배치별 선별. 돌려주는 값은 item_id → 결과. 없는 항목은 NEW 로 남는다."""
     results = await _existing_relevance(session, [item.id for item, _ in survivors])
     pending = [(i, s) for i, s in survivors if i.id not in results]
+    if pending and not _triage_due(rules.triage, pending, datetime.now(UTC)):
+        # 기다리는 항목은 NEW 로 남아 다음 실행에서 다시 모인다. 캐시가 있는 항목은 그대로 진행한다.
+        log.info("pipeline.triage_deferred", pending=len(pending))
+        return results
     infra_failures = 0
     size = rules.triage.batch_size
 
