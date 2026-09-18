@@ -38,6 +38,11 @@ dedupe:
 triage:
   batch_size: 25
   daily_cap_calls: 60
+  # 대기 항목이 min_batch 건 모이거나 가장 오래된 항목이 max_wait_minutes 를 기다리면 부른다.
+  # 2026-09-18 실측: 매 실행 호출은 중앙값 2건이라 60회가 08:44 에 소진됐다.
+  # 72시간 도착 시각 시뮬레이션에서 10건·60분은 하루 29~36회, 대기 p90 31분.
+  min_batch: 10
+  max_wait_minutes: 60
 
 scoring:
   # 2026-09-10 조정 0.25/0.25 → 0.20/0.30. 신뢰도 0.5 인 arXiv 는 관련도 0.83 부터 통과한다

@@ -58,9 +58,42 @@ async def _load(ids):
     return s, [(i, src) for i, src in rows]
 
 
+def _eager():
+    """3건으로 호출 경로를 보는 테스트용. 모으기 대기를 끈다."""
+    rules = get_rules()
+    return rules.model_copy(update={"triage": rules.triage.model_copy(update={"min_batch": 1})})
+
+
+async def test_few_fresh_items_wait_without_a_call(items, monkeypatch):
+    ids, _ = items
+    calls: list[int] = []
+
+    async def fake_triage(_rules, entries):
+        calls.append(len(entries))
+        return TriageBatch(
+            items=[
+                TriageItem(idx=e.idx, relevance=0.4, reason="r", kind=Kind.NEWS) for e in entries
+            ]
+        )
+
+    monkeypatch.setattr(pipeline, "call_triage", fake_triage)
+    s, survivors = await _load(ids)
+    async with s:
+        # 기본값은 10건·60분. 방금 들어온 3건은 기다린다.
+        result = await pipeline._triage(s, get_rules(), survivors)
+        await s.commit()
+
+    async with SessionLocal() as s:
+        decisions = (
+            (await s.execute(select(Decision).where(Decision.item_id.in_(ids)))).scalars().all()
+        )
+        statuses = [(await s.get(Item, i)).status for i in ids]
+    assert result == {} and calls == [] and decisions == [] and statuses == ["NEW"] * 3
+
+
 async def test_item_failure_twice_drops_only_that_item(items, monkeypatch):
     ids, _ = items
-    rules = get_rules()
+    rules = _eager()
 
     async def fake_triage(_rules, entries):
         # 첫 항목만 relevance 범위 밖(항목 실패), 나머지 정상. 개수·idx 는 맞아 배치 실패가 아니다.
@@ -108,7 +141,7 @@ async def test_item_failure_twice_drops_only_that_item(items, monkeypatch):
 
 async def test_infra_failure_leaves_no_decision_rows(items, monkeypatch):
     ids, _ = items
-    rules = get_rules()
+    rules = _eager()
 
     async def boom(_rules, entries):
         raise RuntimeError("network")
@@ -129,7 +162,7 @@ async def test_infra_failure_leaves_no_decision_rows(items, monkeypatch):
 
 async def test_existing_relevance_is_reused_without_a_call(items, monkeypatch):
     ids, _ = items
-    rules = get_rules()
+    rules = _eager()
     async with SessionLocal() as s, s.begin():
         s.add(
             Decision(
