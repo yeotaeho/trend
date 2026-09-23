@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/labels.dart';
+import '../features/profile/profile_page.dart';
+import '../features/profile/report_page.dart';
 import 'placeholder_page.dart';
 import 'routes.dart';
 import 'tab_shell.dart';
@@ -120,22 +122,12 @@ GoRouter createRouter({String initialLocation = AppRoutes.feed}) {
             routes: [
               GoRoute(
                 path: AppRoutes.profile,
-                builder: (context, state) => PlaceholderPage(
-                  screen: '08',
-                  title: '내 프로필',
-                  isRoot: true,
-                  links: [
-                    PlaceholderLink('주간 리포트', AppRoutes.report('latest')),
-                  ],
-                ),
+                builder: (context, state) => const ProfilePage(),
                 routes: [
                   GoRoute(
                     path: 'reports/:reportId',
-                    builder: (context, state) => PlaceholderPage(
-                      screen: '–',
-                      title: '주간 리포트',
-                      note: state.pathParameters['reportId'],
-                    ),
+                    builder: (context, state) =>
+                        ReportPage(reportId: state.pathParameters['reportId']!),
                   ),
                 ],
               ),
