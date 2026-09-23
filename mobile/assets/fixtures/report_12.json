@@ -2,41 +2,73 @@
   "id": "12",
   "title": "9월 2주차 리포트",
   "subtitle": "relevance 구간 × kind · 통과/탈락/👍/👎",
-  "period_start": "2026-09-08",
-  "period_end": "2026-09-14",
-  "created_at": "2026-09-15T00:00:05Z",
+  "period_start": "2026-09-07",
+  "period_end": "2026-09-13",
+  "created_at": "2026-09-14T00:00:05Z",
   "sections": [
     {
       "key": "funnel",
-      "title": "깔때기",
+      "title": "관문별 깔때기",
       "columns": [
         "stage",
-        "count"
+        "passed",
+        "reason",
+        "n"
       ],
       "rows": [
         [
-          "collected",
-          4210
+          "llm",
+          false,
+          "judge_false",
+          122
         ],
         [
-          "rule_passed",
-          3620
-        ],
-        [
-          "triage_scored",
-          3550
-        ],
-        [
-          "score_passed",
-          240
-        ],
-        [
-          "judge_passed",
+          "llm",
+          true,
+          null,
           118
         ],
         [
-          "sent",
-          61
+          "rule",
+          false,
+          "dup",
+          532
+        ],
+        [
+          "rule",
+          false,
+          "exclude_keyword",
+          58
+        ],
+        [
+          "rule",
+          true,
+          null,
+          3620
+        ],
+        [
+          "score",
+          false,
+          "low_score",
+          3310
+        ],
+        [
+          "score",
+          true,
+          null,
+          240
+        ],
+        [
+          "triage",
+          false,
+          null,
+          70
+        ],
+        [
+          "triage",
+          true,
+          null,
+          3550
         ]
       ]
     },

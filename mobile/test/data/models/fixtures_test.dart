@@ -196,6 +196,14 @@ void main() {
       expect(detail.rationale.routing, Routing.dropped);
     });
 
+    test('리포트 셀은 문자열·숫자·불리언·null 을 그대로 받는다', () async {
+      final report = Report.fromJson(await _fixture('report_12'));
+      final funnel = report.sections.firstWhere((s) => s.key == 'funnel');
+      expect(funnel.columns, ['stage', 'passed', 'reason', 'n']);
+      expect(funnel.rows.first, ['llm', false, 'judge_false', 122]);
+      expect(funnel.rows[1], ['llm', true, null, 118]);
+    });
+
     test('빈 목록과 next_cursor null 은 마지막 빈 페이지다', () {
       final page = CursorPage<Alert>.fromJson({
         'items': <Object>[],
