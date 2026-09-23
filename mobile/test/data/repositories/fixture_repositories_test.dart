@@ -222,7 +222,10 @@ void main() {
       expect(items.items.firstWhere((d) => d.id == '18107').restored, isTrue);
       final groups = await filtered.groups(view: FilteredView.kind);
       final survey = groups.groups.firstWhere((g) => g.key == 'survey');
-      expect(survey.preview.firstWhere((d) => d.id == '18107').restored, isTrue);
+      expect(
+        survey.preview.firstWhere((d) => d.id == '18107').restored,
+        isTrue,
+      );
       expect((await alerts.recentFeedback()).items.first.alertId, '18107');
     });
 
@@ -249,10 +252,7 @@ void main() {
 
     test('cluster_dup 항목은 취소하면 cluster_dup 근거로 돌아간다', () async {
       await filtered.restore('18336');
-      expect(
-        (await alerts.alert('18336')).rationale.routing,
-        Routing.restored,
-      );
+      expect((await alerts.alert('18336')).rationale.routing, Routing.restored);
 
       await filtered.cancelRestore('18336');
       expect(
