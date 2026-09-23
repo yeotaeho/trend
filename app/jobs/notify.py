@@ -17,6 +17,7 @@ from app.db.users import DEFAULT_USER_ID
 from app.log import get_logger
 from app.notify.base import APP_CHANNEL, Notifier, RateLimited, channel_connected
 from app.notify.discord import DiscordNotifier
+from app.notify.fcm import FcmNotifier
 from app.notify.policy import (
     cluster_sent_count,
     decide,
@@ -44,6 +45,8 @@ def enabled_notifiers(rules: Rules) -> list[Notifier]:
     on = rules.notify.channels
     connected = channel_connected(get_settings())
     notifiers: list[Notifier] = []
+    if on.fcm and connected["fcm"]:
+        notifiers.append(FcmNotifier())
     if on.discord and connected["discord"]:
         notifiers.append(DiscordNotifier())
     if on.telegram and connected["telegram"]:

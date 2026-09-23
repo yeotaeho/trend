@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from app.config import Settings
@@ -37,9 +38,13 @@ class Notifier(Protocol):
 
 
 def channel_connected(settings: Settings) -> dict[str, bool]:
-    """연결 정보(.env)가 있는 채널. 없는 채널은 켤 수 없고 발송하지 않는다."""
+    """연결 정보(.env)가 있는 채널. 없는 채널은 켤 수 없고 발송하지 않는다.
+
+    FCM 은 서비스 계정 파일이 실제로 있어야 한다 (볼륨 마운트를 빠뜨리면 경로만 남는다).
+    """
+    account = settings.fcm_service_account_file
     return {
-        "fcm": bool(settings.fcm_project_id and settings.fcm_service_account_file),
+        "fcm": bool(settings.fcm_project_id and account and Path(account).is_file()),
         "discord": bool(settings.discord_bot_token and settings.discord_channel_id),
         "telegram": bool(settings.telegram_bot_token and settings.telegram_chat_id),
     }
