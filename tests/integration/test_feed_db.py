@@ -507,7 +507,7 @@ async def test_filtered_total_definition(world: World):
                 Decision(item_id=x["3"], stage="rule", passed=False, created_at=outside),
                 Decision(item_id=x["3"], stage="user", passed=True, created_at=inside),
                 _note(world.me, x["4"], "cluster_dup", inside),
-                # 복원으로 피드 행이 붙은 cluster_dup 항목은 cluster_dup 행뿐이 아니다.
+                # 복원 결정 없이 피드 행이 붙은 cluster_dup 항목은 전달된 것이다.
                 _note(world.me, x["5"], "cluster_dup", inside),
                 _note(world.me, x["5"], "feed", inside, channel="app"),
                 _note(world.other, x["6"], "cluster_dup", inside),

@@ -33,6 +33,7 @@ class Stage(StrEnum):
     TRIAGE = "triage"
     SCORE = "score"
     LLM = "llm"
+    USER = "user"  # 사용자가 걸러진 항목을 복원. details.user_id 에 누가 했는지 남긴다
 
 
 class Level(StrEnum):
