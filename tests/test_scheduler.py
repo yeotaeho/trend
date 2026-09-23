@@ -30,7 +30,7 @@ async def test_every_job_fires_once_right_after_start(one_source, monkeypatch):
 
     start() 를 막지 않고 진짜 스케줄러를 띄워 잡 함수가 실제로 불리는지 본다.
     """
-    expected = {"run_source", "run_pipeline", "run_notify", "run_feedback"}
+    expected = {"run_source", "run_pipeline", "run_notify", "run_feedback", "run_resurface"}
     calls: list[str] = []
     all_called = asyncio.Event()
 
@@ -47,7 +47,7 @@ async def test_every_job_fires_once_right_after_start(one_source, monkeypatch):
 
     scheduler = await sched.start_scheduler()
     try:
-        # 고정 sleep 은 느린 CI 에서 흔들린다. 네 잡이 다 불릴 때까지만 기다린다.
+        # 고정 sleep 은 느린 CI 에서 흔들린다. 잡이 다 불릴 때까지만 기다린다.
         await asyncio.wait_for(all_called.wait(), timeout=5)
     finally:
         scheduler.shutdown(wait=False)
@@ -61,7 +61,7 @@ async def test_missed_runs_collapse_into_one_late_run(one_source, monkeypatch):
     scheduler = await sched.start_scheduler()
     jobs = {job.id: job for job in scheduler.get_jobs()}
 
-    assert set(jobs) == {"source:rss:test", "pipeline", "notify", "feedback"}
+    assert set(jobs) == {"source:rss:test", "pipeline", "notify", "feedback", "resurface"}
     for job in jobs.values():
         assert job.coalesce is True, job.id
         assert job.misfire_grace_time is None, job.id
