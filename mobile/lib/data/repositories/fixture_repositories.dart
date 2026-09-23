@@ -88,9 +88,11 @@ class FixtureStore {
     return body();
   }
 
-  Future<_Json> _read(String name) async =>
-      jsonDecode(await rootBundle.loadString('assets/fixtures/$name.json'))
-          as _Json;
+  /// 번들 캐시는 끈다. 이 저장소가 한 번만 읽어 들고 있고, 캐시된 Future 는 위젯 테스트마다
+  /// 다른 FakeAsync zone 에 묶여 다음 테스트에서 끝나지 않는다.
+  Future<_Json> _read(String name) async => jsonDecode(
+    await rootBundle.loadString('assets/fixtures/$name.json', cache: false),
+  ) as _Json;
 
   Future<List<T>> _readPage<T>(String name, T Function(_Json) fromJson) async =>
       CursorPage.fromJson(
