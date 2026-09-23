@@ -2,7 +2,7 @@
 
 모바일 앱(`mobile/`, Flutter)과 백엔드(FastAPI, 같은 프로세스)가 공유하는 계약서다. 화면 명세는 `docs/design/README.md` 와 `docs/design/screens/*.md` (픽셀 진실은 `docs/design/source/*.dc.html`), 현재 백엔드와의 차이·작업 분해는 `docs/design/gap-matrix.md` 를 본다.
 스키마·선별 출력·발송 억제는 사용자 계획서 `v2-다중사용자-1차-구현서.md` (이하 **v2 계획서**) 를 따른다. 둘이 어긋나면 v2 계획서가 이긴다. 대응표는 10절에 있다.
-이 문서가 바뀌면 프론트 fixture(`mobile/assets/fixtures/*.json`)와 백엔드 응답 모델(`app/api/v1/schemas.py`)을 같은 PR 에서 맞춘다.
+이 문서가 바뀌면 프론트 fixture(`mobile/assets/fixtures/*.json`)와 백엔드 응답 모델(`app/api/v1/schemas/<영역>.py`)을 같은 PR 에서 맞춘다.
 
 - 범위 — 화면 03·04·05·06·07·08·09·10·11. 로그인·온보딩(01·02)은 범위 밖이다.
 - 사용자 — 한 명이지만 스키마는 다중 사용자를 받는다 (v2 계획서 Task 1). `users` 테이블에 `id=1` 한 행이 있고, 코드는 `DEFAULT_USER_ID = 1` (`app/db/users.py`) 로 돈다. 사용자별 데이터(`feedback`·`notifications`·앱 새 테이블)는 전부 `user_id` 를 가진다. 사용자 조회·가입·온보딩은 만들지 않는다.
@@ -1117,7 +1117,7 @@ taxonomy_labels:
 | `app/api/telegram.py` · `app/api/discord.py` | `upsert_feedback(session, DEFAULT_USER_ID, item_id, verdict, source=…)` |
 | `app/jobs/scheduler.py` | `sync_sources` 가 덮어쓰기 적용, 모든 YAML 소스에 잡 등록, 주간 리포트 cron 잡, 찜 재알림 잡 |
 | `app/jobs/report.py` (새) | 주간 리포트 표 생성·저장. `scripts/weekly_report.py` 는 이것을 불러 출력만 한다 (`--apply` 동작 유지) |
-| `app/api/v1/` (새 패키지) | `deps.py`(인증·세션·`current_user_id`), `errors.py`, `pagination.py`, `schemas.py`(응답 모델), 라우터 `meta.py` `feed.py` `alerts.py` `settings.py` `sources.py` `filtered.py` `saved.py` `profile.py` `reports.py` `devices.py`, 조회 SQL 은 `app/api/v1/queries/` |
+| `app/api/v1/` (새 패키지) | `deps.py`(인증·세션·`current_user_id`), `errors.py`, `pagination.py`, `schemas/<영역>.py`(응답 모델, 공통은 `schemas/common.py`), 라우터 `meta.py` `feed.py` `alerts.py` `settings.py` `sources.py` `filtered.py` `saved.py` `profile.py` `reports.py` `devices.py`, 조회 SQL 은 `app/api/v1/queries/` |
 | `config/rules.yaml` ★ | 6.2 표의 새 키 |
 | `config/sources.yaml` ★ | `display_name`, `error_hint` |
 | `config/app.yaml` (새) ★ | 6.3 |
