@@ -11,7 +11,7 @@
 | 구성 요소 | 파일 | 역할 |
 |---|---|---|
 | API 서버 (FastAPI) | `app/main.py` | 웹훅 수신(GitHub release, 텔레그램 콜백), 헬스체크. 같은 프로세스에서 스케줄러 기동 |
-| Scheduler/Worker (APScheduler) | `app/jobs/` | 소스별 폴링(`run_source`), 파이프라인(`run_pipeline`), 발송(`run_notify`), 피드백 폴링(`run_feedback`) |
+| Scheduler/Worker (APScheduler) | `app/jobs/` | 소스별 폴링(`run_source`), 파이프라인(`run_pipeline`), 발송(`run_notify`), 피드백 폴링(`run_feedback`), 읽지 않은 찜 재알림(`run_resurface`, 1시간) |
 | Neon (Postgres) | — | 모든 상태의 단일 진실 원천. `status` + `FOR UPDATE SKIP LOCKED` 로 큐 겸용 (Redis·MQ 없음) |
 
 **Stack** — Python 3.12+ · uv · FastAPI/uvicorn · APScheduler 3.x(AsyncIOScheduler, Postgres jobstore) · httpx + tenacity · feedparser · trafilatura(본문 보강만) · Neon(Postgres 16/17, pgvector) · SQLAlchemy 2.x async(asyncpg) + Alembic · Pydantic v2 / pydantic-settings · Anthropic SDK(Claude Haiku 급, 구조화 JSON) · Voyage 임베딩 · python-telegram-bot 21.x · structlog · pytest + pytest-asyncio + respx · ruff + mypy · Docker Compose + Caddy · GitHub Actions

@@ -258,7 +258,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 }
 ```
 
-메타 행 날짜(`9월 14일`)는 `saved_at` 을 쓴다. `folder` 가 `null` 이면 미분류이고 배지를 숨긴다.
+메타 행 날짜(`9월 14일`)는 `saved_at` 을 쓴다. `folder` 가 `null` 이면 미분류이고 배지를 숨긴다. `delivered_at` 은 전달된 적 없는 항목(걸러진 항목을 찜함)이면 `null` 이다. `title`·`delivered_at` 은 피드 카드와 같은 첫 전달 행 기준이다.
 
 ### 3.4 `Source` — 수집 소스 한 줄
 
@@ -764,7 +764,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 
 #### `PATCH /folders/{folder_id}` / `DELETE /folders/{folder_id}`
 
-PATCH `{"name": "...", "position": 0}` (둘 다 선택). DELETE 는 204 이고 안의 찜은 미분류가 된다 (찜 자체는 지우지 않는다). 폴더 관리 UI 디자인은 없으므로 앱은 더보기(`…`) 메뉴의 간단한 목록으로 구현한다.
+PATCH `{"name": "...", "position": 0}` (둘 다 선택). `position` 은 옮겨 갈 자리(0부터)이고 나머지 폴더는 순서를 지킨 채 밀려 0..n-1 로 다시 매겨진다. 끝을 넘으면 맨 뒤다. 이름 중복은 409, 남의 폴더·없는 폴더는 404. DELETE 는 204 (없는 폴더여도 204) 이고 안의 찜은 미분류가 된다 (찜 자체는 지우지 않는다). 폴더 관리 UI 디자인은 없으므로 앱은 더보기(`…`) 메뉴의 간단한 목록으로 구현한다.
 
 #### `GET /saved` — 찜 목록
 
@@ -775,11 +775,11 @@ PATCH `{"name": "...", "position": 0}` (둘 다 선택). DELETE 는 204 이고 �
 | `sort` | `saved_sort` | `saved_desc` |
 | `limit`, `cursor` | | |
 
-응답 `{"items": [SavedItem], "next_cursor": ...}`.
+응답 `{"items": [SavedItem], "next_cursor": ...}`. 정렬 키가 같으면 `alert_id` 내림차순이고, `delivered_desc` 에서 전달 전 찜(`delivered_at=null`)은 맨 뒤다. 남의 폴더·없는 폴더 ID 는 404.
 
 #### `PUT /saved/{alert_id}` — 찜 추가
 
-요청 본문은 선택. `{"folder_id": "1"}` 또는 `{}` (미분류). 새로 만들면 201, 이미 있으면 200 이고 `folder_id` 를 보냈을 때만 폴더를 바꾼다. 응답은 `SavedItem`. 알림(항목)이 없으면 404, 폴더가 없으면 404.
+요청 본문은 선택. `{"folder_id": "1"}` 또는 `{}` (미분류). 새로 만들면 201, 이미 있으면 200 이고 `folder_id` 를 보냈을 때만 폴더를 바꾼다 (`{"folder_id": null}` 은 미분류로 옮긴다). 메모·읽음·`saved_at` 은 그대로다. 응답은 `SavedItem`. 알림(항목)이 없으면 404, 폴더가 없으면 404.
 
 #### `PATCH /saved/{alert_id}` — 폴더 이동 · 메모 · 읽음
 
@@ -792,13 +792,13 @@ PATCH `{"name": "...", "position": 0}` (둘 다 선택). DELETE 는 204 이고 �
 ```
 
 - `memo` 0~500자, 빈 문자열은 `null` 로 저장.
-- `is_read=true` 이면 `read_at` 을 지금으로. 앱은 찜 카드에서 원문을 열거나 07 로 이동할 때 이 호출을 보낸다 (서버는 GET 에 부작용을 두지 않는다).
+- `is_read=true` 이면 `read_at` 을 지금으로. 이미 읽은 찜이면 처음 읽은 시각을 지킨다. `is_read=false` 는 `read_at` 을 `null` 로 되돌린다. 앱은 찜 카드에서 원문을 열거나 07 로 이동할 때 이 호출을 보낸다 (서버는 GET 에 부작용을 두지 않는다).
 
-응답은 `SavedItem`.
+보낸 키만 바꾼다. 찜이 없으면 404. 응답은 `SavedItem`.
 
 #### `DELETE /saved/{alert_id}` — 찜 해제
 
-204. 되돌리기 스낵바는 같은 폴더·메모로 `PUT` + `PATCH` 를 다시 보내 구현한다.
+204 (찜하지 않은 항목이어도 204, 항목 자체가 없으면 404). 되돌리기 스낵바는 같은 폴더·메모로 `PUT` + `PATCH` 를 다시 보내 구현한다.
 
 #### 읽지 않은 찜 재알림 (정책, 설정 UI 없음)
 
