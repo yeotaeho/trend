@@ -19,7 +19,7 @@ from app.notify.base import Notifier, RateLimited
 from app.notify.discord import DiscordNotifier
 from app.notify.policy import decide, in_quiet_hours
 from app.pipeline import llm
-from app.pipeline.feedback import format_examples, nearest_feedback
+from app.pipeline.feedback import examples_details, format_examples, nearest_feedback
 from app.schemas import ItemStatus, Level, Stage
 
 BATCH_SIZE = 20
@@ -209,9 +209,9 @@ async def _explore(
     body, enrich_failed = await llm.body_for_judge(item)
     if await reserve_call("explore") is None:
         return False
-    examples = format_examples(await nearest_feedback(session, item.id, k=3))
+    examples = await nearest_feedback(session, item.id, k=3)
     result = await llm.judge(
-        rules, source=source.name, title=item.title, body=body, examples=examples
+        rules, source=source.name, title=item.title, body=body, examples=format_examples(examples)
     )
     session.add(
         Decision(
@@ -224,6 +224,7 @@ async def _explore(
                 "enrich_failed": enrich_failed,
                 "importance": result.verdict.importance,
                 "tags": result.verdict.tags,
+                "examples": examples_details(examples),
             },
         )
     )

@@ -16,7 +16,7 @@ from app.notify.discord import send_ops_alert
 from app.pipeline import llm
 from app.pipeline.dedupe import Verdict, classify, find_candidates
 from app.pipeline.embedding import EmbeddingDimError, alert_dim_error, embed_pending
-from app.pipeline.feedback import format_examples, nearest_feedback
+from app.pipeline.feedback import examples_details, format_examples, nearest_feedback
 from app.pipeline.rules import apply_rules
 from app.pipeline.scoring import is_stale, merged_mentions, score_item
 from app.pipeline.triage import (
@@ -305,9 +305,9 @@ async def _judge(
         log.info("pipeline.judge_cap_reached", item_id=item.id)
         return False
 
-    examples = format_examples(await nearest_feedback(session, item.id, k=3))
+    examples = await nearest_feedback(session, item.id, k=3)
     result = await llm.judge(
-        rules, source=source.name, title=item.title, body=body, examples=examples
+        rules, source=source.name, title=item.title, body=body, examples=format_examples(examples)
     )
     session.add(
         _record(
@@ -318,6 +318,7 @@ async def _judge(
                 "enrich_failed": enrich_failed,
                 "importance": result.verdict.importance,
                 "tags": result.verdict.tags,
+                "examples": examples_details(examples),
             },
         )
     )

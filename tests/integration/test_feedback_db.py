@@ -1,4 +1,4 @@
-# 최근접 피드백 통합 테스트 — 같은 벡터의 항목에 남긴 피드백이 사례로 나온다
+# 최근접 피드백 통합 테스트 — 가까운 항목의 피드백이 사례로, 해제는 빠지고 복원 항목은 원문 제목
 
 from datetime import UTC, datetime
 
@@ -84,10 +84,70 @@ async def test_nearest_feedback_finds_identical_vector():
             limited = await nearest_feedback(s, ids[0], k=3, min_sim=-1.0)
             capped = await nearest_feedback(s, ids[0], k=1, min_sim=-1.0)
         # 자기 자신(a) 제외, 먼 c 는 min_sim 에 걸려 제외
-        assert [(e.verdict, e.title_ko) for e in examples] == [("useful", "[릴리즈] B")]
+        assert [(e.item_id, e.verdict, e.title) for e in examples] == [
+            (ids[1], "useful", "[릴리즈] B")
+        ]
         # 임계값을 풀면 거리순으로 b, c. k 로 자르면 가장 가까운 b 만
-        assert [e.title_ko for e in limited] == ["[릴리즈] B", "[영상] C"]
-        assert [e.title_ko for e in capped] == ["[릴리즈] B"]
+        assert [e.title for e in limited] == ["[릴리즈] B", "[영상] C"]
+        assert [e.title for e in capped] == ["[릴리즈] B"]
+    finally:
+        async with SessionLocal() as s, s.begin():
+            await s.execute(delete(Item).where(Item.id.in_(ids[:3])))
+            await s.execute(delete(Source).where(Source.id == ids[3]))
+
+
+async def test_cleared_is_skipped_and_unsummarized_item_uses_original_title():
+    """앱 해제(cleared)는 사례가 아니다. 요약 없이 복원된 항목은 items.title 로 나온다."""
+    now = datetime.now(UTC)
+    async with SessionLocal() as s, s.begin():
+        src = Source(name="test:fb-left", type="rss", config={})
+        s.add(src)
+        await s.flush()
+
+        def item(key: str) -> Item:
+            return Item(
+                source_id=src.id,
+                external_id=key,
+                url=f"https://t/{key}",
+                url_normalized=f"https://t/{key}",
+                url_hash=f"fb-left-{key}",
+                title=f"Original {key}",
+                published_at=now,
+            )
+
+        q, restored, cleared = item("q"), item("restored"), item("cleared")
+        s.add_all([q, restored, cleared])
+        await s.flush()
+        await s.execute(
+            update(Item)
+            .where(Item.id.in_([q.id, restored.id, cleared.id]))
+            .values(embedding=VEC_LIST, embedding_model="t")
+        )
+        # cleared 에는 요약이 있어도 해제 판정이라 빠져야 한다. restored 는 요약이 없다.
+        s.add(
+            Summary(
+                item_id=cleared.id,
+                title_ko="[해제] X",
+                summary_ko="",
+                importance=3,
+                worth_notifying=True,
+                model="m",
+            )
+        )
+        s.add_all(
+            [
+                Feedback(user_id=1, item_id=restored.id, verdict="useful", source="app"),
+                Feedback(user_id=1, item_id=cleared.id, verdict="cleared", source="app"),
+            ]
+        )
+        ids = (q.id, restored.id, cleared.id, src.id)
+
+    try:
+        async with SessionLocal() as s:
+            examples = await nearest_feedback(s, ids[0], k=3)
+        assert [(e.item_id, e.verdict, e.title) for e in examples] == [
+            (ids[1], "useful", "Original restored")
+        ]
     finally:
         async with SessionLocal() as s, s.begin():
             await s.execute(delete(Item).where(Item.id.in_(ids[:3])))
