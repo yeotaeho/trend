@@ -1,5 +1,6 @@
 // 내비게이션 테스트 — 4탭 전환 활성 색, 찜 탭 윤곽선 아이콘, 하위 경로 탭바 유지, 07 탭바 없음.
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tech_radar/app/router.dart';
@@ -8,12 +9,21 @@ import 'package:tech_radar/core/icons.dart';
 import 'package:tech_radar/core/theme/app_colors.dart';
 import 'package:tech_radar/core/theme/app_theme.dart';
 import 'package:tech_radar/core/widgets/app_tab_bar.dart';
+import 'package:tech_radar/data/repositories/fixture_repositories.dart';
+import 'package:tech_radar/data/repositories/repository_providers.dart';
 
 Future<GoRouter> _pumpApp(WidgetTester tester, {String? at}) async {
   final router = createRouter(initialLocation: at ?? AppRoutes.feed);
   addTearDown(router.dispose);
   await tester.pumpWidget(
-    MaterialApp.router(theme: buildAppTheme(), routerConfig: router),
+    ProviderScope(
+      overrides: [
+        fixtureStoreProvider.overrideWithValue(
+          FixtureStore(delay: Duration.zero),
+        ),
+      ],
+      child: MaterialApp.router(theme: buildAppTheme(), routerConfig: router),
+    ),
   );
   await tester.pumpAndSettle();
   return router;
