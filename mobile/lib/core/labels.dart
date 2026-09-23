@@ -1,13 +1,17 @@
 // 계약 2 열거형 — 서버 값(snake_case)과 한국어 라벨을 클라이언트가 소유한다 (docs/api/app-api-v1.md 2절).
 import 'package:json_annotation/json_annotation.dart';
 
+/// 서버가 계약에 없는 열거형 값을 보냈을 때 받는 `unknown` 의 라벨 (계약 7).
+const String unknownLabel = '알 수 없음';
+
 /// 알림 전달 강도 (배지).
 @JsonEnum(valueField: 'value')
 enum DeliveryMode {
   instant('instant', '즉시'),
   quiet('quiet', '조용히'),
   feedOnly('feed_only', '피드만'),
-  experiment('experiment', '실험');
+  experiment('experiment', '실험'),
+  unknown('unknown', unknownLabel);
 
   const DeliveryMode(this.value, this.label);
   final String value;
@@ -18,7 +22,8 @@ enum DeliveryMode {
 @JsonEnum(valueField: 'value')
 enum FeedbackVerdict {
   useful('useful', '유용'),
-  notUseful('not_useful', '불필요');
+  notUseful('not_useful', '불필요'),
+  unknown('unknown', unknownLabel);
 
   const FeedbackVerdict(this.value, this.label);
   final String value;
@@ -49,7 +54,8 @@ enum Kind {
   news('news', '뉴스·사건'),
   tutorial('tutorial', '튜토리얼'),
   promo('promo', '홍보·구인'),
-  other('other', '기타');
+  other('other', '기타'),
+  unknown('unknown', unknownLabel);
 
   const Kind(this.value, this.label);
   final String value;
@@ -65,7 +71,8 @@ enum Gate {
   score('score', '점수'),
   judgment('judgment', '판정'),
   stale('stale', '오래됨'),
-  clusterDup('cluster_dup', '클러스터 하루 1건');
+  clusterDup('cluster_dup', '클러스터 하루 1건'),
+  unknown('unknown', unknownLabel);
 
   const Gate(this.value, this.label);
   final String value;
@@ -73,8 +80,9 @@ enum Gate {
   /// GateBar 범례 라벨.
   final String label;
 
-  /// 탈락 태그 라벨. `cluster_dup` 은 탈락이 아니라 억제라 `탈락` 을 붙이지 않는다.
-  String get tagLabel => this == clusterDup ? label : '$label 탈락';
+  /// 탈락 태그 라벨. `cluster_dup` 은 탈락이 아니라 억제라, `unknown` 은 뜻을 몰라 `탈락` 을 붙이지 않는다.
+  String get tagLabel =>
+      this == clusterDup || this == unknown ? label : '$label 탈락';
 }
 
 /// 07 "이 알림이 온 이유" 우측 라벨.
@@ -84,7 +92,8 @@ enum Routing {
   exploreSlot('explore_slot', '경계 → 탐색 슬롯'),
   restored('restored', '직접 복원'),
   dropped('dropped', '탈락'),
-  clusterDup('cluster_dup', '같은 이슈 → 앞 알림에 병기');
+  clusterDup('cluster_dup', '같은 이슈 → 앞 알림에 병기'),
+  unknown('unknown', unknownLabel);
 
   const Routing(this.value, this.label);
   final String value;
@@ -97,7 +106,8 @@ enum SourceType {
   githubRelease('github_release', 'GitHub 릴리즈'),
   youtube('youtube', 'YouTube'),
   hackernews('hackernews', 'Hacker News'),
-  hfPapers('hf_papers', 'HF Papers');
+  hfPapers('hf_papers', 'HF Papers'),
+  unknown('unknown', unknownLabel);
 
   const SourceType(this.value, this.label);
   final String value;
@@ -108,7 +118,8 @@ enum SourceType {
 enum SourceGroup {
   blogRss('blog_rss', '기술 블로그 · RSS'),
   paperReleaseVideo('paper_release_video', '논문 · 릴리즈 · 영상'),
-  community('community', '커뮤니티');
+  community('community', '커뮤니티'),
+  unknown('unknown', unknownLabel);
 
   const SourceGroup(this.value, this.label);
   final String value;
@@ -131,7 +142,8 @@ enum ImportanceBand {
 enum DeliveryChoice {
   instant('instant', '즉시'),
   quiet('quiet', '조용히'),
-  feedOnly('feed_only', '피드만');
+  feedOnly('feed_only', '피드만'),
+  unknown('unknown', unknownLabel);
 
   const DeliveryChoice(this.value, this.label);
   final String value;
@@ -180,4 +192,15 @@ enum SavedSort {
   const SavedSort(this.value, this.label);
   final String value;
   final String label;
+}
+
+/// FCM 기기 플랫폼 (`POST /devices`).
+@JsonEnum(valueField: 'value')
+enum DevicePlatform {
+  android('android'),
+  ios('ios'),
+  unknown('unknown');
+
+  const DevicePlatform(this.value);
+  final String value;
 }

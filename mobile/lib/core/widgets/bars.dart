@@ -144,19 +144,24 @@ extension GateColor on Gate {
     Gate.judgment => AppColors.gateJudgment,
     Gate.stale => AppColors.gateStale,
     Gate.clusterDup => AppColors.gateClusterDup,
+    Gate.unknown => AppColors.gateStale,
   };
 }
 
 /// 관문별 탈락 건수 막대. 구간 폭 = 건수 ÷ 합계, 순서는 [Gate] 선언 순서.
 ///
 /// 범례는 디자인의 다섯 관문을 항상 보여 주고, 디자인에 없던 `stale`·`cluster_dup`
-/// 은 건수가 있을 때만 보여 준다.
+/// 과 모르는 관문 `unknown` 은 건수가 있을 때만 보여 준다.
 class GateBar extends StatelessWidget {
   const GateBar({super.key, required this.counts});
 
   final Map<Gate, int> counts;
 
-  static const Set<Gate> _optionalInLegend = {Gate.stale, Gate.clusterDup};
+  static const Set<Gate> _optionalInLegend = {
+    Gate.stale,
+    Gate.clusterDup,
+    Gate.unknown,
+  };
 
   @override
   Widget build(BuildContext context) {

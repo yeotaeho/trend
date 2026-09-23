@@ -44,6 +44,7 @@ class DeliveryBadge extends StatelessWidget {
       DeliveryMode.quiet => (AppColors.subtle, AppColors.textMuted),
       DeliveryMode.feedOnly => (AppColors.feedSoft, AppColors.feed),
       DeliveryMode.experiment => (AppColors.warnSoft, AppColors.warn),
+      DeliveryMode.unknown => (AppColors.subtle, AppColors.textMuted),
     };
     return AppBadge(
       label: mode.label,
@@ -68,7 +69,8 @@ class StageTag extends StatelessWidget {
       Gate.exclude ||
       Gate.dedup ||
       Gate.stale ||
-      Gate.clusterDup => (AppColors.subtle, AppColors.textMuted),
+      Gate.clusterDup ||
+      Gate.unknown => (AppColors.subtle, AppColors.textMuted),
     };
     return AppBadge(
       label: gate.tagLabel,

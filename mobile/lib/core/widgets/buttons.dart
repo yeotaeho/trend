@@ -189,7 +189,10 @@ class FeedbackButtons extends StatelessWidget {
     return Row(
       spacing: 8,
       children: [
-        for (final verdict in FeedbackVerdict.values)
+        for (final verdict in const [
+          FeedbackVerdict.useful,
+          FeedbackVerdict.notUseful,
+        ])
           Expanded(
             child: FeedbackButton(
               verdict: verdict,
