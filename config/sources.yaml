@@ -1,3 +1,5 @@
+# config 의 display_name·error_hint 는 앱 수집 소스 화면 표시용이다. 수집기는 읽지 않는다.
+# error_hint 는 연속 실패일 때 보여 줄 조치 문구.
 sources:
   # --- 기업·재단 기술 블로그 (RSS) ---
   # Anthropic 은 공식 RSS 가 없다 (/news/rss.xml 404). 커뮤니티 미러를 쓴다.
@@ -5,6 +7,8 @@ sources:
   - name: rss:anthropic
     type: rss
     config:
+      display_name: Anthropic
+      error_hint: 미러 확인 필요
       url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml
       allowed_hosts: [anthropic.com]   # 미러가 넣은 외부 링크는 버린다
     poll_interval_sec: 900
@@ -13,6 +17,7 @@ sources:
   - name: rss:openai
     type: rss
     config:
+      display_name: OpenAI
       url: https://openai.com/news/rss.xml
     poll_interval_sec: 900
     trust_score: 0.9
@@ -20,6 +25,7 @@ sources:
   - name: rss:huggingface
     type: rss
     config:
+      display_name: Hugging Face
       url: https://huggingface.co/blog/feed.xml
     poll_interval_sec: 900
     trust_score: 0.8
@@ -27,6 +33,7 @@ sources:
   - name: rss:vercel
     type: rss
     config:
+      display_name: Vercel
       url: https://vercel.com/atom
     poll_interval_sec: 1800
     trust_score: 0.7
@@ -35,6 +42,7 @@ sources:
   - name: rss:geeknews
     type: rss
     config:
+      display_name: GeekNews
       url: https://news.hada.io/rss/news
     poll_interval_sec: 900
     trust_score: 0.6
@@ -42,6 +50,7 @@ sources:
   - name: rss:yozm
     type: rss
     config:
+      display_name: 요즘IT
       url: https://yozm.wishket.com/magazine/feed/
     poll_interval_sec: 1800
     trust_score: 0.5
@@ -49,6 +58,7 @@ sources:
   - name: rss:simonwillison
     type: rss
     config:
+      display_name: Simon Willison
       url: https://simonwillison.net/atom/everything/
     poll_interval_sec: 900
     trust_score: 0.8
@@ -57,6 +67,8 @@ sources:
   - name: rss:anthropic-engineering
     type: rss
     config:
+      display_name: Anthropic Engineering
+      error_hint: 미러 확인 필요
       url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_engineering.xml
       allowed_hosts: [anthropic.com]
     poll_interval_sec: 900
@@ -68,6 +80,7 @@ sources:
   - name: rss:arxiv-cs-ai
     type: rss
     config:
+      display_name: arXiv cs.AI
       url: https://rss.arxiv.org/rss/cs.AI
       category_hint: technique
       family: arxiv
@@ -77,6 +90,7 @@ sources:
   - name: rss:arxiv-cs-cl
     type: rss
     config:
+      display_name: arXiv cs.CL
       url: https://rss.arxiv.org/rss/cs.CL
       category_hint: technique
       family: arxiv
@@ -87,6 +101,7 @@ sources:
   - name: hf_papers:daily
     type: hf_papers
     config:
+      display_name: HF Daily Papers
       limit: 50
     poll_interval_sec: 3600
     trust_score: 0.7
@@ -95,6 +110,7 @@ sources:
   - name: github_release:watchlist
     type: github_release
     config:
+      display_name: GitHub Releases
       repos:
         - anthropics/anthropic-sdk-python
         - anthropics/claude-code
@@ -114,6 +130,7 @@ sources:
   - name: hackernews:front
     type: hackernews
     config:
+      display_name: Hacker News
       hits_per_page: 30
     poll_interval_sec: 600
     trust_score: 0.6
@@ -122,6 +139,7 @@ sources:
   - name: youtube:jocoding
     type: youtube
     config:
+      display_name: 조코딩
       channel_id: UCQNE2JmbasNYbjGAcuBiRRg
     poll_interval_sec: 900
     trust_score: 0.6
@@ -129,6 +147,7 @@ sources:
   - name: youtube:codingapple
     type: youtube
     config:
+      display_name: 코딩애플
       channel_id: UCSLrpBAzr-ROVGHQ5EmxnUg
     poll_interval_sec: 900
     trust_score: 0.6
