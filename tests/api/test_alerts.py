@@ -9,9 +9,9 @@ from fastapi.testclient import TestClient
 
 from app.api.v1.queries.alerts import (
     _judgment,
-    _score,
-    _screening,
     routing_for,
+    score_rationale,
+    screening_of,
     to_alert,
 )
 from app.api.v1.schemas.alerts import Routing
@@ -66,19 +66,19 @@ def test_routing_derivation():
 
 
 def test_score_needs_breakdown():
-    assert _score(None, 0.45) is None
-    assert _score(_d("score", False, reason="stale", age_hours=80), 0.45) is None
-    score = _score(_d("score", breakdown={"src": 0.1, "rel": 0.24, "kind": -0.15}), 0.45)
+    assert score_rationale(None, 0.45) is None
+    assert score_rationale({"reason": "stale", "age_hours": 80}, 0.45) is None
+    score = score_rationale({"breakdown": {"src": 0.1, "rel": 0.24, "kind": -0.15}}, 0.45)
     assert score is not None
     assert score.total == pytest.approx(0.19)
     assert score.components == {"src": 0.1, "rel": 0.24, "kind": -0.15}
 
 
 def test_screening_tolerates_old_rows():
-    assert _screening(None) is None
-    old = _screening(_d("triage", relevance=0.3, reason="무관", kind="survey"))
+    assert screening_of(None) is None
+    old = screening_of({"relevance": 0.3, "reason": "무관", "kind": "survey"})
     assert old is not None and old.topics == []
-    odd = _screening(_d("triage", relevance="high", kind="gossip", topics=["agent", 3]))
+    odd = screening_of({"relevance": "high", "kind": "gossip", "topics": ["agent", 3]})
     assert odd is not None
     assert (odd.relevance, odd.kind, odd.topics, odd.reason) == (None, None, ["agent"], None)
 

@@ -1,4 +1,4 @@
-# Alert 조회·직렬화 — 첫 전달 행, 카드 조립, 마지막 선별 결정, 상세 근거 (피드·찜·걸러짐 공용)
+# Alert 조회·직렬화 — 첫 전달 행, 카드 조립, 점수·선별 해석, 상세 근거 (피드·찜·걸러짐 공용)
 
 from __future__ import annotations
 
@@ -27,8 +27,6 @@ from app.schemas import Kind, Level, Stage
 
 # notifications.level — 클러스터 하루 상한으로 보내지 않은 기록. 전달이 아니다 (계약 2).
 CLUSTER_DUP = "cluster_dup"
-# decisions.stage — 사용자가 걸러진 항목을 복원한 결정 (계약 6.1, B8 이 Stage 에 추가).
-USER_STAGE = "user"
 
 LEVEL_TO_MODE = {
     Level.PUSH.value: DeliveryMode.INSTANT,
@@ -181,9 +179,13 @@ def _last(
     return None
 
 
-def _score(decision: Decision | None, threshold: float) -> ScoreRationale | None:
-    """stale 탈락처럼 breakdown 이 없는 점수 결정은 점수가 없는 것으로 본다."""
-    breakdown = (decision.details or {}).get("breakdown") if decision else None
+def _details(decision: Decision | None) -> dict[str, Any] | None:
+    return None if decision is None else decision.details or {}
+
+
+def score_rationale(details: dict[str, Any] | None, threshold: float) -> ScoreRationale | None:
+    """점수 결정 details → 점수. stale 탈락처럼 breakdown 이 없으면 점수가 없는 것으로 본다."""
+    breakdown = (details or {}).get("breakdown")
     if not isinstance(breakdown, dict):
         return None
     components = {k: float(v) for k, v in breakdown.items()}
@@ -192,10 +194,10 @@ def _score(decision: Decision | None, threshold: float) -> ScoreRationale | None
     )
 
 
-def _screening(decision: Decision | None) -> Screening | None:
-    if decision is None:
+def screening_of(details: dict[str, Any] | None) -> Screening | None:
+    """선별 결정 details → 선별 결과. 선별 전 항목(None)은 None."""
+    if details is None:
         return None
-    details = decision.details or {}
     kind = details.get("kind")
     relevance = details.get("relevance")
     return Screening(
@@ -237,7 +239,7 @@ def _judgment(decision: Decision | None) -> Judgment | None:
 def _restored(decisions: Sequence[Decision], user_id: int) -> bool:
     """이 사용자의 마지막 복원 결정이 복원(passed)인가."""
     for d in reversed(decisions):
-        if d.stage == USER_STAGE and (d.details or {}).get("user_id") == user_id:
+        if d.stage == Stage.USER.value and (d.details or {}).get("user_id") == user_id:
             return d.passed
     return False
 
@@ -277,9 +279,9 @@ async def rationale_for(
         )
     )
     return Rationale(
-        score=_score(_last(decisions, Stage.SCORE.value), threshold),
+        score=score_rationale(_details(_last(decisions, Stage.SCORE.value)), threshold),
         routing=routing_for(alert, decisions, user_id=user_id, cluster_dup=bool(cluster_dup)),
-        screening=_screening(_last(decisions, Stage.TRIAGE.value, passed_only=True)),
+        screening=screening_of(_details(_last(decisions, Stage.TRIAGE.value, passed_only=True))),
         judgment=_judgment(_last(decisions, Stage.LLM.value)),
         trust_note_source=alert.source_name,
     )

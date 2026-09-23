@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, and_, func, select
 from sqlalchemy.engine import Row
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
@@ -227,16 +227,13 @@ async def _explore_sent_today(session: AsyncSession, cfg: NotifyConfig, now: dat
     return (await session.execute(stmt)).scalar_one() > 0
 
 
-async def _explore_candidate(
-    session: AsyncSession, rules: Rules, now: datetime
-) -> Row[tuple[Item, Source]] | None:
-    """점수 관문 바로 아래로 떨어진 최근 24시간 항목 중 최고점. Summary 가 없어야 한다.
+def explore_candidate(threshold: float, now: datetime) -> ColumnElement[bool]:
+    """탐색 후보 조건 — Item 에 상관된다. 발송 잡의 후보 선택과 걸러진 항목 API 가 같이 쓴다.
 
-    클러스터 하루 상한이 켜져 있으면 오늘 이미 나간 클러스터의 항목은 후보가 아니다.
+    점수 관문 바로 아래로 떨어졌고(마지막 결정이 score 탈락), 최근 24시간 발행, Summary 없음.
+    항목의 "마지막" 결정 행 하나를 고른 뒤 그것이 score 탈락인지 본다. 최근 score 행만 보면
+    그 뒤에 다른 단계 결정(판정·사용자 복원)이 붙은 항목까지 후보가 된다.
     """
-    thr = rules.scoring.threshold
-    # 항목의 "마지막" 결정 행 하나를 고른 뒤 그것이 score 탈락인지 본다. 최근 score 행만 보면
-    # 그 뒤에 다른 단계 결정이 붙은 항목까지 후보가 된다.
     latest = aliased(Decision)
     last_decision = (
         select(latest.id)
@@ -246,20 +243,33 @@ async def _explore_candidate(
         .correlate(Item)
         .scalar_subquery()
     )
+    score_drop = select(Decision.id).where(
+        Decision.id == last_decision,
+        Decision.stage == Stage.SCORE.value,
+        Decision.passed.is_(False),
+    )
+    summarized = select(Summary.item_id).where(Summary.item_id == Item.id)
+    return and_(
+        Item.status == ItemStatus.DROPPED.value,
+        Item.score >= threshold - EXPLORE_BAND,
+        Item.score < threshold,
+        Item.published_at >= now - timedelta(hours=24),
+        score_drop.exists(),
+        ~summarized.exists(),
+    )
+
+
+async def _explore_candidate(
+    session: AsyncSession, rules: Rules, now: datetime
+) -> Row[tuple[Item, Source]] | None:
+    """탐색 후보 중 최고점.
+
+    클러스터 하루 상한이 켜져 있으면 오늘 이미 나간 클러스터의 항목은 후보가 아니다.
+    """
     stmt = (
         select(Item, Source)
         .join(Source, Source.id == Item.source_id)
-        .join(Decision, Decision.id == last_decision)
-        .outerjoin(Summary, Summary.item_id == Item.id)
-        .where(
-            Item.status == ItemStatus.DROPPED.value,
-            Summary.item_id.is_(None),
-            Item.score >= thr - EXPLORE_BAND,
-            Item.score < thr,
-            Item.published_at >= now - timedelta(hours=24),
-            Decision.stage == Stage.SCORE.value,
-            Decision.passed.is_(False),
-        )
+        .where(explore_candidate(rules.scoring.threshold, now))
         .order_by(Item.score.desc())
         .limit(1)
         .with_for_update(of=Item, skip_locked=True)
