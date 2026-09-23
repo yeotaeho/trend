@@ -20,6 +20,7 @@ from app.pipeline.feedback import format_examples, nearest_feedback
 from app.pipeline.rules import apply_rules
 from app.pipeline.scoring import is_stale, merged_mentions, score_item
 from app.pipeline.triage import (
+    TRIAGE_PROMPT_VERSION,
     TriageBatchError,
     TriageEntry,
     TriageItem,
@@ -140,6 +141,8 @@ async def _existing_relevance(session: AsyncSession, item_ids: list[int]) -> dic
                 reason=str(details["reason"]),
                 # kind 도입 전 행은 필드가 없다. 다시 호출하지 않고 중립값으로 채운다.
                 kind=Kind(details.get("kind", Kind.OTHER)),
+                # topics 도입 전 행도 마찬가지. 빈 목록으로 두고 다시 부르지 않는다.
+                topics=list(details.get("topics", [])),
             )
     return found
 
@@ -165,7 +168,7 @@ async def _triage_once(
     if batch_id is None:
         raise _CapReached
     batch = await call_triage(rules, entries)
-    ok, failed = parse_triage(batch, expected)
+    ok, failed = parse_triage(batch, expected, taxonomy=rules.policy.taxonomy)
     return ok, failed, batch_id
 
 
@@ -244,7 +247,9 @@ async def _triage(
                             "relevance": res.relevance,
                             "reason": res.reason,
                             "kind": res.kind.value,
+                            "topics": res.topics,
                             "batch_id": batch_id,
+                            "prompt_version": TRIAGE_PROMPT_VERSION,
                         },
                     )
                 )

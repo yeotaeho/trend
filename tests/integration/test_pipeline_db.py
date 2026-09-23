@@ -1,4 +1,4 @@
-# 파이프라인 2국면 통합 테스트 — 항목 실패 2회는 DROPPED, 기반 실패는 결정 행 없이 NEW, 결과 재사용
+# 파이프라인 2국면 통합 테스트 — 항목 실패 2회 DROPPED, 기반 실패는 행 없이 NEW, 재사용, topics
 
 from datetime import UTC, datetime
 
@@ -9,7 +9,7 @@ from app.config import get_rules
 from app.db.models import Decision, Item, LlmCall, Source
 from app.db.session import SessionLocal
 from app.jobs import pipeline
-from app.pipeline.triage import TriageBatch, TriageItem
+from app.pipeline.triage import TRIAGE_PROMPT_VERSION, TriageBatch, TriageItem
 from app.schemas import Kind
 
 
@@ -72,7 +72,8 @@ async def test_few_fresh_items_wait_without_a_call(items, monkeypatch):
         calls.append(len(entries))
         return TriageBatch(
             items=[
-                TriageItem(idx=e.idx, relevance=0.4, reason="r", kind=Kind.NEWS) for e in entries
+                TriageItem(idx=e.idx, relevance=0.4, reason="r", kind=Kind.NEWS, topics=[])
+                for e in entries
             ]
         )
 
@@ -104,6 +105,7 @@ async def test_item_failure_twice_drops_only_that_item(items, monkeypatch):
                     relevance=5.0 if e.idx == ids[0] else 0.5,
                     reason="r",
                     kind=Kind.NEWS,
+                    topics=[],
                 )
                 for e in entries
             ]
@@ -179,7 +181,8 @@ async def test_existing_relevance_is_reused_without_a_call(items, monkeypatch):
         calls.append(len(entries))
         return TriageBatch(
             items=[
-                TriageItem(idx=e.idx, relevance=0.4, reason="r", kind=Kind.NEWS) for e in entries
+                TriageItem(idx=e.idx, relevance=0.4, reason="r", kind=Kind.NEWS, topics=[])
+                for e in entries
             ]
         )
 
@@ -190,4 +193,59 @@ async def test_existing_relevance_is_reused_without_a_call(items, monkeypatch):
         await s.commit()
 
     assert result[ids[0]].relevance == 0.7  # 재사용
+    # kind·topics 도입 전 행이다. 중립값으로 채우고 다시 부르지 않는다.
+    assert result[ids[0]].kind is Kind.OTHER and result[ids[0]].topics == []
     assert calls == [2]  # 나머지 둘만 호출
+
+
+async def test_triage_decision_keeps_topics_and_prompt_version(items, monkeypatch):
+    ids, _ = items
+    rules = _eager()
+
+    async def fake_triage(_rules, entries):
+        # 분류표 밖 slug 는 버려지고 항목 실패로 세지 않는다.
+        return TriageBatch(
+            items=[
+                TriageItem(
+                    idx=e.idx,
+                    relevance=0.6,
+                    reason="r",
+                    kind=Kind.TECHNIQUE,
+                    topics=["inference-opt", "nope", "agent"],
+                )
+                for e in entries
+            ]
+        )
+
+    monkeypatch.setattr(pipeline, "call_triage", fake_triage)
+    s, survivors = await _load(ids)
+    async with s:
+        result = await pipeline._triage(s, rules, survivors)
+        await s.commit()
+
+    async with SessionLocal() as s:
+        rows = (
+            (
+                await s.execute(
+                    select(Decision).where(Decision.item_id.in_(ids), Decision.stage == "triage")
+                )
+            )
+            .scalars()
+            .all()
+        )
+    assert len(rows) == 3 and all(r.passed for r in rows)
+    for r in rows:
+        assert r.details["topics"] == ["inference-opt", "agent"]
+        assert r.details["kind"] == "technique"
+        assert r.details["prompt_version"] == TRIAGE_PROMPT_VERSION
+    assert result[ids[0]].topics == ["inference-opt", "agent"]
+
+    # 저장된 행에서 복원하면 topics 가 그대로 돌아오고 선별을 다시 부르지 않는다.
+    async def must_not_call(_rules, entries):
+        raise AssertionError("재호출")
+
+    monkeypatch.setattr(pipeline, "call_triage", must_not_call)
+    s, survivors = await _load(ids)
+    async with s:
+        again = await pipeline._triage(s, rules, survivors)
+    assert all(again[i].topics == ["inference-opt", "agent"] for i in ids)
