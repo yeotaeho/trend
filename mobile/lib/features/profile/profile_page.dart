@@ -29,13 +29,14 @@ class ProfilePage extends ConsumerWidget {
         title: '내 프로필',
         actions: [_PeriodButton(days: ref.watch(profilePeriodProvider))],
       ),
-      // 기간을 바꿔 다시 조회하는 동안에는 이전 값을 그대로 보여 준다.
+      // 기간 변경·다시 시도로 재조회하는 동안에는 이전 값·오류 대신 로딩을 보여 준다.
       body: switch (profile) {
-        AsyncValue(:final value?) => _ProfileBody(profile: value),
+        AsyncValue(isLoading: true) => const LoadingState(),
         AsyncValue(:final error?) => ErrorState(
           message: loadErrorMessage(error),
           onRetry: () => ref.invalidate(profileProvider),
         ),
+        AsyncValue(:final value?) => _ProfileBody(profile: value),
         _ => const LoadingState(),
       },
     );
@@ -59,7 +60,7 @@ class _PeriodButton extends ConsumerWidget {
             backgroundColor: AppColors.surface,
             builder: (context) => _PeriodSheet(selected: days),
           );
-          if (picked != null) {
+          if (picked != null && context.mounted) {
             ref.read(profilePeriodProvider.notifier).select(picked);
           }
         },
@@ -342,7 +343,7 @@ class _LearnedRow extends StatelessWidget {
             style: AppText.bodySm.copyWith(color: AppColors.textSecondary),
           ),
         ),
-        Text.rich(value, textAlign: TextAlign.right),
+        Flexible(child: Text.rich(value, textAlign: TextAlign.right)),
       ],
     );
   }

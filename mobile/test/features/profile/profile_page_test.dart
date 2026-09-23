@@ -53,6 +53,15 @@ class _FailingProfileRepository extends _FakeProfileRepository {
       throw const ApiException('internal', '서버 오류가 발생했습니다.', status: 500);
 }
 
+/// 14일 조회는 성공하고 다른 기간은 실패한다.
+class _FailingOtherPeriodRepository extends _FakeProfileRepository {
+  @override
+  Future<Profile> profile({int periodDays = 14}) async {
+    if (periodDays == 14) return super.profile(periodDays: periodDays);
+    throw const ApiException('internal', '서버 오류가 발생했습니다.', status: 500);
+  }
+}
+
 Future<GoRouter> _pump(WidgetTester tester, ProfileRepository repo) async {
   tester.view.physicalSize = const Size(390 * 3, 1400 * 3);
   tester.view.devicePixelRatio = 3;
@@ -185,6 +194,20 @@ void main() {
 
     expect(find.text('서버 오류가 발생했습니다.'), findsOneWidget);
     expect(find.text('다시 시도'), findsOneWidget);
+  });
+
+  testWidgets('기간을 바꾼 재조회가 실패하면 이전 기간 숫자 대신 오류를 보여 준다', (tester) async {
+    await _pump(tester, _FailingOtherPeriodRepository());
+    expect(find.text('61'), findsOneWidget);
+
+    await tester.tap(find.text('최근 14일'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('최근 7일'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('서버 오류가 발생했습니다.'), findsOneWidget);
+    expect(find.text('61'), findsNothing);
+    expect(find.text('최근 7일'), findsOneWidget);
   });
 
   testWidgets('주간 리포트 카드를 누르면 리포트 상세로 간다', (tester) async {

@@ -21,11 +21,12 @@ class ReportPage extends ConsumerWidget {
     return Scaffold(
       appBar: const SubTopBar(title: '주간 리포트'),
       body: switch (report) {
-        AsyncValue(:final value?) => _ReportBody(report: value),
+        AsyncValue(isLoading: true) => const LoadingState(),
         AsyncValue(:final error?) => ErrorState(
           message: loadErrorMessage(error),
           onRetry: () => ref.invalidate(reportProvider(reportId)),
         ),
+        AsyncValue(:final value?) => _ReportBody(report: value),
         _ => const LoadingState(),
       },
     );
