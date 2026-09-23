@@ -1,11 +1,16 @@
-# 스케줄러 등록 테스트 — 모든 잡이 기동 직후 1회 돌고, 밀린 회차는 늦어도 한 번은 돈다
+# 스케줄러 테스트 — 잡 즉시·밀린 회차 1회, 앱 on/off 재기동 보존, 비활성 소스도 잡 등록
 
 import asyncio
+from contextlib import asynccontextmanager
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+from app.config import SourceConfig
+from app.db.models import Source
+from app.jobs import collect
 from app.jobs import scheduler as sched
 
 
@@ -59,3 +64,103 @@ async def test_missed_runs_collapse_into_one_late_run(one_source, monkeypatch):
     for job in jobs.values():
         assert job.coalesce is True, job.id
         assert job.misfire_grace_time is None, job.id
+
+
+class SourceTable:
+    """sources 테이블 자리. sync_sources 가 쓰는 execute(select(Source))·add·flush 만 흉내 낸다."""
+
+    def __init__(self) -> None:
+        self.rows: dict[str, Source] = {}
+
+    async def execute(self, _stmt: Any) -> Any:
+        rows = list(self.rows.values())
+        return SimpleNamespace(scalars=lambda: iter(rows))
+
+    def add(self, source: Source) -> None:
+        self.rows[source.name] = source
+
+    async def flush(self) -> None:
+        return None
+
+    @asynccontextmanager
+    async def scope(self):
+        yield self
+
+
+@pytest.fixture
+def table(monkeypatch) -> SourceTable:
+    table = SourceTable()
+    monkeypatch.setattr(sched, "session_scope", table.scope)
+    monkeypatch.setattr(
+        sched,
+        "get_source_configs",
+        lambda: [
+            SourceConfig(name="rss:a", type="rss"),
+            SourceConfig(name="rss:b", type="rss"),
+            SourceConfig(name="rss:yaml-off", type="rss", enabled=False),
+        ],
+    )
+    return table
+
+
+def _prefs(monkeypatch, data: dict[str, Any] | None) -> None:
+    async def fetch(_session, _user_id):
+        return None if data is None else SimpleNamespace(data=data)
+
+    monkeypatch.setattr(sched, "fetch_prefs", fetch)
+
+
+async def test_app_disabled_source_stays_off_across_restart(table, monkeypatch):
+    _prefs(monkeypatch, None)
+    table.add(Source(name="rss:gone", type="rss", enabled=True))
+    first = await sched.sync_sources()
+    assert [s.name for s in first] == ["rss:a", "rss:b", "rss:yaml-off"]
+    assert table.rows["rss:gone"].enabled is False
+
+    # PATCH /sources/rss:b {"enabled": false} 가 남기는 두 값. 재기동하면 sync_sources 가 다시 돈다.
+    table.rows["rss:b"].enabled = False
+    _prefs(monkeypatch, {"sources": {"rss:b": {"enabled": False}}})
+    await sched.sync_sources()
+
+    assert table.rows["rss:b"].enabled is False
+    assert table.rows["rss:a"].enabled is True
+
+
+async def test_app_override_can_enable_a_yaml_disabled_source(table, monkeypatch):
+    _prefs(monkeypatch, {"sources": {"rss:yaml-off": {"enabled": True}, "rss:a": "틀린 모양"}})
+
+    synced = {s.name: s.enabled for s in await sched.sync_sources()}
+
+    assert synced == {"rss:a": True, "rss:b": True, "rss:yaml-off": True}
+
+
+async def test_disabled_sources_still_get_a_job(monkeypatch):
+    async def _sources():
+        return [
+            SimpleNamespace(id=1, name="rss:on", poll_interval_sec=900, enabled=True),
+            SimpleNamespace(id=2, name="rss:off", poll_interval_sec=900, enabled=False),
+        ]
+
+    monkeypatch.setattr(sched, "sync_sources", _sources)
+    monkeypatch.setattr(AsyncIOScheduler, "start", lambda self: None)
+    scheduler = await sched.start_scheduler()
+
+    assert {"source:rss:on", "source:rss:off"} <= {job.id for job in scheduler.get_jobs()}
+
+
+async def test_run_source_skips_disabled_source(monkeypatch):
+    class _Session:
+        async def get(self, _model, _id):
+            return Source(id=7, name="rss:off", type="rss", config={}, enabled=False)
+
+    @asynccontextmanager
+    async def scope():
+        yield _Session()
+
+    def must_not_build(_cfg):
+        raise AssertionError("비활성 소스를 폴링했다")
+
+    monkeypatch.setattr(collect, "session_scope", scope)
+    monkeypatch.setattr(collect, "build_source", must_not_build)
+
+    assert await collect.run_source(7) == 0

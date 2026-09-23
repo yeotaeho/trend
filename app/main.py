@@ -11,6 +11,7 @@ from app.api import discord, github, health, telegram, v1
 from app.api.v1.errors import install_error_handlers
 from app.api.v1.meta import warn_missing_taxonomy_labels
 from app.config import get_settings
+from app.db.prefs import load_prefs_overlay
 from app.db.session import engine
 from app.jobs.scheduler import start_scheduler
 from app.log import configure_logging, get_logger
@@ -22,6 +23,7 @@ log = get_logger(__name__)
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     configure_logging()
     warn_missing_taxonomy_labels()
+    await load_prefs_overlay()
     scheduler = await start_scheduler() if get_settings().scheduler_enabled else None
     try:
         yield
