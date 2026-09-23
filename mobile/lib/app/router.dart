@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/labels.dart';
+import '../features/filtered/filtered_page.dart';
 import 'placeholder_page.dart';
 import 'routes.dart';
 import 'tab_shell.dart';
@@ -52,11 +53,7 @@ GoRouter createRouter({String initialLocation = AppRoutes.feed}) {
                         (v) => v.value == state.uri.queryParameters['view'],
                         orElse: () => FilteredView.source,
                       );
-                      return PlaceholderPage(
-                        screen: view == FilteredView.kind ? '10' : '09',
-                        title: '걸러진 항목',
-                        note: view.label,
-                      );
+                      return FilteredPage(initialView: view);
                     },
                   ),
                 ],

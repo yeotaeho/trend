@@ -1,19 +1,32 @@
 // 내비게이션 테스트 — 4탭 전환 활성 색, 찜 탭 윤곽선 아이콘, 하위 경로 탭바 유지, 07 탭바 없음.
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tech_radar/app/router.dart';
 import 'package:tech_radar/app/routes.dart';
 import 'package:tech_radar/core/icons.dart';
+import 'package:tech_radar/core/labels.dart';
 import 'package:tech_radar/core/theme/app_colors.dart';
 import 'package:tech_radar/core/theme/app_theme.dart';
 import 'package:tech_radar/core/widgets/app_tab_bar.dart';
+import 'package:tech_radar/data/models/models.dart';
+import 'package:tech_radar/data/repositories/repositories.dart';
+import 'package:tech_radar/data/repositories/repository_providers.dart';
+import 'package:tech_radar/features/filtered/filtered_page.dart';
 
 Future<GoRouter> _pumpApp(WidgetTester tester, {String? at}) async {
   final router = createRouter(initialLocation: at ?? AppRoutes.feed);
   addTearDown(router.dispose);
   await tester.pumpWidget(
-    MaterialApp.router(theme: buildAppTheme(), routerConfig: router),
+    ProviderScope(
+      overrides: [
+        filteredRepositoryProvider.overrideWithValue(
+          _EmptyFilteredRepository(),
+        ),
+      ],
+      child: MaterialApp.router(theme: buildAppTheme(), routerConfig: router),
+    ),
   );
   await tester.pumpAndSettle();
   return router;
@@ -97,7 +110,11 @@ void main() {
     router.go('${AppRoutes.filtered}?view=kind');
     await tester.pumpAndSettle();
     expect(find.byType(AppTabBar), findsOneWidget);
-    expect(find.text('화면 10 · 준비 중\n종류별'), findsOneWidget);
+    expect(find.text('걸러진 항목'), findsOneWidget);
+    expect(
+      tester.widget<FilteredPage>(find.byType(FilteredPage)).initialView,
+      FilteredView.kind,
+    );
     _expectActive(tester, '피드');
   });
 
@@ -149,4 +166,17 @@ void main() {
     expect(find.byType(AppTabBar), findsNothing);
     expect(find.textContaining('화면 07'), findsOneWidget);
   });
+}
+
+/// 걸러진 항목 화면이 fixture 를 읽지 않고 바로 그려지게 하는 빈 요약.
+class _EmptyFilteredRepository extends Fake implements FilteredRepository {
+  @override
+  Future<FilteredSummary> summary({int? hours}) async => const FilteredSummary(
+    windowHours: 24,
+    filteredTotal: 0,
+    collectedTotal: 0,
+    gateCounts: {},
+    borderline: Borderline(count: 0, range: [0.35, 0.45]),
+    unclassifiedCount: 0,
+  );
 }
