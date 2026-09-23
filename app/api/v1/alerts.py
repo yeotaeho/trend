@@ -12,6 +12,7 @@ from app.api.v1.deps import Session, UserId
 from app.api.v1.errors import ApiError
 from app.api.v1.queries.alerts import (
     FEEDBACK_TO_VERDICT,
+    INT4_MAX,
     alert_select,
     build_alerts,
     first_delivery,
@@ -21,12 +22,11 @@ from app.api.v1.queries.alerts import (
 from app.api.v1.schemas.alerts import AlertDetail, FeedbackIn, FeedbackOut, RecentFeedback
 from app.config import get_rules
 from app.db.budget import today_start
-from app.db.feedback import APP_SOURCE, clear_feedback, upsert_feedback
-from app.db.models import Feedback, Item
+from app.db.feedback import clear_feedback, set_app_feedback
+from app.db.models import Item
 
 router = APIRouter()
 
-_INT4_MAX = 2**31 - 1
 RECENT_DEFAULT = 5
 RECENT_MAX = 20
 
@@ -35,7 +35,7 @@ async def existing_item_id(session: Session, alert_id: str) -> int:
     """alert_id 는 items.id 문자열이다. 숫자가 아니거나 없는 항목은 404."""
     # isdecimal 은 전각 숫자도 받는다. ASCII 숫자만 ID 다.
     item_id = int(alert_id) if alert_id.isascii() and alert_id.isdecimal() else 0
-    exists = 0 < item_id <= _INT4_MAX and await session.scalar(
+    exists = 0 < item_id <= INT4_MAX and await session.scalar(
         select(Item.id).where(Item.id == item_id)
     )
     if not exists:
@@ -67,13 +67,9 @@ async def put_feedback(
 ) -> FeedbackOut:
     """앱 판정은 리액션 폴링이 덮어쓰지 않는다. 걸러진 항목에도 쓸 수 있다."""
     item_id = await existing_item_id(session, alert_id)
-    await upsert_feedback(
-        session, user_id, item_id, FEEDBACK_TO_VERDICT[body.verdict], source=APP_SOURCE
+    updated_at = await set_app_feedback(
+        session, user_id, item_id, FEEDBACK_TO_VERDICT[body.verdict]
     )
-    updated_at = await session.scalar(
-        select(Feedback.created_at).where(Feedback.user_id == user_id, Feedback.item_id == item_id)
-    )
-    assert updated_at is not None
     return FeedbackOut(alert_id=str(item_id), feedback=body.verdict, updated_at=updated_at)
 
 

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.errors import ApiError
 from app.api.v1.pagination import PageParams, paginate
-from app.api.v1.queries.alerts import alert_select, build_alerts, first_delivery
+from app.api.v1.queries.alerts import INT4_MAX, alert_select, build_alerts, first_delivery
 from app.api.v1.queries.filtered import WINDOW_HOURS, filtered_total
 from app.api.v1.schemas.alerts import Alert
 from app.api.v1.schemas.feed import FeedFilter, TodayStats
@@ -29,9 +29,12 @@ FILTER_LEVEL = {
 def _after(key: dict[str, Any]) -> tuple[datetime, int]:
     """피드 커서 = 직전 페이지 마지막 카드의 (delivered_at, id)."""
     try:
-        return datetime.fromisoformat(key["t"]), int(key["id"])
+        sent_at, item_id = datetime.fromisoformat(key["t"]), int(key["id"])
     except (KeyError, TypeError, ValueError) as exc:
         raise ApiError(400, "bad_request", "커서를 해석할 수 없습니다.") from exc
+    if not 0 < item_id <= INT4_MAX:
+        raise ApiError(400, "bad_request", "커서를 해석할 수 없습니다.")
+    return sent_at, item_id
 
 
 async def feed_page(

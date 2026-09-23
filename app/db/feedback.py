@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from sqlalchemy import func, update
+from datetime import datetime
+
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import Insert, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +32,26 @@ async def upsert_feedback(
     session: AsyncSession, user_id: int, item_id: int, verdict: str, source: str
 ) -> None:
     await session.execute(feedback_upsert_stmt(user_id, item_id, verdict, source))
+
+
+async def set_app_feedback(
+    session: AsyncSession, user_id: int, item_id: int, verdict: str
+) -> datetime:
+    """앱의 판정 설정. 돌려주는 값은 판정 시각.
+
+    같은 판정을 다시 보내면(재시도) 시각을 밀지 않고 출처만 app 으로 가져온다. 시각이 밀리면
+    옛 판정이 오늘 판정 수와 최근 판정 맨 위로 올라온다 (리액션 폴링과 같은 이유).
+    """
+    mine = (Feedback.user_id == user_id, Feedback.item_id == item_id)
+    current = (await session.execute(select(Feedback).where(*mine))).scalar_one_or_none()
+    if current is not None and current.verdict == verdict:
+        current.source = APP_SOURCE
+        return current.created_at
+    stmt = feedback_upsert_stmt(user_id, item_id, verdict, APP_SOURCE).returning(
+        Feedback.created_at
+    )
+    created_at: datetime = (await session.execute(stmt)).scalar_one()
+    return created_at
 
 
 async def clear_feedback(session: AsyncSession, user_id: int, item_id: int) -> None:

@@ -380,6 +380,11 @@ async def test_app_feedback_wins_over_reaction_poll(world: World):
         )
         assert put.json()["feedback"] == "not_useful"
         assert await verdict_of(ids["i"]) == ("useless", "app")
+        # 같은 판정 재시도는 시각을 밀지 않는다.
+        again = await c.put(
+            f"/api/v1/alerts/{ids['i']}/feedback", json={"verdict": "not_useful"}, headers=AUTH
+        )
+        assert again.json()["updated_at"] == put.json()["updated_at"]
 
         assert await poll({"m-feed-app": "useful"}) == 0
         assert await verdict_of(ids["i"]) == ("useless", "app")
@@ -401,6 +406,22 @@ async def test_app_feedback_wins_over_reaction_poll(world: World):
     assert await poll({"m-feed-dc": "useful"}) == 1
     assert await poll({"m-feed-dc": "useless"}) == 1
     assert await verdict_of(ids["j"]) == ("useless", "discord")
+
+    # 디스코드 판정과 같은 값을 앱에서 누르면 출처만 app 으로 가져오고 시각은 그대로다.
+    async with SessionLocal() as s:
+        before = await s.scalar(
+            select(Feedback.created_at).where(
+                Feedback.user_id == DEFAULT_USER_ID, Feedback.item_id == ids["j"]
+            )
+        )
+    async with _client(DEFAULT_USER_ID) as c:
+        res = await c.put(
+            f"/api/v1/alerts/{ids['j']}/feedback", json={"verdict": "not_useful"}, headers=AUTH
+        )
+    assert before is not None
+    assert res.json()["updated_at"] == before.strftime("%Y-%m-%dT%H:%M:%SZ")
+    assert await verdict_of(ids["j"]) == ("useless", "app")
+    assert await poll({"m-feed-dc": "useful"}) == 0
 
 
 async def test_recent_feedback_today_is_seoul_calendar_day(world: World):
@@ -468,11 +489,11 @@ async def test_filtered_total_definition(world: World):
     inside, outside = since + timedelta(hours=1), since - timedelta(hours=1)
     async with SessionLocal() as s, s.begin():
         src = world.src
-        xs = {k: _item(src, f"flt-{k}") for k in "1234567"}
+        xs = {k: _item(src, f"flt-{k}") for k in "12345678"}
         for k in "137":
             xs[k].status = "DROPPED"
         xs["2"].status = "FILTERED_OUT"
-        for k in "456":
+        for k in "4568":
             xs[k].status = "SENT"
         s.add_all(xs.values())
         await s.flush()
@@ -492,8 +513,11 @@ async def test_filtered_total_definition(world: World):
                 _note(world.other, x["6"], "cluster_dup", inside),
                 Decision(item_id=x["7"], stage="triage", passed=False, created_at=inside),
                 Decision(item_id=x["7"], stage="triage", passed=False, created_at=inside),
+                # 오류 행은 전달이 아니다 — cluster_dup 행뿐인 항목으로 센다.
+                _note(world.me, x["8"], "push", outside, error="HTTPError: 500"),
+                _note(world.me, x["8"], "cluster_dup", inside),
             ]
         )
     async with SessionLocal() as s:
-        assert await filtered_total(s, world.me, since) == 3  # 1, 4, 7
+        assert await filtered_total(s, world.me, since) == 4  # 1, 4, 7, 8
         assert await filtered_total(s, world.other, since) == 3  # 1, 6, 7

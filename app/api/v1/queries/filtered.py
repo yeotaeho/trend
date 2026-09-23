@@ -20,7 +20,7 @@ async def filtered_total(session: AsyncSession, user_id: int, since: datetime) -
 
     - DROPPED·FILTERED_OUT 이고 마지막 비사용자 결정이 창 안. 마지막 결정 시각 ≥ since 는
       "창 안에 비사용자 결정이 하나라도 있다" 와 같아서 결정 시각 인덱스로 창부터 좁힌다.
-    - 이 사용자의 알림이 cluster_dup 행뿐이고 그 행이 창 안 (상태 SENT).
+    - 이 사용자의 알림이 cluster_dup 행뿐이고(오류 행은 전달이 아니다) 그 행이 창 안 (상태 SENT).
     """
     dropped = (
         select(Decision.item_id)
@@ -36,6 +36,7 @@ async def filtered_total(session: AsyncSession, user_id: int, since: datetime) -
         other.item_id == Notification.item_id,
         other.user_id == user_id,
         other.level != CLUSTER_DUP,
+        other.error.is_(None),
     )
     clustered = select(Notification.item_id).where(
         Notification.user_id == user_id,

@@ -44,7 +44,9 @@ def test_feed_rejects_unknown_filter(client: TestClient):
 
 def test_feed_cursor_with_wrong_shape_is_bad_request(client: TestClient):
     # base64 JSON 이지만 피드 커서 키가 아니다. DB 에 가기 전에 400.
-    for key in ({"x": 1}, {"t": "어제", "id": 3}, {"t": "2026-09-24T02:18:00+00:00", "id": "a"}):
+    t = "2026-09-24T02:18:00+00:00"
+    # id 가 int4 범위 밖이면 asyncpg 가 500 을 낸다 — 커서 오류로 막는다.
+    for key in ({"x": 1}, {"t": "어제", "id": 3}, {"t": t, "id": "a"}, {"t": t, "id": 2**31}):
         res = client.get("/api/v1/feed", params={"cursor": encode_cursor(key)}, headers=AUTH)
         assert res.status_code == 400, key
         assert res.json()["error"]["code"] == "bad_request"

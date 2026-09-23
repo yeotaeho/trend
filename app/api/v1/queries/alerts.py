@@ -39,6 +39,8 @@ LEVEL_TO_MODE = {
 # DB 값은 그대로 두고 API 계층에서만 옮긴다. cleared(앱 해제)는 null.
 VERDICT_TO_FEEDBACK = {"useful": FeedbackValue.USEFUL, "useless": FeedbackValue.NOT_USEFUL}
 FEEDBACK_TO_VERDICT = {v: k for k, v in VERDICT_TO_FEEDBACK.items()}
+# items.id 는 int4. 범위 밖 값을 바인딩하면 asyncpg 가 500 을 낸다.
+INT4_MAX = 2**31 - 1
 # 요약 없는 항목(복원 등)의 카드 본문 길이.
 RAW_SUMMARY_CHARS = 200
 
