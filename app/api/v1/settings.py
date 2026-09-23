@@ -46,13 +46,6 @@ async def save_or_422(session: AsyncSession, user_id: int, data: dict[str, Any])
         ) from exc
 
 
-async def current_prefs(
-    session: AsyncSession, user_id: int, *, for_update: bool = False
-) -> tuple[dict[str, Any], datetime | None]:
-    row = await prefs.fetch_prefs(session, user_id, for_update=for_update)
-    return (dict(row.data), row.updated_at) if row else ({}, None)
-
-
 def _interests(rules: Rules, updated_at: datetime | None) -> Interests:
     policy = rules.policy
     return Interests(
@@ -68,13 +61,13 @@ def _interests(rules: Rules, updated_at: datetime | None) -> Interests:
 
 @router.get("/interests")
 async def get_interests(session: Session, user_id: UserId) -> Interests:
-    _, updated_at = await current_prefs(session, user_id)
+    _, updated_at = await prefs.current_prefs(session, user_id)
     return _interests(get_rules(), updated_at)
 
 
 @router.put("/interests")
 async def put_interests(body: InterestsIn, session: Session, user_id: UserId) -> Interests:
-    data, _ = await current_prefs(session, user_id, for_update=True)
+    data = await prefs.prefs_for_update(session, user_id)
     policy = {
         "interests": body.profile.self_description,
         "not_interested": body.profile.not_interested,
@@ -144,9 +137,12 @@ async def _notifications(
 
 
 def _require_connected(channels: ChannelsIn) -> None:
+    """꺼진 채널을 켤 때만 본다. YAML 기본으로 이미 켜진 미연결 채널을 그대로 보내는 건 된다."""
     connected = channel_connected(get_settings())
+    current = get_rules().notify.channels
     for name, change in channels:
-        if change is not None and change.enabled and not connected[name]:
+        turning_on = change is not None and change.enabled and not getattr(current, name)
+        if turning_on and not connected[name]:
             raise ApiError(
                 409,
                 "channel_not_connected",
@@ -188,7 +184,7 @@ def _with_cluster_cap(data: dict[str, Any], dedupe: bool) -> dict[str, Any]:
 
 @router.get("/notifications")
 async def get_notifications(session: Session, user_id: UserId) -> NotificationSettings:
-    _, updated_at = await current_prefs(session, user_id)
+    _, updated_at = await prefs.current_prefs(session, user_id)
     return await _notifications(session, user_id, updated_at)
 
 
@@ -198,7 +194,7 @@ async def patch_notifications(
 ) -> NotificationSettings:
     if body.channels:
         _require_connected(body.channels)
-    data, _ = await current_prefs(session, user_id, for_update=True)
+    data = await prefs.prefs_for_update(session, user_id)
     if patch := _notify_patch(body):
         data = merge_overlay(data, {"notify": patch})
     if body.dedupe_same_issue_daily is not None:

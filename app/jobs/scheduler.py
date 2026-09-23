@@ -32,7 +32,8 @@ async def sync_sources() -> list[Source]:
     모든 소스다 (비활성 포함). 잡은 전부 등록하고 run_source 가 비활성 소스를 건너뛰므로
     앱에서 켜고 끌 때 잡을 다시 등록하지 않는다.
     """
-    configs = get_source_configs()
+    # 이름이 겹치면 뒤 항목이 이긴다. 자리는 처음 나온 곳이다.
+    configs = list({cfg.name: cfg for cfg in get_source_configs()}.values())
     async with session_scope() as session:
         prefs = await fetch_prefs(session, DEFAULT_USER_ID)
         overrides = source_overrides(prefs.data if prefs else {})

@@ -164,3 +164,20 @@ async def test_run_source_skips_disabled_source(monkeypatch):
     monkeypatch.setattr(collect, "build_source", must_not_build)
 
     assert await collect.run_source(7) == 0
+
+
+async def test_duplicate_yaml_names_collapse_to_last_entry(table, monkeypatch):
+    _prefs(monkeypatch, None)
+    monkeypatch.setattr(
+        sched,
+        "get_source_configs",
+        lambda: [
+            SourceConfig(name="rss:a", type="rss", poll_interval_sec=900),
+            SourceConfig(name="rss:b", type="rss"),
+            SourceConfig(name="rss:a", type="rss", poll_interval_sec=600),
+        ],
+    )
+
+    synced = await sched.sync_sources()
+
+    assert [(s.name, s.poll_interval_sec) for s in synced] == [("rss:a", 600), ("rss:b", 900)]

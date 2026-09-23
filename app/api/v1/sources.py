@@ -10,9 +10,9 @@ from app.api.v1.deps import Session, UserId
 from app.api.v1.errors import ApiError
 from app.api.v1.queries import sources as queries
 from app.api.v1.schemas import sources as schemas
-from app.api.v1.settings import current_prefs, save_or_422
+from app.api.v1.settings import save_or_422
 from app.config import get_app_config, get_source_configs, merge_overlay
-from app.db import budget
+from app.db import budget, prefs
 from app.db.models import Source
 
 router = APIRouter(prefix="/sources")
@@ -55,7 +55,7 @@ def _budget_use(usage: budget.BudgetUsage) -> schemas.BudgetUse:
 
 def _yaml_names() -> list[str]:
     """목록은 sources.yaml 에 있는 소스만, YAML 순서로. 빠져서 비활성화된 과거 행은 뺀다."""
-    return [cfg.name for cfg in get_source_configs()]
+    return list(dict.fromkeys(cfg.name for cfg in get_source_configs()))
 
 
 @router.get("")
@@ -92,7 +92,7 @@ async def patch_source(
     if row is None:
         raise ApiError(404, "not_found", "소스를 찾을 수 없습니다.", {"source_id": source_id})
     row.enabled = body.enabled
-    data, _ = await current_prefs(session, user_id, for_update=True)
+    data = await prefs.prefs_for_update(session, user_id)
     data = merge_overlay(data, {"sources": {source_id: {"enabled": body.enabled}}})
     await save_or_422(session, user_id, data)
     return to_view(row)

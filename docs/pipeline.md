@@ -4,7 +4,7 @@
 
 ## 설정 — YAML + 앱 덮어쓰기
 
-유효 설정은 `config/rules.yaml` 위에 앱이 저장한 덮어쓰기(`user_prefs.data`, 키는 `Rules` 섹션 이름)를 깊은 병합(목록은 통째 교체)한 값이다. `get_rules()` 가 이 값을 돌려주며, 기동 시(lifespan, 스케줄러 전) DB 에서 한 번 읽고 설정 API(`/api/v1/settings/*`, `/api/v1/sources/{id}`)가 저장·커밋한 직후 `set_prefs_overlay()` 로 갈아끼운다. 다음 선별·판정·발송부터 반영되고 이미 매긴 점수는 다시 계산하지 않는다. 덮어쓰기 섹션이 검증에 실패하면(YAML 키가 바뀐 옛 값 등) 기동은 계속하고 경고 로그 후 그 섹션만 무시한다. `policy.taxonomy` 는 선별 어휘라 YAML 로만 바꾼다. 소스 on/off 는 `data.sources` 에 남고 `sync_sources` 가 YAML 위에 얹는다. YAML 을 고쳐도 앱이 덮어쓴 키는 앱 값이 이긴다.
+유효 설정은 `config/rules.yaml` 위에 앱이 저장한 덮어쓰기(`user_prefs.data`, 키는 `Rules` 섹션 이름)를 깊은 병합(목록은 통째 교체)한 값이다. `get_rules()` 가 이 값을 돌려주며, 기동 시(lifespan, 스케줄러 전) DB 에서 한 번 읽고 설정 API(`/api/v1/settings/*`, `/api/v1/sources/{id}`)가 저장·커밋한 직후 `set_prefs_overlay()` 로 갈아끼운다. 다음 선별·판정·발송부터 반영되고 이미 매긴 점수는 다시 계산하지 않는다. 덮어쓰기 섹션이 검증에 실패하면(YAML 키가 바뀐 옛 값 등) 기동은 계속하고 경고 로그 후 그 섹션만 무시하고, 다음 앱 저장이 그 섹션을 지운다. `policy.taxonomy` 는 선별 어휘라 YAML 로만 바꾼다. 소스 on/off 는 `data.sources` 에 남고 `sync_sources` 가 YAML 위에 얹는다. YAML 을 고쳐도 앱이 덮어쓴 키는 앱 값이 이긴다.
 
 ## 흐름
 

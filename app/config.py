@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import functools
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 
@@ -219,8 +220,10 @@ def get_settings() -> Settings:
 
 # user_prefs.data 중 Rules 밖 키. sources 는 sync_sources 가 따로 읽는다.
 PREFS_NON_RULES_KEYS = frozenset({"sources"})
-# 앱이 저장한 설정 덮어쓰기 (DEFAULT_USER_ID 의 user_prefs.data). set_prefs_overlay 로만 바꾼다.
+# 앱이 저장한 설정 덮어쓰기 (DEFAULT_USER_ID 의 user_prefs.data)와 그 저장 시각.
+# set_prefs_overlay 로만 바꾼다.
 _prefs_overlay: dict[str, Any] = {}
+_prefs_version: datetime | None = None
 
 
 def merge_overlay(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
@@ -244,12 +247,12 @@ def _check_overlay_section(name: str, value: Any) -> None:
         raise ValueError("policy.taxonomy 는 덮어쓸 수 없다")
 
 
-def rules_with_overlay(base: dict[str, Any], overlay: dict[str, Any]) -> Rules:
-    """YAML 위에 덮어쓰기를 섹션 단위로 얹는다. 검증에 실패한 섹션은 경고 후 버린다.
-
-    YAML 키가 바뀌어 옛 덮어쓰기가 안 맞아도 기동을 멈추지 않는다. YAML 자체가 틀리면 실패한다.
-    """
+def _apply_sections(
+    base: dict[str, Any], overlay: dict[str, Any]
+) -> tuple[dict[str, Any], set[str]]:
+    """덮어쓰기를 섹션 단위로 얹는다. 검증에 실패한 섹션은 경고 후 건너뛰고 이름을 돌려준다."""
     merged = base
+    ignored: set[str] = set()
     for name, value in overlay.items():
         if name in PREFS_NON_RULES_KEYS:
             continue
@@ -259,9 +262,28 @@ def rules_with_overlay(base: dict[str, Any], overlay: dict[str, Any]) -> Rules:
             Rules.model_validate(candidate)
         except ValueError as exc:  # pydantic ValidationError 도 ValueError 다
             log.warning("config.prefs_section_ignored", section=name, error=str(exc))
+            ignored.add(name)
             continue
         merged = candidate
+    return merged, ignored
+
+
+def rules_with_overlay(base: dict[str, Any], overlay: dict[str, Any]) -> Rules:
+    """YAML 위에 덮어쓰기를 얹는다. 틀린 섹션은 버린다.
+
+    YAML 키가 바뀌어 옛 덮어쓰기가 안 맞아도 기동을 멈추지 않는다. YAML 자체가 틀리면 실패한다.
+    """
+    merged, _ = _apply_sections(base, overlay)
     return Rules.model_validate(merged)
+
+
+def sanitize_overlay(overlay: dict[str, Any]) -> dict[str, Any]:
+    """저장 경로용. 어차피 무시되는 틀린 섹션을 떼어 낸다.
+
+    남겨 두면 그 위에 병합한 새 저장이 전부 검증에 걸려 앱에서 고칠 길이 없다.
+    """
+    _, ignored = _apply_sections(_read_yaml(CONFIG_DIR / "rules.yaml"), overlay)
+    return {k: v for k, v in overlay.items() if k not in ignored}
 
 
 def validate_overlay(overlay: dict[str, Any]) -> Rules:
@@ -273,10 +295,17 @@ def validate_overlay(overlay: dict[str, Any]) -> Rules:
     return Rules.model_validate(merge_overlay(_read_yaml(CONFIG_DIR / "rules.yaml"), sections))
 
 
-def set_prefs_overlay(overlay: dict[str, Any]) -> None:
-    """기동 시·설정 저장 직후 부른다. 다음 get_rules() 부터 새 유효 설정이다."""
-    global _prefs_overlay
+def set_prefs_overlay(overlay: dict[str, Any], version: datetime | None = None) -> None:
+    """기동 시·설정 저장 직후 부른다. 다음 get_rules() 부터 새 유효 설정이다.
+
+    version 은 user_prefs.updated_at. 커밋은 행 잠금 순서대로지만 커밋 뒤 이 호출은 순서가
+    섞일 수 있어, 이미 가진 것보다 오래된 저장은 버린다.
+    """
+    global _prefs_overlay, _prefs_version
+    if version is not None and _prefs_version is not None and version < _prefs_version:
+        return
     _prefs_overlay = copy.deepcopy(overlay)
+    _prefs_version = version
     get_rules.cache_clear()
 
 

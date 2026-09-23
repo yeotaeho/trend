@@ -9,8 +9,8 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import set_prefs_overlay, validate_overlay
-from app.db.models import UserPrefs
+from app.config import sanitize_overlay, set_prefs_overlay, validate_overlay
+from app.db.models import User, UserPrefs
 from app.db.session import session_scope
 from app.db.users import DEFAULT_USER_ID
 
@@ -18,20 +18,42 @@ from app.db.users import DEFAULT_USER_ID
 async def fetch_prefs(
     session: AsyncSession, user_id: int, *, for_update: bool = False
 ) -> UserPrefs | None:
-    """for_update 는 읽고-고쳐-쓰는 저장 경로용. 동시 PATCH 두 개가 서로를 덮지 않는다."""
-    stmt = select(UserPrefs).where(UserPrefs.user_id == user_id)
+    """for_update 는 읽고-고쳐-쓰는 저장 경로용. 동시 저장 두 개가 서로를 덮지 않는다.
+
+    user_prefs 행이 아직 없으면 잠글 것이 없어, 언제나 있는 users 행을 잠근다.
+    """
     if for_update:
-        stmt = stmt.with_for_update()
+        await session.execute(select(User.id).where(User.id == user_id).with_for_update())
+    stmt = select(UserPrefs).where(UserPrefs.user_id == user_id)
     return (await session.execute(stmt)).scalar_one_or_none()
 
 
+async def current_prefs(
+    session: AsyncSession, user_id: int
+) -> tuple[dict[str, Any], datetime | None]:
+    """조회용 (data, updated_at). 한 번도 저장하지 않았으면 ({}, None)."""
+    row = await fetch_prefs(session, user_id)
+    return (dict(row.data), row.updated_at) if row else ({}, None)
+
+
+async def prefs_for_update(session: AsyncSession, user_id: int) -> dict[str, Any]:
+    """저장 경로용 data. 잠그고 읽으며, 기동 때 무시된 틀린 섹션은 떼어 낸다."""
+    row = await fetch_prefs(session, user_id, for_update=True)
+    return sanitize_overlay(row.data) if row else {}
+
+
 async def upsert_prefs(session: AsyncSession, user_id: int, data: dict[str, Any]) -> datetime:
-    """data 를 통째로 바꾸고 DB 시각의 updated_at 을 돌려준다."""
+    """data 를 통째로 바꾸고 updated_at 을 돌려준다.
+
+    now() 는 트랜잭션 시작 시각이라 잠금을 기다린 뒤 저장이 앞 저장보다 이를 수 있다.
+    실제 시각(clock_timestamp)이어야 set_prefs_overlay 의 순서 비교가 맞다.
+    """
+    now = func.clock_timestamp()
     stmt = (
         insert(UserPrefs)
-        .values(user_id=user_id, data=data)
+        .values(user_id=user_id, data=data, updated_at=now)
         .on_conflict_do_update(
-            index_elements=[UserPrefs.user_id], set_={"data": data, "updated_at": func.now()}
+            index_elements=[UserPrefs.user_id], set_={"data": data, "updated_at": now}
         )
         .returning(UserPrefs.updated_at)
     )
@@ -47,7 +69,7 @@ async def save_prefs(session: AsyncSession, user_id: int, data: dict[str, Any]) 
     validate_overlay(data)
     updated_at = await upsert_prefs(session, user_id, data)
     await session.commit()
-    set_prefs_overlay(data)
+    set_prefs_overlay(data, updated_at)
     return updated_at
 
 
@@ -67,4 +89,4 @@ async def load_prefs_overlay() -> None:
     """기동 시 한 번, 스케줄러보다 먼저. 첫 잡부터 앱에서 저장한 설정으로 돈다."""
     async with session_scope() as session:
         prefs = await fetch_prefs(session, DEFAULT_USER_ID)
-    set_prefs_overlay(prefs.data if prefs else {})
+    set_prefs_overlay(prefs.data if prefs else {}, prefs.updated_at if prefs else None)
