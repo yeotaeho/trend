@@ -20,6 +20,20 @@ policy:
     - fastapi/fastapi
     - pydantic/pydantic
   focus_stack: [claude, mcp, langgraph, fastapi, pydantic, sqlalchemy, postgres, next.js, uv, ruff]
+  # 선별 topics 분류표 (slug). 순서가 앱 관심사 화면 순서다. 라벨은 config/app.yaml 에 있다.
+  taxonomy:
+    - llm-model
+    - agent
+    - mcp-tooling
+    - inference-opt
+    - rag-retrieval
+    - training-finetune
+    - python-backend
+    - web-frontend
+    - devops-infra
+    - ai-safety-eval
+    - dev-community
+    - video
 
 # 싸고 정확한 제외 규칙만 남긴다. exclude 는 언제나 우선한다.
 exclude:

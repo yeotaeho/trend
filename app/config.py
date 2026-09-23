@@ -1,4 +1,4 @@
-# 설정 로더 — .env 시크릿(pydantic-settings)과 config/*.yaml 규칙·소스 정의
+# 설정 로더 — .env 시크릿(pydantic-settings)과 config/*.yaml 규칙·소스·앱 정적값
 
 from __future__ import annotations
 
@@ -42,6 +42,12 @@ class Settings(BaseSettings):
     github_token: str = ""
     github_webhook_secret: str = ""
 
+    # 앱 API 베어러 토큰. 비어 있으면 /api/v1 전부 401. 토큰 하나 = DEFAULT_USER_ID.
+    app_api_token: str = ""
+    discord_channel_name: str = ""  # 앱 알림 설정 화면 표시용 (#trend-alerts)
+    fcm_project_id: str = ""
+    fcm_service_account_file: str = ""  # 서비스 계정 JSON 경로. 커밋 금지
+
     scheduler_enabled: bool = True
     log_level: str = "INFO"
 
@@ -62,6 +68,22 @@ class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+DEFAULT_TAXONOMY = (
+    "llm-model",
+    "agent",
+    "mcp-tooling",
+    "inference-opt",
+    "rag-retrieval",
+    "training-finetune",
+    "python-backend",
+    "web-frontend",
+    "devops-infra",
+    "ai-safety-eval",
+    "dev-community",
+    "video",
+)
+
+
 class PolicyConfig(_Strict):
     """선별·판정 프롬프트가 읽는 정책. 문장으로 쓴다. 관문이 아니라 힌트다."""
 
@@ -69,6 +91,8 @@ class PolicyConfig(_Strict):
     not_interested: str = ""
     focus_repos: list[str] = Field(default_factory=list)
     focus_stack: list[str] = Field(default_factory=list)
+    # 선별 topics 의 분류표 (slug). 앱 표시 라벨은 config/app.yaml 이 따로 가진다.
+    taxonomy: list[str] = Field(default_factory=lambda: list(DEFAULT_TAXONOMY))
 
 
 class ExcludeConfig(_Strict):
@@ -127,6 +151,23 @@ class Rules(_Strict):
     notify: NotifyConfig = Field(default_factory=NotifyConfig)
 
 
+class OnboardingConfig(_Strict):
+    done: int = 8
+    total: int = 8
+
+
+class AppConfig(_Strict):
+    """config/app.yaml — 앱 전용 정적값. 파이프라인은 읽지 않는다."""
+
+    onboarding: OnboardingConfig = Field(default_factory=OnboardingConfig)
+    personal_model_threshold: int = 50
+    resurface_unread_after_days: int = 7
+    screening_relevance_floor: float = 0.5
+    planned_sources: list[str] = Field(default_factory=list)
+    # policy.taxonomy slug → 표시 라벨. 없는 slug 는 slug 를 그대로 라벨로 쓴다.
+    taxonomy_labels: dict[str, str] = Field(default_factory=dict)
+
+
 def _read_yaml(path: Path) -> dict[str, Any]:
     with path.open(encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
@@ -143,6 +184,11 @@ def get_rules() -> Rules:
 
 
 @functools.lru_cache(maxsize=1)
+def get_app_config() -> AppConfig:
+    return AppConfig.model_validate(_read_yaml(CONFIG_DIR / "app.yaml"))
+
+
+@functools.lru_cache(maxsize=1)
 def get_source_configs() -> list[SourceConfig]:
     raw = _read_yaml(CONFIG_DIR / "sources.yaml")
     sources = raw.get("sources", [])
@@ -154,3 +200,4 @@ def reload_configs() -> None:
     """YAML 을 다시 읽는다 (rules.yaml 핫리로드용)."""
     get_rules.cache_clear()
     get_source_configs.cache_clear()
+    get_app_config.cache_clear()
