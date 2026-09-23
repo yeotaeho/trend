@@ -38,6 +38,7 @@ from app.config import (
     yaml_rules,
 )
 from app.db import prefs
+from app.notify.base import channel_connected
 from app.schemas import Kind
 
 router = APIRouter(prefix="/settings")
@@ -89,15 +90,6 @@ async def put_interests(body: InterestsIn, session: Session, user_id: UserId) ->
     data = merge_overlay(data, {"policy": policy, "scoring": {"kind_weights": weights}})
     updated_at = await save_or_422(session, user_id, data)
     return _interests(get_rules(), updated_at)
-
-
-def channel_connected(settings: Settings) -> dict[str, bool]:
-    """연결 정보(.env)가 있는 채널. 없는 채널은 켤 수 없다."""
-    return {
-        "fcm": bool(settings.fcm_project_id and settings.fcm_service_account_file),
-        "discord": bool(settings.discord_bot_token and settings.discord_channel_id),
-        "telegram": bool(settings.telegram_bot_token and settings.telegram_chat_id),
-    }
 
 
 def _discord_channel_name(settings: Settings) -> str | None:

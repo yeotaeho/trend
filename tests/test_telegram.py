@@ -30,7 +30,7 @@ def make_pair(title_ko="[릴리즈] Next.js 16 <출시>"):
 
 def test_render_escapes_and_includes_source():
     item, summary = make_pair()
-    text = render(item, summary, "rss:vercel", now=NOW)
+    text = render(item, summary, "rss:vercel", title=summary.title_ko, now=NOW)
 
     assert "&lt;출시&gt;" in text
     assert "출처: rss:vercel · 12분 전" in text
@@ -51,3 +51,11 @@ def test_callback_rejects_garbage():
     assert parse_feedback_callback("fb:maybe:42") is None
     assert parse_feedback_callback("fb:useful:abc") is None
     assert parse_feedback_callback("something-else") is None
+
+
+def test_render_uses_send_title_not_summary_title():
+    item, summary = make_pair()
+    text = render(item, summary, "rss:vercel", title="발송 제목 (v2 · v1)", now=NOW)
+
+    assert "<b>발송 제목 (v2 · v1)</b>" in text
+    assert "&lt;출시&gt;" not in text

@@ -40,6 +40,7 @@ class Level(StrEnum):
     SILENT = "silent"
     FEED = "feed"
     EXPLORE = "explore"  # 하루 1건 경계 항목 실험. push 상한에서 제외
+    CLUSTER_DUP = "cluster_dup"  # 클러스터 하루 상한으로 억제. 실제 발송 없음, push 상한에서 제외
 
 
 class Kind(StrEnum):

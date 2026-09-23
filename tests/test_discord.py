@@ -52,7 +52,7 @@ def test_escape_md_neutralizes_formatting():
 
 def test_render_escapes_and_includes_source():
     item, summary = make_pair()
-    text = render(item, summary, "rss:vercel", now=NOW)
+    text = render(item, summary, "rss:vercel", title=summary.title_ko, now=NOW)
 
     assert r"\*정식\*" in text
     assert "출처: rss:vercel · 12분 전" in text
@@ -61,7 +61,7 @@ def test_render_escapes_and_includes_source():
 
 def test_push_payload_has_buttons_and_no_mentions():
     item, summary = make_pair()
-    payload = build_payload(item, summary, Level.PUSH, "rss:vercel")
+    payload = build_payload(item, summary, Level.PUSH, "rss:vercel", title=summary.title_ko)
 
     assert "flags" not in payload
     assert payload["allowed_mentions"] == {"parse": []}
@@ -72,7 +72,7 @@ def test_push_payload_has_buttons_and_no_mentions():
 
 def test_silent_payload_sets_suppress_flag():
     item, summary = make_pair()
-    payload = build_payload(item, summary, Level.SILENT, "rss:vercel")
+    payload = build_payload(item, summary, Level.SILENT, "rss:vercel", title=summary.title_ko)
 
     assert payload["flags"] == FLAG_SUPPRESS_NOTIFICATIONS
 
@@ -112,11 +112,15 @@ def test_escape_md_covers_link_masking_and_line_markers():
 def test_link_button_omitted_for_bad_scheme_or_long_url():
     item, summary = make_pair()
     item.url = "javascript:alert(1)"
-    buttons = build_payload(item, summary, Level.PUSH, "rss:x")["components"][0]["components"]
+    buttons = build_payload(item, summary, Level.PUSH, "rss:x", title=summary.title_ko)[
+        "components"
+    ][0]["components"]
     assert [b.get("custom_id") for b in buttons] == ["fb:useful:7", "fb:useless:7"]
 
     item.url = "https://example.com/" + "a" * 600
-    buttons = build_payload(item, summary, Level.PUSH, "rss:x")["components"][0]["components"]
+    buttons = build_payload(item, summary, Level.PUSH, "rss:x", title=summary.title_ko)[
+        "components"
+    ][0]["components"]
     assert all("url" not in b for b in buttons)
 
 
@@ -234,7 +238,7 @@ async def test_repeated_short_429_exhausts_as_rate_limited():
 
 def test_explore_payload_has_prefix_and_is_silent():
     item, summary = make_pair()
-    payload = build_payload(item, summary, Level.EXPLORE, "rss:vercel")
+    payload = build_payload(item, summary, Level.EXPLORE, "rss:vercel", title=summary.title_ko)
     assert payload["content"].startswith("🧪 실험 · 경계 항목\n\n")
     assert payload["flags"] == FLAG_SUPPRESS_NOTIFICATIONS
 

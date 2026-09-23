@@ -1,4 +1,4 @@
-# 발송 잡 — SCORED/QUEUED 항목에 정책을 적용해 디스코드로 보내고, 끝에 하루 1건 경계 항목을 실험한다
+# 발송 잡 — SCORED 항목에 정책을 적용해 켜진 채널 전부로 보내고, 끝에 하루 1건 경계 항목을 실험한다
 
 from __future__ import annotations
 
@@ -9,28 +9,49 @@ from sqlalchemy.engine import Row
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
-from app.config import NotifyConfig, Rules, get_rules
+from app.config import NotifyConfig, Rules, get_rules, get_settings
 from app.db.budget import reserve_call, today_start
 from app.db.models import Decision, Item, Notification, Source, Summary
 from app.db.session import session_scope
 from app.db.users import DEFAULT_USER_ID
 from app.log import get_logger
-from app.notify.base import Notifier, RateLimited
+from app.notify.base import APP_CHANNEL, Notifier, RateLimited, channel_connected
 from app.notify.discord import DiscordNotifier
-from app.notify.policy import decide, in_quiet_hours
+from app.notify.policy import (
+    cluster_sent_count,
+    decide,
+    decorate_title,
+    in_quiet_hours,
+    sibling_versions,
+)
+from app.notify.telegram import TelegramNotifier
 from app.pipeline import llm
 from app.pipeline.feedback import examples_details, format_examples, nearest_feedback
 from app.schemas import ItemStatus, Level, Stage
 
 BATCH_SIZE = 20
+# QUEUED 는 무음 시간 항목을 아침까지 미루던 때의 상태다. 이제 만들지 않지만 남은 행은 마저 보낸다.
 PENDING = (ItemStatus.SCORED.value, ItemStatus.QUEUED.value)
+# 제목 병기에 쓰는 형제 항목 상태. 탈락·실패 항목의 버전은 붙이지 않는다.
+SIBLING_STATUSES = (ItemStatus.SCORED.value, ItemStatus.QUEUED.value, ItemStatus.SENT.value)
 EXPLORE_BAND = 0.10  # 임계값 바로 아래 이 폭 안에서 떨어진 항목이 탐색 후보
+RATE_LIMITED = "rate_limited"
 log = get_logger(__name__)
 
 
-async def _claim_one(
-    session: AsyncSession, skip_ids: set[int]
-) -> tuple[Item, Summary, Source] | None:
+def enabled_notifiers(rules: Rules) -> list[Notifier]:
+    """켜져 있고 연결 정보(.env)가 있는 채널. 비어 있으면 모든 항목이 피드 전용이 된다."""
+    on = rules.notify.channels
+    connected = channel_connected(get_settings())
+    notifiers: list[Notifier] = []
+    if on.discord and connected["discord"]:
+        notifiers.append(DiscordNotifier())
+    if on.telegram and connected["telegram"]:
+        notifiers.append(TelegramNotifier())
+    return notifiers
+
+
+async def _claim_one(session: AsyncSession) -> tuple[Item, Summary, Source] | None:
     """한 건씩 잠근다. 락은 커밋 때 풀리므로 항목 하나가 곧 트랜잭션 하나여야 한다.
 
     한 번에 20건을 잠그고 루프 안에서 커밋하면 첫 커밋에서 나머지 19건의 락까지
@@ -45,89 +66,131 @@ async def _claim_one(
         .limit(1)
         .with_for_update(of=Item, skip_locked=True)
     )
-    if skip_ids:
-        # QUEUED 로 미룬 항목은 여전히 PENDING 이라 그냥 두면 같은 건만 계속 잡는다.
-        stmt = stmt.where(Item.id.notin_(skip_ids))
     row = (await session.execute(stmt)).first()
     return (row[0], row[1], row[2]) if row else None
 
 
-async def run_notify(notifier: Notifier | None = None) -> int:
-    """실제로 발송한 건수를 돌려준다."""
-    notifier = notifier or DiscordNotifier()
+async def _send_title(
+    session: AsyncSession, rules: Rules, item: Item, summary: Summary, now: datetime
+) -> str:
+    """같은 클러스터 형제 항목(중복 판정 창 안) 제목의 버전을 병기한 발송 제목."""
+    if item.cluster_id is None:
+        return summary.title_ko
+    stmt = (
+        select(Item.title)
+        .where(
+            Item.cluster_id == item.cluster_id,
+            Item.id != item.id,
+            Item.status.in_(SIBLING_STATUSES),
+            Item.published_at >= now - timedelta(hours=rules.dedupe.window_hours),
+        )
+        .order_by(Item.published_at.desc(), Item.id.desc())
+    )
+    titles = list((await session.execute(stmt)).scalars())
+    return decorate_title(summary.title_ko, sibling_versions(item.title, titles))
+
+
+async def deliver(
+    session: AsyncSession,
+    notifiers: list[Notifier],
+    item: Item,
+    summary: Summary,
+    level: Level,
+    source_name: str,
+    *,
+    title: str,
+) -> bool | None:
+    """켜진 채널 전부로 보내고 채널마다 notifications 행을 남긴다. 커밋은 호출자가 한다.
+
+    한 채널이라도 성공하면 SENT, 전부 실패하면 FAILED 로 두고 성공 여부를 돌려준다.
+    아직 어느 채널도 성공하지 않았는데 RateLimited 면 기록 없이 None 을 돌려준다 — 배치를
+    멈추라는 뜻이고, 대기가 지나면 다음 잡이 이 항목부터 다시 시도한다. 이미 다른 채널로
+    나갔으면 되돌릴 수 없으므로 그 채널 행에 error='rate_limited' 만 남긴다.
+    """
+    rows: list[Notification] = []
+    for notifier in notifiers:
+        row = Notification(
+            user_id=DEFAULT_USER_ID,
+            item_id=item.id,
+            channel=notifier.channel,
+            level=level.value,
+            title=title,
+        )
+        try:
+            row.message_id = await notifier.send(item, summary, level, source_name, title=title)
+        except RateLimited as exc:
+            if all(r.error is not None for r in rows):
+                log.warning("notify.rate_limited", item_id=item.id, error=str(exc))
+                return None
+            row.error = RATE_LIMITED
+        except Exception as exc:
+            row.error = f"{type(exc).__name__}: {exc}"
+            log.warning("notify.failed", item_id=item.id, channel=notifier.channel, error=str(exc))
+        rows.append(row)
+
+    session.add_all(rows)
+    delivered = any(r.error is None for r in rows)
+    item.status = ItemStatus.SENT.value if delivered else ItemStatus.FAILED.value
+    return delivered
+
+
+async def run_notify(notifiers: list[Notifier] | None = None) -> int:
+    """실제로 발송한 건수를 돌려준다. notifiers 를 생략하면 켜지고 연결된 채널 전부다."""
     rules = get_rules()
     cfg = rules.notify
+    if notifiers is None:
+        notifiers = enabled_notifiers(rules)
     sent = 0
 
     async with session_scope() as session:
-        visited: set[int] = set()
         for _ in range(BATCH_SIZE):
-            claimed = await _claim_one(session, visited)
+            claimed = await _claim_one(session)
             if claimed is None:
                 break
             item, summary, source = claimed
-            visited.add(item.id)
             # 매 항목마다 새로 읽는다. 잡 시작 시각을 재사용하면 자정을 넘길 때 날짜가 어긋난다.
             now = datetime.now(UTC)
-            verdict = await decide(session, cfg, importance=summary.importance, now=now)
-
-            if verdict.level is None:
-                if verdict.reason == "feed_only":
-                    # 발송하지 않고 이력만 남긴다.
-                    session.add(
-                        Notification(
-                            user_id=DEFAULT_USER_ID,
-                            item_id=item.id,
-                            channel=notifier.channel,
-                            level=Level.FEED.value,
-                        )
-                    )
-                    item.status = ItemStatus.SENT.value
-                else:
-                    item.status = ItemStatus.QUEUED.value
-                    log.info("notify.deferred", item_id=item.id, reason=verdict.reason)
-                await session.commit()
-                continue
-
-            try:
-                message_id = await notifier.send(item, summary, verdict.level, source.name)
-            except RateLimited as exc:
-                # 항목 탓이 아니다. 기록하지 않고 배치를 멈춘다 — 채널이 준 대기 시간이
-                # 지나면 다음 발송 잡이 이 항목부터 다시 시도한다.
-                log.warning("notify.rate_limited", item_id=item.id, error=str(exc))
-                break
-            except Exception as exc:
+            verdict = await decide(
+                session,
+                cfg,
+                importance=summary.importance,
+                cluster_id=item.cluster_id,
+                user_id=DEFAULT_USER_ID,
+                now=now,
+            )
+            # 켜진 채널이 없으면 보낼 곳이 없으니 피드에만 남긴다.
+            level = verdict.level if notifiers else Level.FEED
+            if level in (Level.FEED, Level.CLUSTER_DUP):
+                # 발송하지 않고 이력만 남긴다. 피드·걸러진 항목 화면이 이 행을 읽는다.
                 session.add(
                     Notification(
                         user_id=DEFAULT_USER_ID,
                         item_id=item.id,
-                        channel=notifier.channel,
-                        level=verdict.level.value,
-                        error=f"{type(exc).__name__}: {exc}",
+                        channel=APP_CHANNEL,
+                        level=level.value,
                     )
                 )
-                item.status = ItemStatus.FAILED.value
-                log.warning("notify.failed", item_id=item.id, error=str(exc))
+                item.status = ItemStatus.SENT.value
+                log.info(
+                    "notify.not_sent", item_id=item.id, level=level.value, reason=verdict.reason
+                )
                 await session.commit()
                 continue
 
-            session.add(
-                Notification(
-                    user_id=DEFAULT_USER_ID,
-                    item_id=item.id,
-                    channel=notifier.channel,
-                    level=verdict.level.value,
-                    message_id=message_id,
-                )
+            title = await _send_title(session, rules, item, summary, now)
+            delivered = await deliver(
+                session, notifiers, item, summary, level, source.name, title=title
             )
-            item.status = ItemStatus.SENT.value
-            # 발송 직후 커밋한다. 배치를 한 트랜잭션으로 묶으면 뒤쪽 한 건이 실패했을 때
+            if delivered is None:
+                break
+            # 항목마다 커밋한다. 배치를 한 트랜잭션으로 묶으면 뒤쪽 한 건이 실패했을 때
             # 이미 발송이 끝난 앞쪽 항목까지 롤백돼 다음 잡에서 다시 발송된다.
             await session.commit()
-            sent += 1
+            if delivered:
+                sent += 1
 
         try:
-            await _explore(session, rules, notifier, now=datetime.now(UTC))
+            await _explore(session, rules, notifiers, now=datetime.now(UTC))
         except Exception as exc:
             await session.rollback()
             log.warning("notify.explore_failed", error=str(exc))
@@ -156,7 +219,10 @@ async def _explore_sent_today(session: AsyncSession, cfg: NotifyConfig, now: dat
 async def _explore_candidate(
     session: AsyncSession, rules: Rules, now: datetime
 ) -> Row[tuple[Item, Source]] | None:
-    """점수 관문 바로 아래로 떨어진 최근 24시간 항목 중 최고점. Summary 가 없어야 한다."""
+    """점수 관문 바로 아래로 떨어진 최근 24시간 항목 중 최고점. Summary 가 없어야 한다.
+
+    클러스터 하루 상한이 켜져 있으면 오늘 이미 나간 클러스터의 항목은 후보가 아니다.
+    """
     thr = rules.scoring.threshold
     # 항목의 "마지막" 결정 행 하나를 고른 뒤 그것이 score 탈락인지 본다. 최근 score 행만 보면
     # 그 뒤에 다른 단계 결정이 붙은 항목까지 후보가 된다.
@@ -187,18 +253,24 @@ async def _explore_candidate(
         .limit(1)
         .with_for_update(of=Item, skip_locked=True)
     )
+    if rules.notify.cluster_daily_cap > 0:
+        sent = cluster_sent_count(rules.notify, Item.cluster_id, DEFAULT_USER_ID, now)
+        stmt = stmt.where(sent.scalar_subquery() == 0)
     return (await session.execute(stmt)).first()
 
 
 async def _explore(
-    session: AsyncSession, rules: Rules, notifier: Notifier, *, now: datetime
+    session: AsyncSession, rules: Rules, notifiers: list[Notifier], *, now: datetime
 ) -> bool:
     """하루 1건 경계 항목 실험. 판정 → 통과면 🧪 발송 → SENT. false 면 그날은 보내지 않는다.
 
     일반 발송 흐름을 타지 않는다. 후보는 DROPPED 이고 Summary 가 없어 일반 발송 쿼리에 안 잡힌다.
     이게 없으면 파이프는 자기가 버린 것에 대해 영원히 배우지 못한다. now 는 호출 직전 시각이다.
+    토글이 꺼졌거나 켜진 채널이 없으면 판정(LLM 예약)도 하지 않는다.
     """
     cfg = rules.notify
+    if not cfg.explore_enabled or not notifiers:
+        return False
     if in_quiet_hours(cfg, now) or await _explore_sent_today(session, cfg, now):
         return False
     row = await _explore_candidate(session, rules, now)
@@ -246,17 +318,14 @@ async def _explore(
         await session.commit()
         return False
 
-    message_id = await notifier.send(item, summary, Level.EXPLORE, source.name)
-    session.add(
-        Notification(
-            user_id=DEFAULT_USER_ID,
-            item_id=item.id,
-            channel=notifier.channel,
-            level=Level.EXPLORE.value,
-            message_id=message_id,
-        )
+    title = await _send_title(session, rules, item, summary, now)
+    delivered = await deliver(
+        session, notifiers, item, summary, Level.EXPLORE, source.name, title=title
     )
-    item.status = ItemStatus.SENT.value
+    if delivered is None:
+        # 판정까지 되돌린다. 후보로 남아 대기가 풀린 뒤 다음 잡이 다시 시도한다.
+        await session.rollback()
+        return False
     await session.commit()
-    log.info("notify.explore_sent", item_id=item.id)
-    return True
+    log.info("notify.explore_done", item_id=item.id, delivered=delivered)
+    return delivered

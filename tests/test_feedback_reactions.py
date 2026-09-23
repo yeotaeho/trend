@@ -58,7 +58,12 @@ async def test_send_seeds_thumbs_reactions(settings):
         return_value=httpx.Response(204)
     )
     item, summary = make_pair()
-    assert await DiscordNotifier().send(item, summary, Level.PUSH, "rss:vercel") == "99"
+    assert (
+        await DiscordNotifier().send(
+            item, summary, Level.PUSH, "rss:vercel", title=summary.title_ko
+        )
+        == "99"
+    )
     assert up.called and down.called
 
 
@@ -72,7 +77,12 @@ async def test_seed_failure_does_not_fail_send(settings):
         return_value=httpx.Response(403, json={"message": "Missing Permissions"})
     )
     item, summary = make_pair()
-    assert await DiscordNotifier().send(item, summary, Level.PUSH, "rss:vercel") == "99"
+    assert (
+        await DiscordNotifier().send(
+            item, summary, Level.PUSH, "rss:vercel", title=summary.title_ko
+        )
+        == "99"
+    )
 
 
 @respx.mock
