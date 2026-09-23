@@ -1,4 +1,4 @@
-# 스케줄러 — sources.yaml + 앱 on/off 를 DB 에 동기화하고 소스별·파이프라인·발송·주간 리포트 잡 등록
+# 스케줄러 — sources.yaml·앱 on/off 를 DB 에 동기화하고 폴링·파이프라인·발송·재알림·리포트 잡 등록
 
 from __future__ import annotations
 
@@ -18,11 +18,13 @@ from app.jobs.feedback import run_feedback
 from app.jobs.notify import run_notify
 from app.jobs.pipeline import run_pipeline
 from app.jobs.report import run_weekly_report
+from app.jobs.resurface import run_resurface
 from app.log import get_logger
 
 PIPELINE_INTERVAL_SEC = 120
 NOTIFY_INTERVAL_SEC = 180
 FEEDBACK_INTERVAL_SEC = 600  # 디스코드 GET 1회. 리액션은 몇 분 늦게 반영돼도 된다
+RESURFACE_INTERVAL_SEC = 3600  # 7일 지난 찜을 다시 알린다. 한 시간 늦어도 된다
 log = get_logger(__name__)
 
 
@@ -91,6 +93,7 @@ async def start_scheduler() -> AsyncIOScheduler:
     scheduler.add_job(run_pipeline, id="pipeline", **_interval(PIPELINE_INTERVAL_SEC))
     scheduler.add_job(run_notify, id="notify", **_interval(NOTIFY_INTERVAL_SEC))
     scheduler.add_job(run_feedback, id="feedback", **_interval(FEEDBACK_INTERVAL_SEC))
+    scheduler.add_job(run_resurface, id="resurface", **_interval(RESURFACE_INTERVAL_SEC))
     # 월요일 09:00 에 지난주(월~일)를 만든다. 늦게 돌아도 같은 주를 덮어쓰므로 grace 는 무제한이다.
     scheduler.add_job(
         run_weekly_report,
