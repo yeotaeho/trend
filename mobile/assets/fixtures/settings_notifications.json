@@ -1,0 +1,36 @@
+{
+  "channels": {
+    "fcm": {
+      "enabled": true,
+      "connected": true,
+      "device_count": 1
+    },
+    "discord": {
+      "enabled": true,
+      "connected": true,
+      "channel_name": "#trend-alerts",
+      "reaction_sync": true
+    },
+    "telegram": {
+      "enabled": false,
+      "connected": false
+    }
+  },
+  "daily_push_cap": 15,
+  "quiet_hours": {
+    "start": "23:00",
+    "end": "08:00",
+    "timezone": "Asia/Seoul"
+  },
+  "dedupe_same_issue_daily": true,
+  "delivery_by_importance": {
+    "high": "instant",
+    "mid": "quiet",
+    "low": "feed_only"
+  },
+  "exploration_slot": {
+    "enabled": true,
+    "daily_limit": 1
+  },
+  "updated_at": "2026-09-20T11:00:00Z"
+}

@@ -1,0 +1,28 @@
+{
+  "total_count": 23,
+  "unread_count": 7,
+  "unfiled_count": 3,
+  "folders": [
+    {
+      "id": "1",
+      "name": "나중에 읽기",
+      "count": 9,
+      "unread_count": 4,
+      "position": 0
+    },
+    {
+      "id": "2",
+      "name": "적용해보기",
+      "count": 6,
+      "unread_count": 2,
+      "position": 1
+    },
+    {
+      "id": "3",
+      "name": "ClickMe 참고",
+      "count": 5,
+      "unread_count": 1,
+      "position": 2
+    }
+  ]
+}

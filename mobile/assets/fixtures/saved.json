@@ -1,0 +1,65 @@
+{
+  "items": [
+    {
+      "alert_id": "18342",
+      "source_name": "GitHub Releases",
+      "title": "[릴리즈] MCP Python SDK v2.2.0 — HTTP 리다이렉트·OAuth 검증 변경",
+      "url": "https://github.com/modelcontextprotocol/python-sdk/releases/tag/v2.2.0",
+      "delivered_at": "2026-09-24T02:18:00Z",
+      "saved_at": "2026-09-14T05:40:00Z",
+      "folder": {
+        "id": "2",
+        "name": "적용해보기"
+      },
+      "memo": "trend 레포 python-sdk 올릴 때 OAuth 검증 부분 확인",
+      "is_read": true,
+      "read_at": "2026-09-15T01:00:00Z"
+    },
+    {
+      "alert_id": "17811",
+      "source_name": "arXiv cs.CL",
+      "title": "BeaconKV: 장문 컨텍스트 KV 캐시 압축으로 추론 2.1배",
+      "url": "https://arxiv.org/abs/2609.04567",
+      "delivered_at": "2026-09-12T01:10:00Z",
+      "saved_at": "2026-09-12T03:20:00Z",
+      "folder": {
+        "id": "1",
+        "name": "나중에 읽기"
+      },
+      "memo": null,
+      "is_read": false,
+      "read_at": null
+    },
+    {
+      "alert_id": "17630",
+      "source_name": "Anthropic",
+      "title": "[모델] Claude 5 Fable — 컨텍스트 2배, 가격 동일",
+      "url": "https://www.anthropic.com/news/claude-5-fable",
+      "delivered_at": "2026-09-09T00:30:00Z",
+      "saved_at": "2026-09-09T02:00:00Z",
+      "folder": {
+        "id": "3",
+        "name": "ClickMe 참고"
+      },
+      "memo": "페르소나 시뮬레이터 배치 비용 재계산",
+      "is_read": false,
+      "read_at": null
+    },
+    {
+      "alert_id": "17502",
+      "source_name": "youtube:jocoding",
+      "title": "Claude Code 서브에이전트로 1인 개발 팀 만들기",
+      "url": "https://www.youtube.com/watch?v=jc0dSubAgnt",
+      "delivered_at": "2026-09-08T10:00:00Z",
+      "saved_at": "2026-09-08T12:30:00Z",
+      "folder": {
+        "id": "1",
+        "name": "나중에 읽기"
+      },
+      "memo": null,
+      "is_read": true,
+      "read_at": "2026-09-10T11:00:00Z"
+    }
+  ],
+  "next_cursor": null
+}

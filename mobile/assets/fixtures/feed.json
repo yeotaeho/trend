@@ -1,0 +1,73 @@
+{
+  "items": [
+    {
+      "id": "18342",
+      "source_id": "github_release:watchlist",
+      "source_name": "GitHub Releases",
+      "source_type": "github_release",
+      "delivered_at": "2026-09-24T02:18:00Z",
+      "delivery_mode": "instant",
+      "is_exploration": false,
+      "title": "[릴리즈] MCP Python SDK v2.2.0 — HTTP 리다이렉트·OAuth 검증 변경 (v2.2.0 · v1.30.0)",
+      "summary": "스트리밍 HTTP 클라이언트의 리다이렉트 처리와 OAuth 토큰 검증이 바뀐 보안 릴리즈. v1.30.0에 백포트됨.",
+      "categories": [
+        "mcp-tooling",
+        "python-backend"
+      ],
+      "tags": [
+        "mcp",
+        "oauth",
+        "python"
+      ],
+      "url": "https://github.com/modelcontextprotocol/python-sdk/releases/tag/v2.2.0",
+      "importance": 4,
+      "is_saved": true,
+      "feedback": "useful"
+    },
+    {
+      "id": "18301",
+      "source_id": "rss:arxiv-cs-cl",
+      "source_name": "arXiv cs.CL",
+      "source_type": "rss",
+      "delivered_at": "2026-09-23T23:55:00Z",
+      "delivery_mode": "experiment",
+      "is_exploration": true,
+      "title": "BeaconKV: 장문 컨텍스트 KV 캐시 압축으로 추론 2.1배",
+      "summary": "고정 비콘 토큰에 문맥을 요약 저장해 KV 캐시를 8배 줄이고 품질 손실 1% 이내. 코드 공개.",
+      "categories": [
+        "inference-opt"
+      ],
+      "tags": [
+        "kv-cache",
+        "long-context"
+      ],
+      "url": "https://arxiv.org/abs/2609.04567",
+      "importance": 4,
+      "is_saved": false,
+      "feedback": null
+    },
+    {
+      "id": "18290",
+      "source_id": "rss:anthropic",
+      "source_name": "Anthropic",
+      "source_type": "rss",
+      "delivered_at": "2026-09-23T22:00:00Z",
+      "delivery_mode": "instant",
+      "is_exploration": false,
+      "title": "[모델] Claude 5 Fable — 컨텍스트 2배, 가격 동일",
+      "summary": "새 최상위 모델. 툴 사용과 장문 추론 벤치마크 갱신, API 가격은 이전 세대와 동일.",
+      "categories": [
+        "llm-model"
+      ],
+      "tags": [
+        "claude",
+        "model-release"
+      ],
+      "url": "https://www.anthropic.com/news/claude-5-fable",
+      "importance": 5,
+      "is_saved": false,
+      "feedback": null
+    }
+  ],
+  "next_cursor": null
+}

@@ -1,0 +1,90 @@
+{
+  "period_days": 14,
+  "user": {
+    "display_name": "여태호",
+    "discord_connected": true,
+    "onboarding_done": 8,
+    "onboarding_total": 8
+  },
+  "stats": {
+    "alerts_received": 61,
+    "push_count": 38,
+    "experiment_count": 9,
+    "useful_count": 27,
+    "not_useful_count": 15,
+    "useful_ratio": 64,
+    "missed_issues": 1
+  },
+  "category_reactions": [
+    {
+      "category": "mcp-tooling",
+      "useful": 12,
+      "not_useful": 2,
+      "total": 14
+    },
+    {
+      "category": "llm-model",
+      "useful": 9,
+      "not_useful": 2,
+      "total": 11
+    },
+    {
+      "category": "inference-opt",
+      "useful": 6,
+      "not_useful": 3,
+      "total": 9
+    },
+    {
+      "category": "agent",
+      "useful": 4,
+      "not_useful": 4,
+      "total": 8
+    },
+    {
+      "category": "video",
+      "useful": 1,
+      "not_useful": 5,
+      "total": 6
+    },
+    {
+      "category": "dev-community",
+      "useful": 1,
+      "not_useful": 3,
+      "total": 4
+    }
+  ],
+  "learned": {
+    "kind_penalties": [
+      {
+        "kind": "survey",
+        "weight": -0.15,
+        "not_useful": 4,
+        "total": 4,
+        "active": true
+      }
+    ],
+    "source_trust_changes": [
+      {
+        "source_id": "rss:arxiv-cs-cl",
+        "source_name": "arXiv cs.CL",
+        "from": 0.5,
+        "to": 0.58
+      },
+      {
+        "source_id": "youtube:codingapple",
+        "source_name": "youtube:codingapple",
+        "from": 0.6,
+        "to": 0.52
+      }
+    ],
+    "profile_vector_labels": 42,
+    "personal_model_threshold": 50
+  },
+  "weekly_report_latest": {
+    "id": "12",
+    "title": "9월 2주차 리포트",
+    "subtitle": "relevance 구간 × kind · 통과/탈락/👍/👎",
+    "period_start": "2026-09-08",
+    "period_end": "2026-09-14"
+  }
+}
