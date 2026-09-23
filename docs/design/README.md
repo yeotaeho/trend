@@ -1,24 +1,29 @@
 # 모바일 앱 디자인 명세 (Flutter 구현용)
 
-Figma 파일 `xbgeR2ik7vN0BXtBxFPfI5` · 섹션 "기술 파악 · 모바일 앱 v0.1"에서 추출. Figma 접근 권한 없이 구현할 수 있도록 화면별 레이아웃·문구·데이터 필드·설정값을 정리했다.
-공통 색/타이포/컴포넌트는 [tokens.md](tokens.md) 참조.
+화면별 레이아웃·문구·데이터 필드·설정값을 정리해 Figma 접근 없이 구현할 수 있게 한다. 공통 색·타이포·아이콘·컴포넌트는 [tokens.md](tokens.md) 를 본다.
 
-- 제외: `1 로그인`(2:2), `2 온보딩 · 콜드스타트`(4:2) — 요청 범위 밖
-- 기준 프레임 390 × 844, 폰트 IBM Plex Sans KR, Figma 변수 없음
+## 진실의 근원
+
+- **`source/*.dc.html` 이 픽셀 기준의 진실이다.** 각 파일은 인라인 스타일 HTML 한 화면이고, `source/gen.py.txt` (공통 CSS·조각 함수·아이콘 경로)가 만든 출력과 바이트 단위로 같다. Figma 파일 `xbgeR2ik7vN0BXtBxFPfI5` (섹션 "기술 파악 · 모바일 앱 v0.1")은 이 HTML 을 옮겨 그린 것이다.
+- 값이 Figma 와 다르면 HTML 이 이긴다. 각 화면 명세 끝의 "Figma 와 다른 점" 에 둘 다 적었다.
+- 예외는 스크롤 화면의 전체 높이다. `.dc.html` 아트보드 높이와 `11-saved.png` 는 IBM Plex Sans KR 대신 대체 폰트로 렌더링되어 길다. 높이는 Figma 프레임 높이(아래 표)를 따른다.
+- `source/canvas.json` 은 디자인 캔버스의 아트보드 배치, `source/앱-화면-설계-v0.1.md` 는 사용자가 쓴 화면 ↔ 백엔드 매핑과 열린 결정 원문이다. 계약과의 대응은 `docs/api/app-api-v1.md` 9절에 있다.
+- 로그인(`Login`)·온보딩(`Onboarding`)은 범위 밖이라 HTML 도 복사하지 않았다. `gen.py.txt` 에는 두 화면 코드가 남아 있다.
+- 기준 폭 390, 폰트 IBM Plex Sans KR, Figma 변수 없음.
 
 ## 화면 목록
 
-| # | 화면 | Figma node | 명세 | 스크린샷 | 탭 |
-|---|---|---|---|---|---|
-| 03 | 피드 (알림 이력) | `4:66` | [03-feed.md](screens/03-feed.md) | [png](screens/03-feed.png) | 피드 (루트) |
-| 04 | 관심사 | `5:2` | [04-interests.md](screens/04-interests.md) | [png](screens/04-interests.png) | 설정 › |
-| 05 | 알림 설정 | `5:193` | [05-notification-settings.md](screens/05-notification-settings.md) | [png](screens/05-notification-settings.png) | 설정 › |
-| 06 | 수집 소스 | `6:2` | [06-sources.md](screens/06-sources.md) | [png](screens/06-sources.png) | 설정 › |
-| 07 | 피드백 · 판정 근거 | `6:139` | [07-feedback-rationale.md](screens/07-feedback-rationale.md) | [png](screens/07-feedback-rationale.png) | 전체화면 push |
-| 08 | 내 프로필 (사용자 파악) | `6:217` | [08-profile.md](screens/08-profile.md) | [png](screens/08-profile.png) | 내 프로필 (루트) |
-| 09 | 걸러진 항목 · 소스별 | `9:2` | [09-filtered-by-source.md](screens/09-filtered-by-source.md) | [png](screens/09-filtered-by-source.png) | 피드 › |
-| 10 | 걸러진 항목 · 종류별 | `9:181` | [10-filtered-by-type.md](screens/10-filtered-by-type.md) | [png](screens/10-filtered-by-type.png) | 피드 › |
-| 11 | 찜한 알림 | `23:39` | [11-saved.md](screens/11-saved.md) | **없음** (Figma MCP 한도 초과) | 찜 (루트) |
+| # | 화면 | HTML | Figma node · 높이 | 명세 | 스크린샷 | 탭 |
+|---|---|---|---|---|---|---|
+| 03 | 피드 (알림 이력) | [Main.dc.html](source/Main.dc.html) | `4:66` · 844 | [03-feed.md](screens/03-feed.md) | [png](screens/03-feed.png) | 피드 (루트) |
+| 04 | 관심사 | [Interests.dc.html](source/Interests.dc.html) | `5:2` · 1340 | [04-interests.md](screens/04-interests.md) | [png](screens/04-interests.png) | 설정 › |
+| 05 | 알림 설정 | [NotifySettings.dc.html](source/NotifySettings.dc.html) | `5:193` · 1120 | [05-notification-settings.md](screens/05-notification-settings.md) | [png](screens/05-notification-settings.png) | 설정 › |
+| 06 | 수집 소스 | [SourceSettings.dc.html](source/SourceSettings.dc.html) | `6:2` · 930 | [06-sources.md](screens/06-sources.md) | [png](screens/06-sources.png) | 설정 › |
+| 07 | 피드백 · 판정 근거 | [Feedback.dc.html](source/Feedback.dc.html) | `6:139` · 960 | [07-feedback-rationale.md](screens/07-feedback-rationale.md) | [png](screens/07-feedback-rationale.png) | 전체화면 push |
+| 08 | 내 프로필 (사용자 파악) | [Profile.dc.html](source/Profile.dc.html) | `6:217` · 1020 | [08-profile.md](screens/08-profile.md) | [png](screens/08-profile.png) | 내 프로필 (루트) |
+| 09 | 걸러진 항목 · 소스별 | [DroppedBySource.dc.html](source/DroppedBySource.dc.html) | `9:2` · 1080 | [09-filtered-by-source.md](screens/09-filtered-by-source.md) | [png](screens/09-filtered-by-source.png) | 피드 › |
+| 10 | 걸러진 항목 · 종류별 | [DroppedByKind.dc.html](source/DroppedByKind.dc.html) | `9:181` · 1100 | [10-filtered-by-type.md](screens/10-filtered-by-type.md) | [png](screens/10-filtered-by-type.png) | 피드 › |
+| 11 | 찜 | [Saved.dc.html](source/Saved.dc.html) | `23:39` · 1360 | [11-saved.md](screens/11-saved.md) | [png](screens/11-saved.png) (HTML 렌더) | 찜 (루트) |
 
 ## 내비게이션 맵
 
@@ -34,7 +39,7 @@ Figma 파일 `xbgeR2ik7vN0BXtBxFPfI5` · 섹션 "기술 파악 · 모바일 앱 
  │             └─ "걸러짐 571건 보기 ›" ──→ 09 걸러진 항목·소스별
  │                                              ⇄ (세그먼트) 10 종류별
  │                                              ⇄ (세그먼트) 관문별 (디자인 없음)
- ├─ 찜 ────── 11 찜한 알림
+ ├─ 찜 ────── 11 찜
  │             ├─ 카드 탭 → 07 (권장)
  │             ├─ [원문] → 외부 브라우저 / [폴더] → 폴더 이동 시트 (디자인 없음)
  │             └─ 폴더 칩 "+" → 새 폴더 (디자인 없음)
@@ -50,7 +55,7 @@ Figma 파일 `xbgeR2ik7vN0BXtBxFPfI5` · 섹션 "기술 파악 · 모바일 앱 
 
 ## 디자인 공백 (구현 시 결정 필요)
 - 설정 탭 루트 화면, 검색 화면(피드/걸러짐/찜), 알림(🔔) 화면, 관문별 보기, 주간 리포트 상세, 소스 추가/상세, 폴더 이동/생성, 각종 값 편집(push 상한·무음 시간·kind 가중치) 피커, 빈 상태/로딩/오류 상태 — 모두 디자인 없음.
-- 11 찜 화면은 스크린샷 미확보로 일부 색상 추정(★).
+- 스크린샷 03~10 은 Figma 렌더, 11 은 HTML 렌더(대체 폰트)다.
 
 ## 데이터 필드 · 설정값 목록
 
@@ -69,7 +74,7 @@ Figma 파일 `xbgeR2ik7vN0BXtBxFPfI5` · 섹션 "기술 파악 · 모바일 앱 
 | alert.`is_exploration` | 알림 | 03 | bool | true (`실험 · 경계 항목`) |
 | alert.`title` | 알림 | 03, 07, 11 | string | `[릴리즈] MCP Python SDK v2.2.0 — …` |
 | alert.`summary` | 알림 | 03, 07 | string | `스트리밍 HTTP 클라이언트의 …` |
-| alert.`categories` | 알림 | 03 | string[] | `["mcp-tooling","python-backend"]` |
+| alert.`categories` | 알림 | 03 | string[] (선별 topics) | `["mcp-tooling","python-backend"]` |
 | alert.`url` | 알림 | 03, 07, 11 | URL | – |
 | alert.`is_saved` | 사용자 상태 | 03 | bool | true |
 | alert.`feedback` | 사용자 입력 | 03, 07 | enum? `useful`/`not_useful`/null | `useful` |
@@ -82,12 +87,12 @@ Figma 파일 `xbgeR2ik7vN0BXtBxFPfI5` · 섹션 "기술 파악 · 모바일 앱 
 | screening.`kind` | 판정 근거 | 07, 09 | enum | `technique` |
 | screening.`reason` | 판정 근거 | 07, 09, 10 | string | `KV 캐시 압축의 구체 기법과 수치, 코드 공개` |
 | judgment.`importance` | 판정 근거 | 07 | int 1–5 | 4 |
-| judgment.`similar_feedback` | 판정 근거 | 07 | {label, title} | 유용 `PagedAttention v2 …` |
-| `recent_feedback[]` | 이력 | 07 | {alert_id, feedback, title, created_at} | 유용 · `MCP Python SDK …` · `42분` |
+| judgment.`similar_feedback` | 판정 근거 | 07 | {label, title} | 👍 `PagedAttention v2 …` |
+| `recent_feedback[]` | 이력 | 07 | {alert_id, feedback, title, created_at} | 👍 · `MCP Python SDK …` · `42분` |
 | `recent_feedback_today_count` | 이력 | 07 | int | 3 |
 | `profile.self_description` | 설정 | 04 | string | `AI 시스템 개발자. LLM 애플리케이션…` |
 | `profile.not_interested` | 설정 | 04 | string | `채용·홍보·입문 튜토리얼·개발과 무관한 금융 콘텐츠` |
-| `taxonomy[]` | 마스터 | 04 | {slug, label}[] (12) | `llm-model` 새 모델·벤치마크 |
+| `taxonomy[]` | 마스터 | 04 | {slug, label}[] (12, slug 는 `rules.yaml` `policy.taxonomy`) | `llm-model` 새 모델·벤치마크 |
 | `selected_categories` | 설정 | 04 | string[] | 8 / 12 |
 | `watch_keywords` | 설정 | 04 | string[] | `claude, mcp, langgraph, fastapi, pydantic, next.js, uv` |
 | `kind_weights.release_major` | 설정 | 04 | float | +0 |
@@ -103,7 +108,7 @@ Figma 파일 `xbgeR2ik7vN0BXtBxFPfI5` · 섹션 "기술 파악 · 모바일 앱 
 | `channels.telegram.enabled` / `connected` | 설정 / 연결 정보 | 05 | bool / bool | false / false (`연결 안 됨`) |
 | `quiet_hours.start` / `end` | 설정 | 05 | time HH:mm | `23:00` / `08:00` |
 | `quiet_hours.timezone` | 설정 | 05 | IANA tz | `Asia/Seoul` |
-| `dedupe_same_issue_daily` | 설정 | 05 | bool | true |
+| `dedupe_same_issue_daily` | 설정 | 05 | bool (`cluster_daily_cap > 0`) | true |
 | `delivery_by_importance.high` (5·4) | 설정 | 05 | enum `instant`/`quiet`/`feed_only` | `instant` (즉시) |
 | `delivery_by_importance.mid` (3) | 설정 | 05 | enum | `quiet` (조용히) |
 | `delivery_by_importance.low` (2·1) | 설정 | 05 | enum | `feed_only` (피드만) |

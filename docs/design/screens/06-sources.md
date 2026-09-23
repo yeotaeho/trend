@@ -1,35 +1,33 @@
 # 06 수집 소스
 
-- Figma node: `6:2` · 프레임 390 × 930 · 스크린샷: [06-sources.png](06-sources.png)
-- 하단 탭: **설정** 활성 (설정 하위 화면)
+- 원본 HTML: [`../source/SourceSettings.dc.html`](../source/SourceSettings.dc.html) (`gen.py.txt` `src_row()`) · Figma node `6:2` · 프레임 390 × 930 · 스크린샷 [06-sources.png](06-sources.png) (Figma)
+- 하단 탭: **설정** 활성 (설정 하위)
 
 ## 목적
 
-수집 파이프라인이 긁어오는 소스(RSS, arXiv, GitHub 릴리즈, YouTube) 목록과 상태(주기, 실패, 신뢰도 trust)를 보고 소스별 on/off를 제어한다. 상단에 오늘의 수집 통계와 LLM 호출 예산을 보여준다.
+수집 소스 목록과 상태(주기·실패·trust)를 보고 소스별 on/off 를 바꾼다. 위에 오늘 수집량과 LLM 예산을 보여 준다.
 
 ## 레이아웃 (위 → 아래)
 
-### 1. TopBar (`6:3`, 높이 77)
-- `icon/back` 20 + 제목 `수집 소스` (Bold 18) / 우측 `icon/plus` 22 → 소스 추가(디자인 없음. 유형 선택: RSS URL / GitHub 저장소 / YouTube 채널 권장)
+### 1. 하위 TopBar
+`back` 20 + `수집 소스` (18/600). 우측 `plus` 22 → 소스 추가 (v1 범위 밖, `준비 중` 토스트).
 
-### 2. Stat 3열 (카드 111×88, gap 8, 좌우 16)
-Stat 카드: 흰 배경, 1px `#E5E2DB`, radius 14, padding 14. 라벨(Regular 11 `#55524B`) / 값(Bold 22 lh 1.2 `#1C1B19`) / 캡션(Regular 11 `#8A877F`).
+### 2. Stat 3열 — 컨테이너 `padding 8px 16px 4px`, gap 12
+StatCard(06) — Card `padding 12px 14px`, gap 2, margin 0, flex-grow. 라벨 11 tertiary, 값 22/700 + 접미 13/500 tertiary. **캡션 없음**.
 
-| 라벨 | 값 | 캡션 |
+| 라벨 | 값 | 접미 |
 |---|---|---|
-| `활성 소스` | `9 / 10` | `sources.enabled` |
-| `오늘 수집` | `612 건` | `items 오늘` |
-| `LLM 예산` | `41 / 60` | `llm_calls` |
+| `활성 소스` | `9` | ` / 10` |
+| `오늘 수집` | `612` | ` 건` |
+| `LLM 예산` | `41` | ` / 60` |
 
-(캡션은 개발용 필드명이 그대로 노출된 형태 — 디자인 의도대로 유지하거나 문구 교체는 기획 확인)
-
-### 3. SectionLabel `기술 블로그 · RSS` + 카드 (SourceRow 3개)
+### 3. SectionLabel `기술 블로그 · RSS` + 카드 (`padding 2px 16px`, gap 0, SourceRow 3개)
 ### 4. SectionLabel `논문 · 릴리즈 · 영상` + 카드 (SourceRow 4개)
-SourceRow (326×60, 구분선 `#EFECE6`):
-- 좌: 아이콘 타일 36×36 (배경 `#F0EEE9`, radius 10, 아이콘 18 `#55524B`: `icon/rss` / `icon/github` / `icon/youtube`)
-- 중: 소스 ID (SemiBold 14 `#1C1B19`) + 상태 줄 (Regular 11): 정상 `#8A877F`, **오류는 SemiBold `#C2410C`계열 붉은 주황**(`실패 5회 · 미러 확인 필요`)
-- 우: `trust 1.0` (Regular 12 `#8A877F`) + Toggle 44×26
-- 행 탭 → 소스 상세(디자인 없음), 토글 → 소스 활성/비활성
+SourceRow — flex, gap 12, `padding 12px 0`, 마지막 외 아래 1px `#EFECE6`.
+- 아이콘 타일 36×36, radius 10, `#F0EEE9`, 아이콘 18 `#55524B` (`rss` / `github` / `youtube`).
+- 가운데(flex-grow) — 소스 ID 14 / 600 `mono` primary, 아래 상태 줄 11 tertiary. 오류면 상태 줄이 11 / 600 `#C2410C`.
+- `trust {x}` 12 tertiary `mono`.
+- Toggle.
 
 | 그룹 | 소스 ID | 아이콘 | 상태 줄 | trust | 토글 |
 |---|---|---|---|---|---|
@@ -41,32 +39,35 @@ SourceRow (326×60, 구분선 `#EFECE6`):
 | | `youtube:jocoding` | youtube | `15분` | 0.6 | ON |
 | | `youtube:codingapple` | youtube | `15분` | 0.6 | OFF |
 
-상태 줄 조합 규칙: `{폴링 주기}` + 선택적 `· 보정 {base} → {calibrated}` / `· 저장소 {n}개` / 오류 시 `실패 {n}회 · {조치}`로 대체.
+상태 줄 규칙 — `{주기}` 뒤에 선택적으로 `· 보정 {base} → {calibrated}` 또는 `· 저장소 {n}개`. 실패가 있으면 `실패 {n}회 · {조치}` 로 **바꾼다** (`gen.py.txt` 는 오류일 때 원래 상태 줄을 버린다).
 
-### 5. SectionLabel `미착수` + 칩 (wrap)
-비활성 스타일 칩(흰 배경, `#D9D5CC` 테두리, Medium 13 `#55524B`): `Hacker News`, `Reddit`, `GitHub Trending`, `X`. 아직 지원 예정인 소스 — 탭 동작 없음(또는 "준비 중" 토스트).
+### 5. SectionLabel `미착수` + 칩 (flex wrap, gap 8, `px 16`)
+미선택 Chip — `Hacker News` `Reddit` `GitHub Trending` `X`. 탭 동작 없음.
 
-### 6. TabBar — 공통, **설정** 활성
+### 6. TabBar — **설정** 활성
 
 ## 데이터 필드
 
 | 필드 | 타입 | 예시 | 비고 |
 |---|---|---|---|
-| `sources_enabled_count` / `sources_total` | int / int | 9 / 10 | `9 / 10` |
-| `items_collected_today` | int | 612 | `612 건` |
-| `llm_calls_used_today` / `llm_calls_budget` | int / int | 41 / 60 | 일일 LLM 호출 예산 |
-| source.`id` | string | `rss:anthropic` | `{type}:{name}` 형식 |
-| source.`type` | enum | `rss` / `github_release` / `youtube` | 아이콘·그룹 결정 |
-| source.`group` | enum | `blog_rss` / `paper_release_video` | 섹션 분류 (arXiv RSS는 논문 그룹) |
-| source.`enabled` | bool | true | 토글 (설정값) |
-| source.`poll_interval_min` | int | 15 / 30 / 60 | 표시 `15분` |
-| source.`trust` | float(0–1, 소수1자리) | 1.0 | `trust 0.9` |
-| source.`trust_base` → `trust_calibrated` | float | 0.5 → 0.58 | 피드백 기반 보정, 있을 때만 |
-| source.`consecutive_failures` | int | 5 | >0 이면 오류 표시 |
-| source.`error_hint` | string | `미러 확인 필요` | |
-| source.`repo_count` | int | 10 | github watchlist 전용 |
-| `planned_sources` | string[] | `Hacker News, Reddit, GitHub Trending, X` | 미착수 |
+| `enabled_count` / `total` | int / int | 9 / 10 | |
+| `items_collected` | int | 612 | 최근 24시간 |
+| `llm_budget.triage.used` / `cap` | int / int | 41 / 60 | 선별 호출 |
+| source.`id` | string | `rss:anthropic` | `sources.name` |
+| source.`type` | enum | `rss` / `github_release` / `youtube` / `hackernews` / `hf_papers` | 아이콘 |
+| source.`group` | enum | `blog_rss` / `paper_release_video` / `community` | 섹션 |
+| source.`enabled` | bool | true | 토글 |
+| source.`poll_interval_min` | int | 15 | `15분` |
+| source.`trust` / `trust_base` / `trust_calibrated` | float | 0.58 / 0.5 / 0.58 | |
+| source.`consecutive_failures` / `error_hint` | int / string? | 5 / `미러 확인 필요` | |
+| source.`repo_count` | int? | 10 | github 전용 |
+| `planned_sources` | string[] | `Reddit, GitHub Trending, X` | 정적 (계약 4.5) |
 
 ## 엣지
-- 오류 소스는 상태 줄을 오류색으로 표시(토글은 ON 유지 가능).
-- 비활성(OFF) 소스는 토글만 회색, 행 스타일 동일.
+- 오류 소스도 토글은 ON 일 수 있다.
+- OFF 소스는 토글만 회색이고 행 스타일은 같다.
+
+## Figma 와 다른 점 (HTML 우선)
+- Stat 카드에 캡션(`sources.enabled` `items 오늘` `llm_calls`)이 없다. 값 뒤 접미(`/ 10` `건` `/ 60`)가 13/500 tertiary 로 붙는다. Stat 간격은 12 다.
+- Stat 라벨 색은 tertiary 다 (추출본 secondary).
+- 소스 ID·trust 는 `mono` 다.

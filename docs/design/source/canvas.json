@@ -1,0 +1,104 @@
+{
+  "artboards": [
+    {
+      "file": "Login.dc.html",
+      "title": "1 로그인",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Onboarding.dc.html",
+      "title": "2 온보딩 · 콜드스타트",
+      "x": 480,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Main.dc.html",
+      "title": "3 피드 (알림 이력)",
+      "x": 960,
+      "y": 0,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "Interests.dc.html",
+      "title": "4 관심사",
+      "x": 1440,
+      "y": 0,
+      "w": 390,
+      "h": 1340
+    },
+    {
+      "file": "NotifySettings.dc.html",
+      "title": "5 알림 설정",
+      "x": 0,
+      "y": 1500,
+      "w": 390,
+      "h": 1120
+    },
+    {
+      "file": "SourceSettings.dc.html",
+      "title": "6 수집 소스",
+      "x": 480,
+      "y": 1500,
+      "w": 390,
+      "h": 1140
+    },
+    {
+      "file": "Feedback.dc.html",
+      "title": "7 피드백 · 판정 근거",
+      "x": 960,
+      "y": 1500,
+      "w": 390,
+      "h": 1180
+    },
+    {
+      "file": "Profile.dc.html",
+      "title": "8 내 프로필 (사용자 파악)",
+      "x": 1440,
+      "y": 1500,
+      "w": 390,
+      "h": 1060
+    },
+    {
+      "file": "DroppedBySource.dc.html",
+      "title": "9 걸러진 항목 · 소스별",
+      "x": 0,
+      "y": 3000,
+      "w": 390,
+      "h": 1180
+    },
+    {
+      "file": "DroppedByKind.dc.html",
+      "title": "10 걸러진 항목 · 종류별",
+      "x": 480,
+      "y": 3000,
+      "w": 390,
+      "h": 1260
+    },
+    {
+      "file": "Saved.dc.html",
+      "title": "11 찜",
+      "x": 960,
+      "y": 3000,
+      "w": 390,
+      "h": 1240
+    }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": 0,
+      "y": -260,
+      "w": 460,
+      "text": "기술 파악 · 모바일 앱 화면 v0.1\n기획서 v0.1 / 구현도 v0.2 / v2-다중사용자 메모 기준.\n카테고리 12개 = rules.yaml taxonomy, kind 가중치 = scoring.kind_weights, 알림 상한·무음 = notify 설정, 소스 = sources.yaml.\n온보딩 👍/👎 8건 = 프로필 벡터 콜드스타트(메모 §3-B).\n수치는 샘플."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

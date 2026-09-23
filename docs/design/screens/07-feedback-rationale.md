@@ -1,85 +1,84 @@
 # 07 피드백 · 판정 근거
 
-- Figma node: `6:139` · 프레임 390 × 960 · 스크린샷: [07-feedback-rationale.png](07-feedback-rationale.png)
-- **하단 탭바 없음** (피드 카드에서 push 되는 상세 화면)
+- 원본 HTML: [`../source/Feedback.dc.html`](../source/Feedback.dc.html) (`gen.py.txt` `bar()`) · Figma node `6:139` · 프레임 390 × 960 · 스크린샷 [07-feedback-rationale.png](07-feedback-rationale.png) (Figma)
+- **하단 탭바 없음** (전체 화면 push)
 
 ## 목적
 
-특정 알림 하나에 대해 "왜 이 알림이 왔는지"(점수 구성, 선별/판정 LLM 근거)를 투명하게 보여주고, 유용/불필요 판정을 받는다. 판정이 이후 선별·신뢰도에 어떻게 반영되는지 안내하고, 최근 판정 이력을 보여준다.
+알림 하나에 대해 "왜 왔는지"(점수 구성, 선별·판정 근거)를 보여 주고 유용/불필요 판정을 받는다. 판정이 어디에 쓰이는지 안내하고 최근 판정 이력을 보여 준다.
 
-진입: [03 피드](03-feed.md) 카드 탭, (권장) 푸시 알림 탭, 최근 판정 행 탭.
+진입은 [03 피드](03-feed.md) 카드 탭, 푸시 알림 탭, 최근 판정 행 탭이다.
 
 ## 레이아웃 (위 → 아래)
 
-### 1. TopBar (`6:140`, 높이 77)
-- `icon/back` 20 + 제목 `피드백` (Bold 18) / 우측 `icon/external` 22 → 원문 URL 외부 브라우저 열기
+본문은 세로 flex **gap 12**, `padding-top 4` 다. 섹션 라벨도 이 gap 안에 들어가므로 라벨 위 간격은 12 + 20 이다.
 
-### 2. 알림 요약 카드 (`6:151`, 358×166)
-FeedCard의 축약판(액션 행·태그 없음):
-- 메타 행: `arXiv cs.CL · 3시간 전` (Regular 12 `#8A877F`) + Badge `실험` (배경 `#FDF1E2`, 글자 `#B5651D`)
-- 제목: `BeaconKV: 장문 컨텍스트 KV 캐시 압축으로 추론 2.1배` (Bold/SemiBold 18, lh 1.35 — 피드 카드보다 큼, 텍스트 높이 48 = 2줄)
-- 요약: `고정 비콘 토큰에 문맥을 요약 저장해 KV 캐시를 8배 줄이고 품질 손실 1% 이내. 코드 공개.` (Regular 13.5 `#55524B`)
+### 1. 하위 TopBar
+`back` 20 + `피드백` (18/600). 우측 `external` 22 → 원문 URL.
 
-### 3. SectionLabel `이 알림이 온 이유` + 근거 카드 (`6:161`, 358×225)
-- 헤더 행 (space-between):
-  - 좌: `점수 0.43` (SemiBold 13 `#1C1B19`) + ` / 통과선 0.45` (Regular 13 `#8A877F`)
-  - 우: `경계 → 탐색 슬롯` (SemiBold 12 `#B5651D`) — 결과 라우팅 라벨
-- 점수 분해 바 4행 (각 17 높이, 행 간 10):
-  - 라벨(56 폭, Regular 12 `#55524B`) / 바 트랙 206×8 radius 4 `#EFECE6` + 채움 `#2D5BE3` / 값(44 폭, 우정렬 Regular 12 `#55524B`)
-  - 채움 폭(Figma px): src 44, rel 110, fresh 44, kind 2 → 대략 `폭 = 값 / 0.47 × 206` (스케일 최대값은 추정; 각 구성요소의 최대 기여도로 정규화 권장)
+### 2. 알림 요약 카드 — 기본 Card (padding 16, gap 12)
+- 메타 행 (space-between) — `arXiv cs.CL · 3시간 전` 12 tertiary + Badge `실험`.
+- 제목 17 / 700 / lh 1.4 — `BeaconKV: 장문 컨텍스트 KV 캐시 압축으로 추론 2.1배`.
+- 요약 13.5 / lh 1.55 / `#55524B` — `고정 비콘 토큰에 문맥을 요약 저장해 KV 캐시를 8배 줄이고 품질 손실 1% 이내. 코드 공개.`
 
-| 구성요소 | 의미 | 값 |
-|---|---|---|
-| `src` | 소스 신뢰도 기여 | 0.10 |
-| `rel` | relevance(관련도) 기여 | 0.25 |
-| `fresh` | 신선도 기여 | 0.10 |
-| `kind` | kind 가중치 기여 | 0.00 |
+### 3. SectionLabel `이 알림이 온 이유` + 근거 카드 (기본 Card)
+- 헤더 행 (space-between, baseline 정렬)
+  - 좌 `점수 0.43` 13 / 600 primary + ` / 통과선 0.45` (같은 줄, 500 tertiary).
+  - 우 `경계 → 탐색 슬롯` 12 / 600 `#B5651D`.
+- ScoreBar 4행 ([tokens Bars](../tokens.md#bars)). 채움 폭 = 값 ÷ 0.5.
 
-(주: 샘플 합계 0.45 ≠ 점수 0.43 — 반올림/기타 항목 차이. 서버가 준 total을 그대로 표시)
+| 라벨 | 값 | 채움 | 색 |
+|---|---|---|---|
+| `src` | 0.10 | 20% | `#2D5BE3` |
+| `rel` | 0.25 | 50% | `#2D5BE3` |
+| `fresh` | 0.10 | 20% | `#2D5BE3` |
+| `kind` | 0.00 | 0% | `#B8B4AB` |
 
-- 근거 텍스트 (Regular 12 / lh 1.55 `#55524B`, 2줄 블록):
+샘플 합 0.45 는 점수 0.43 과 다르다. 앱은 서버가 준 `total` 을 그대로 쓴다.
+
+- 근거 문장 — 12 / lh 1.55 / `#6B6862`, `padding-top 4`, 두 줄 (`<br>`). kind 값은 `mono`.
   - `선별: relevance 0.83 · kind technique — "KV 캐시 압축의 구체 기법과 수치, 코드 공개"`
-  - `판정: importance 4 · 유사 피드백 유용 "PagedAttention v2 …"`
+  - `판정: importance 4 · 유사 피드백 👍 "PagedAttention v2 …"`
 
-### 4. SectionLabel `당신의 판정` + Feedback 버튼 2개 (각 175×40, gap 8, 좌우 16)
-- `유용` (icon/thumbup) — 샘플 **선택됨**: 배경 `#1C1B19`, 흰 글자
-- `불필요` (icon/thumbdown) — 미선택: 흰 배경, `#D9D5CC` 테두리
-- radius 10, SemiBold 14. 상호배타 토글, 03 피드의 버튼과 동일 상태 공유
+### 4. SectionLabel `당신의 판정` + FeedbackButton 두 개 (`px 16`)
+`유용` 선택 샘플 (배경 `#1C1B19`, 흰 글자), `불필요` 미선택. 13/600, 높이 40, radius 10. 03 과 상태를 공유한다.
 
-### 5. 안내 카드 (`6:201`, 358×62)
-Regular 12 / lh 1.55 `#8A877F`: `유용 판정은 다음 선별·판정에 사례로 들어가고 arXiv cs.CL의 신뢰도를 보정합니다. Discord에서 누른 리액션과 자동으로 합쳐집니다.` (소스명은 동적)
+### 5. 안내 카드 — Card `padding 12px 16px`
+12 / lh 1.6 / tertiary — `👍는 다음 선별·판정에 사례로 들어가고 arXiv cs.CL의 신뢰도를 보정합니다. Discord에서 누른 리액션과 자동으로 합쳐집니다.` 소스명(`arXiv cs.CL`)은 `mono` 이고 동적이다.
 
-### 6. SectionLabel `최근 판정 · 오늘 3건` + 리스트 카드 (`6:206`)
-행: 판정 아이콘 16 (유용 = `icon/thumbup` `#2D5BE3`, 불필요 = `icon/thumbdown` `#B5651D`) + 제목 1줄 말줄임(Medium 13 `#1C1B19`) + 우측 시간(Regular 11 `#8A877F`). 행 구분선 `#EFECE6`.
+### 6. SectionLabel `최근 판정 · 오늘 3건` + 목록 카드 (`padding 4px 16px`, gap 0)
+행 — flex gap 10, `padding 6px 0`, 첫 행 아래 1px `#EFECE6`. 아이콘 16 (👍 `thumbup` `#2D5BE3`, 👎 `thumbdown` `#B5651D`) + 제목 13 / 400 primary (flex-grow, 한 줄 말줄임) + 시간 11 tertiary.
 
 | 판정 | 제목 | 시간 |
 |---|---|---|
-| 유용 | `MCP Python SDK v2.2.0 — HTTP 리다이렉트…` | `42분` |
-| 불필요 | `SDLC 에이전트 서베이 — 2026 상반기 동향` | `어제` |
+| 👍 | `MCP Python SDK v2.2.0 — HTTP 리다이렉트…` | `42분` |
+| 👎 | `SDLC 에이전트 서베이 — 2026 상반기 동향` | `어제` |
 
-(라벨은 "오늘 3건"이지만 샘플 행은 2개, 그중 하나는 `어제` — 개수·기간 정의 확인 필요.) 행 탭 → 해당 알림의 07 화면.
+`오늘 3건` 은 오늘 판정 수이고 목록은 기간과 무관한 최근 N건이다 (계약 4.2). 행 탭 → 그 알림의 07.
 
 ## 데이터 필드
 
 | 필드 | 타입 | 예시 | 비고 |
 |---|---|---|---|
-| alert.`source_name`, `delivered_at`, `delivery_mode`, `title`, `summary`, `url` | – | 03과 동일 | |
-| score.`total` | float(2자리) | 0.43 | `점수 0.43` |
-| score.`threshold` | float | 0.45 | `통과선 0.45` |
-| score.`components.src` | float | 0.10 | |
-| score.`components.rel` | float | 0.25 | |
-| score.`components.fresh` | float | 0.10 | |
-| score.`components.kind` | float | 0.00 | 음수 가능(감점 kind) |
-| `routing_label` | enum/string | `경계 → 탐색 슬롯` | 통과/경계→탐색 슬롯/탈락 등 |
-| screening.`relevance` | float | 0.83 | 선별 LLM 출력 |
-| screening.`kind` | enum | `technique` | |
-| screening.`reason` | string | `KV 캐시 압축의 구체 기법과 수치, 코드 공개` | 따옴표로 감싸 표시 |
-| judgment.`importance` | int 1–5 | 4 | 판정 LLM 출력 |
-| judgment.`similar_feedback` | {label, title} | 유용, `PagedAttention v2 …` | few-shot 사례 |
-| alert.`feedback` | enum? | `useful` | 버튼 상태 |
-| `recent_feedback[]` | {alert_id, feedback, title, created_at} | 위 표 | 시간 표시 `42분`, `어제` |
-| `recent_feedback_today_count` | int | 3 | 섹션 라벨 |
+| alert 필드 | – | 03 과 같음 | |
+| score.`total` / `threshold` | float | 0.43 / 0.45 | |
+| score.`components.*` | float | src 0.10 · rel 0.25 · fresh 0.10 · kind 0.00 | `hot`·`multi` 는 0 이 아닐 때만 행 추가 |
+| `routing` | enum | `explore_slot` | 라벨 `경계 → 탐색 슬롯` |
+| screening.`relevance` / `kind` / `reason` | float / enum / string | 0.83 / `technique` / `KV 캐시 …` | 선별 결정 |
+| screening.`topics` | string[] | `["inference-opt"]` | 화면에는 쓰지 않음 |
+| judgment.`importance` | int | 4 | |
+| judgment.`similar_feedback[0]` | {feedback, title} | 👍 `PagedAttention v2 …` | |
+| `recent_feedback` | {today_count, items[]} | 3, 2행 | |
+| `trust_note_source` | string | `arXiv cs.CL` | 안내 카드 |
 
 ## 엣지
-- 경계 항목이 아니면 우측 라벨 없음 또는 `통과` 표시 권장.
-- kind 값 0이면 바 채움 최소 2px (0 표시용).
+- 경계가 아니면 우측 라벨은 `routing` 라벨(`통과` 등)이다.
+- `kind` 가 음수면 채움 없이 값만 `#B5651D` 로 보인다.
+
+## Figma 와 다른 점 (HTML 우선)
+- 제목은 17 / 700 / 1.4 다 (이전 추출본 18 · 1.35).
+- 점수 바 라벨은 tertiary `mono` 이고 값은 `mono` 다. 채움 눈금은 공통 0.5 다 (이전 추출본 0.47).
+- 근거 문장 색은 `#6B6862` 다 (추출본 `#55524B`).
+- 판정 버튼 라벨은 13 이다 (추출본 14).
+- 안내 카드 문장은 `👍는 …` 으로 시작한다 (Figma `유용 판정은 …`). 근거 둘째 줄도 `유사 피드백 👍` 다 (Figma `유용`).
+- 최근 판정 제목은 400 이다 (추출본 Medium).

@@ -1,49 +1,51 @@
 # 09 걸러진 항목 · 소스별
 
-- Figma node: `9:2` · 프레임 390 × 1080 · 스크린샷: [09-filtered-by-source.png](09-filtered-by-source.png)
-- 하단 탭: **피드** 활성 (피드에서 push 된 하위 화면, 뒤로가기 있음)
-- 같은 화면의 다른 탭: [10 종류별](10-filtered-by-type.md), `관문별`(디자인 없음)
+- 원본 HTML: [`../source/DroppedBySource.dc.html`](../source/DroppedBySource.dc.html) (`gen.py.txt` `dropped_screen()` `drop_group()` `drop_item()`) · Figma node `9:2` · 프레임 390 × 1080 · 스크린샷 [09-filtered-by-source.png](09-filtered-by-source.png) (Figma)
+- 하단 탭: **피드** 활성 (피드 하위, 뒤로가기)
+- 같은 화면의 다른 보기: [10 종류별](10-filtered-by-type.md), `관문별` (디자인 없음)
 
 ## 목적
 
-오늘 파이프라인이 사용자에게 보내지 않은(걸러진) 항목을 투명하게 보여준다. 어느 관문(exclude/중복/선별/점수/판정)에서 몇 건이 탈락했는지 요약하고, 소스별로 묶어 탈락 사유를 보여주며, 잘못 걸러진 항목을 👍(복원/유용)로 되살릴 수 있다.
+보내지 않은(걸러진) 항목을 투명하게 보여 준다. 관문(exclude·중복·선별·점수·판정)별 탈락 수, 소스별 묶음과 사유, 잘못 걸러진 항목의 👍 복원.
 
-진입: [03 피드](03-feed.md)의 `걸러짐 571건 보기 ›`.
+진입은 [03 피드](03-feed.md) 의 `걸러짐 571건 보기 ›`.
 
 ## 레이아웃 (위 → 아래)
 
-### 1. TopBar (`9:3`, 높이 77 + 세그먼트)
-- `icon/back` 20 + 제목 `걸러진 항목` (Bold 18) / 우측 `icon/search` 22 → 걸러진 항목 검색(디자인 없음)
-- **Segmented** (358×38, 좌우 16, TopBar 아래): `소스별` / `종류별` / `관문별` — 단일 선택, 이 화면은 `소스별` 선택. 스타일은 [tokens.md Segmented](../tokens.md#segmented-control).
-  - `종류별` → 화면 10 / `관문별` → 관문(gate)별 그룹 화면(디자인 없음; 같은 DropGroup 구조로 gate 기준 그룹핑 권장)
+### 1. 하위 TopBar
+`back` 20 + `걸러진 항목` (18/600). 우측 `search` 22 (디자인 없음).
 
-### 2. Summary 카드 (`9:21`, 358×126)
-- 헤더 행: `오늘 걸러짐 571` (Bold 15 `#1C1B19`) + ` / 수집 612` (Regular 13 `#8A877F`) / 우측 `최근 24시간` (Regular 12 `#8A877F`)
-- **GateBar** 326×10, radius 5, 5구간 가로 스택 — 폭 = 건수 / 걸러짐 합계 × 326 (정확히 비례)
+### 2. Segmented — `padding 4px 16px 10px`
+`소스별` / `종류별` / `관문별`, 이 화면은 `소스별`.
 
-| 관문 | 라벨 | 건수 | 색 |
+### 3. Summary 카드 — Card (padding 16, **gap 10**)
+- 헤더 행 (space-between) — 좌 `오늘 걸러짐 571` 15/600 + ` / 수집 612` (13 / 400 tertiary), 우 `최근 24시간` 12 tertiary.
+- GateBar + 범례 ([tokens Bars](../tokens.md#bars)).
+
+| 관문 | 범례 | 건수 | 색 |
 |---|---|---|---|
-| exclude (키워드 제외) | `exclude 9` | 9 | `#B8B4AB` |
-| 중복 제거 | `중복 58` | 58 | `#D6D2C9` |
-| 선별(LLM relevance) | `선별 318` | 318 | `#9FB4EA` |
-| 점수 미달 | `점수 164` | 164 | `#2D5BE3` |
-| 판정(LLM importance) | `판정 22` | 22 | `#B5651D` |
+| exclude | `exclude 9` | 9 | `#B8B4AB` |
+| 중복 | `중복 58` | 58 | `#D6D2C9` |
+| 선별 | `선별 318` | 318 | `#9FB4EA` |
+| 점수 | `점수 164` | 164 | `#2D5BE3` |
+| 판정 | `판정 22` | 22 | `#B5651D` |
 
-- 범례 행: 8×8 원형 점 + 라벨 (Regular 11 `#55524B`), 항목 간 gap 10
-- 하단 안내: `점수 탈락 중 경계(0.35–0.45) 154건 · 탐색 슬롯 후보` (Regular 12.5 `#55524B`)
+- 안내 — 12 / lh 1.5 / `#55524B` — `점수 탈락 중 경계(0.35–0.45) 154건 · 탐색 슬롯 후보`.
 
-### 3. SectionLabel `소스별` + 우측 `많은 순` (Regular 12 `#8A877F`, 정렬 표시. 탭 → 정렬 변경 권장: 많은 순/이름순)
+### 4. SectionLabel `소스별 · 많은 순`
+한 문자열이다. 정렬 전환(`많은 순`/`이름순`)은 라벨 탭으로 붙인다 (디자인 없음).
 
-### 4. DropGroup 리스트 (카드 간 gap 12)
-**DropGroup 헤더** (접힘 시 카드 높이 64):
-- 아이콘 타일 36×36 (`#F0EEE9`, radius 10, icon 18) — rss/github/youtube
-- 소스 ID (SemiBold 14) + 탈락 사유 요약 (Regular 11 `#8A877F`)
-- 우측 건수 (Bold 16 `#1C1B19`) + `icon/chev`(접힘, 오른쪽) / `icon/chevd`(펼침, 아래)
-- 헤더 탭 → 펼침/접힘 토글 (펼치면 DroppedItem 목록, 샘플은 최대 3건 미리보기)
+### 5. DropGroup 목록 — 세로 flex **gap 10**
+DropGroup — Card `padding 6px 16px`, gap 0.
+- 헤더 — flex gap 12, `padding 8px 0` (펼침이면 아래 1px `#EFECE6`).
+  - 아이콘 타일 36×36 radius 10 `#F0EEE9`, 아이콘 18 `#55524B`.
+  - 가운데(flex-grow) — 이름 14/600 primary, 요약 11 tertiary.
+  - 건수 16/700, `chev`(접힘) / `chevd`(펼침) 16 `#B8B4AB`.
+- 헤더 탭 → 펼침/접힘.
 
-**DroppedItem** (펼친 그룹 안, 구분선 `#EFECE6`):
-- 제목 (SemiBold 14 `#1C1B19`, 최대 2줄) + 우측 **RestoreButton** 32×32 (흰 배경, `#D9D5CC` 테두리, radius 8, `icon/thumbup` 15) → 탭 시 "이 항목은 유용했어야 함" 피드백 + 피드로 복원
-- 아래 줄: 탈락 관문 Badge (`선별 탈락` / `점수 탈락` / (권장) `판정 탈락` `중복` `exclude`; 배경 `#E8EEFC`, 글자 `#2D5BE3`, SemiBold 11) + 사유 텍스트 (Regular 11 `#8A877F`, 최대 2줄)
+DroppedItem (펼친 그룹 안) — 세로 flex gap 6, `padding 10px 0`, 마지막 외 아래 1px `#EFECE6`.
+- 윗줄 (space-between, gap 8) — 제목 13.5 / 500 / lh 1.4 primary, RestoreButton 32×32 (`thumbup` 15).
+- 아랫줄 (flex gap 8) — 탈락 태그 `{관문} 탈락` ([tokens 탈락 태그](../tokens.md#탈락-태그-stage_tag-0910)) + 사유 11 tertiary.
 
 | 소스 | 요약 | 건수 | 상태 |
 |---|---|---|---|
@@ -54,43 +56,38 @@
 | `github_release:watchlist` (github) | `중복 8 (버전 형제) · 판정 4` | 12 | 접힘 |
 | `rss:vercel` (rss) | `exclude 2 (sponsored) · 선별 5` | 7 | 접힘 |
 
-`rss:arxiv-cs-ai` 펼침 항목:
+`rss:arxiv-cs-ai` 펼침 항목.
 
-| 제목 | 배지 | 사유 |
+| 제목 | 태그 | 사유 |
 |---|---|---|
 | LLM 기반 자율주행 의사결정 프레임워크 제안 | 선별 탈락 | `relevance 0.3 · survey · "관심 스택과 무관한 도메인 서베이"` |
 | Survey of Agentic Software Engineering, 2026H1 | 점수 탈락 | `0.41 (src 0.10 · rel 0.24 · kind −0.15)` |
 | Beacon-style KV compaction for 1M-token context | 점수 탈락 | `0.43 · 경계 → 내일 탐색 슬롯 후보` |
 
-### 5. TabBar — 공통, **피드** 활성
+### 6. TabBar — **피드** 활성
 
 ## 데이터 필드
 
 | 필드 | 타입 | 예시 | 비고 |
 |---|---|---|---|
-| `window` | string | `최근 24시간` | 집계 기간 |
-| `filtered_total` | int | 571 | |
-| `collected_total` | int | 612 | |
-| `gate_counts.exclude` | int | 9 | |
-| `gate_counts.dedup` | int | 58 | |
-| `gate_counts.screening` | int | 318 | 선별 |
-| `gate_counts.score` | int | 164 | 점수 |
-| `gate_counts.judgment` | int | 22 | 판정 |
-| `borderline_count` | int | 154 | 점수 탈락 중 경계 구간 |
-| `borderline_range` | [float, float] | [0.35, 0.45] | 경계 구간 = [하한, 통과선] |
-| group.`source_id` / `source_type` | string / enum | `rss:arxiv-cs-ai` / `rss` | |
-| group.`count` | int | 312 | 정렬 기준 |
-| group.`summary` | string | `선별 relevance 0.5 미만 71%` | 서버 생성 문자열 또는 gate별 count로 클라이언트 조합(`중복 9 · 선별 11 · 점수 3`) |
-| item.`id` | string | – | 복원 API용 |
-| item.`title` | string | `Survey of Agentic …` | 원문 제목(영문 그대로일 수 있음) |
-| item.`dropped_gate` | enum | `screening` / `score` / `judgment` / `dedup` / `exclude` | 배지 |
-| item.`relevance` | float | 0.3 | 선별 탈락 시 |
-| item.`kind` | enum | `survey` | |
-| item.`reason` | string | `관심 스택과 무관한 도메인 서베이` | LLM 사유 |
-| item.`score_total` / `components` | float / {src, rel, kind, …} | 0.41 / src 0.10 · rel 0.24 · kind −0.15 | 점수 탈락 시 |
-| item.`exploration_candidate` | bool | true | `경계 → 내일 탐색 슬롯 후보` |
-| item.`restored` | bool | false | RestoreButton 상태 |
+| `window_hours` | int | 24 | `최근 24시간` |
+| `filtered_total` / `collected_total` | int | 571 / 612 | |
+| `gate_counts.*` | int | 9 / 58 / 318 / 164 / 22 | 계약은 `stale` 과 `cluster_dup` (`클러스터 하루 1건`, 클러스터 하루 상한으로 억제된 항목) 구간을 더한다. 둘 다 디자인 색이 없어 계약 2 의 권장색을 쓴다 |
+| `borderline.count` / `range` | int / [float, float] | 154 / [0.35, 0.45] | |
+| group.`key` / `source` / `count` | – | `rss:arxiv-cs-ai` / 312 | |
+| group 요약 재료 | – | `low_relevance_ratio`, `gate_counts` | 요약 문장은 클라이언트가 만든다 |
+| item.`id` / `title` / `dropped_gate` | – | `score` | |
+| item.`relevance` / `kind` / `reason` / `topics` | – | 0.3 / `survey` | 선별 결정 |
+| item.`score` | {total, components} | 0.41 | 점수 결정 |
+| item.`exploration_candidate` / `restored` | bool | true / false | |
 
 ## 엣지
-- 걸러짐 0건: GateBar 숨기고 "오늘 걸러진 항목이 없습니다" 권장.
-- 그룹 펼침 시 전체 항목 수가 많으면 "더 보기" 페이징 필요(디자인 없음).
+- 걸러짐 0건이면 GateBar 를 숨기고 `오늘 걸러진 항목이 없습니다`.
+- 그룹 항목이 많으면 `더 보기` 페이징 (디자인 없음).
+
+## Figma 와 다른 점 (HTML 우선)
+- 섹션 라벨은 `소스별 · 많은 순` 한 문자열이다 (Figma 는 좌 `소스별` + 우 `많은 순`).
+- 그룹 카드 간격은 10 이다 (추출본 12).
+- 탈락 태그 색이 관문마다 다르다 (추출본은 전부 `#E8EEFC` / `#2D5BE3`). `선별` 은 `#EAF0FC` / `#4A6FD0`.
+- 항목 제목은 13.5 / 500 이다 (추출본 SemiBold 14). 범례 글자는 tertiary, 범례 점은 radius 3 사각형이다.
+- 안내 문구는 12 / lh 1.5 다 (추출본 12.5).
