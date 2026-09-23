@@ -124,6 +124,7 @@ class _Body extends ConsumerWidget {
                   max: _maxPushCap,
                   format: (value) => '$value건',
                 );
+                if (!context.mounted) return;
                 if (value != null && value != settings.dailyPushCap) {
                   save({'daily_push_cap': value});
                 }
@@ -140,7 +141,7 @@ class _Body extends ConsumerWidget {
                   start: _hourOf(quiet.start),
                   end: _hourOf(quiet.end),
                 );
-                if (range == null) return;
+                if (range == null || !context.mounted) return;
                 final start = formatHour(range.$1);
                 final end = formatHour(range.$2);
                 if (start != quiet.start || end != quiet.end) {
