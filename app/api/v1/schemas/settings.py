@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.api.v1.schemas.common import (
     DAILY_PUSH_CAP_MAX,
@@ -12,6 +12,7 @@ from app.api.v1.schemas.common import (
     KIND_WEIGHT_MAX,
     KIND_WEIGHT_MIN,
     WATCH_KEYWORDS_MAX,
+    StrictIn,
     UtcDateTime,
 )
 from app.config import Delivery, get_rules
@@ -20,11 +21,6 @@ from app.schemas import Kind
 WATCH_KEYWORD_MAX_LEN = 50
 # 정적 — 탐색 슬롯은 하루 한 건이다 (jobs/notify.py _explore_sent_today).
 EXPLORATION_DAILY_LIMIT = 1
-
-
-class _In(BaseModel):
-    # 모르는 키·읽기 전용 키(timezone·connected·daily_limit …)를 보내면 422.
-    model_config = ConfigDict(extra="forbid")
 
 
 class InterestProfile(BaseModel):
@@ -40,7 +36,7 @@ class Interests(BaseModel):
     updated_at: UtcDateTime | None
 
 
-class InterestProfileIn(_In):
+class InterestProfileIn(StrictIn):
     self_description: str = Field(min_length=1, max_length=1000)
     not_interested: str = Field(max_length=500)
 
@@ -48,7 +44,7 @@ class InterestProfileIn(_In):
 KindWeight = Annotated[float, Field(ge=KIND_WEIGHT_MIN, le=KIND_WEIGHT_MAX)]
 
 
-class InterestsIn(_In):
+class InterestsIn(StrictIn):
     profile: InterestProfileIn
     selected_categories: list[str] = Field(min_length=1)
     watch_keywords: list[str] = Field(max_length=WATCH_KEYWORDS_MAX)
@@ -137,32 +133,32 @@ class NotificationSettings(BaseModel):
 HourTime = Annotated[str, Field(pattern=r"^([01]\d|2[0-3]):00$")]
 
 
-class ChannelIn(_In):
+class ChannelIn(StrictIn):
     enabled: bool
 
 
-class ChannelsIn(_In):
+class ChannelsIn(StrictIn):
     fcm: ChannelIn | None = None
     discord: ChannelIn | None = None
     telegram: ChannelIn | None = None
 
 
-class QuietHoursIn(_In):
+class QuietHoursIn(StrictIn):
     start: HourTime | None = None
     end: HourTime | None = None
 
 
-class DeliveryByImportanceIn(_In):
+class DeliveryByImportanceIn(StrictIn):
     high: Delivery | None = None
     mid: Delivery | None = None
     low: Delivery | None = None
 
 
-class ExplorationSlotIn(_In):
+class ExplorationSlotIn(StrictIn):
     enabled: bool
 
 
-class NotificationSettingsIn(_In):
+class NotificationSettingsIn(StrictIn):
     """바꿀 키만 보낸다. null 은 보내지 않은 것과 같다."""
 
     channels: ChannelsIn | None = None

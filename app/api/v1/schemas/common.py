@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Annotated, Any
 
-from pydantic import BaseModel, PlainSerializer
+from pydantic import BaseModel, ConfigDict, PlainSerializer
 
 # 계약 1.2 — ISO-8601 UTC, 초 단위, Z 접미.
 UtcDateTime = Annotated[
@@ -22,6 +22,12 @@ DAILY_PUSH_CAP_MAX = 50
 WATCH_KEYWORDS_MAX = 50
 FOLDER_NAME_MAX = 30
 MEMO_MAX = 500
+
+
+class StrictIn(BaseModel):
+    """쓰기 요청 본문. 모르는 키·읽기 전용 키를 보내면 422."""
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class Page[T](BaseModel):
