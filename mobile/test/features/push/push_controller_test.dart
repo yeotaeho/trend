@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tech_radar/app/app.dart';
@@ -12,22 +13,27 @@ import 'package:tech_radar/data/repositories/fixture_repositories.dart';
 import 'package:tech_radar/data/repositories/repositories.dart';
 import 'package:tech_radar/data/repositories/repository_providers.dart';
 import 'package:tech_radar/features/alert/alert_detail_page.dart';
+import 'package:tech_radar/features/feed/feed_page.dart';
 import 'package:tech_radar/features/push/push_controller.dart';
 import 'package:tech_radar/features/push/push_messaging.dart';
 
 import '../../helpers.dart';
 
 class _FakeMessaging implements PushMessaging {
-  _FakeMessaging({this.initial});
+  _FakeMessaging({this.initial, this.prepareFails = false});
 
   final PushMessage? initial;
+  final bool prepareFails;
   final refresh = StreamController<String>.broadcast();
   final foreground = StreamController<PushMessage>.broadcast();
   final opened = StreamController<PushMessage>.broadcast();
   int prepared = 0;
 
   @override
-  Future<void> prepare() async => prepared++;
+  Future<void> prepare() async {
+    prepared++;
+    if (prepareFails) throw StateError('permission request in progress');
+  }
 
   @override
   Future<String?> getToken() async => 'token-1';
@@ -143,6 +149,16 @@ void main() {
       expect(devices.tokens, ['token-1', 'token-2']);
     });
 
+    test('권한 준비가 실패해도 등록한다', () async {
+      final messaging = _FakeMessaging(prepareFails: true);
+      final devices = _FakeDevices();
+      final container = _container(messaging, devices, fixtures: false);
+
+      container.read(pushControllerProvider);
+      await pumpEventQueue();
+      expect(devices.tokens, ['token-1']);
+    });
+
     test('fixture 모드면 등록하지 않는다', () async {
       final messaging = _FakeMessaging();
       final devices = _FakeDevices();
@@ -173,6 +189,27 @@ void main() {
         ),
       );
       expect(find.byType(AlertDetailPage), findsOneWidget);
+    });
+
+    testWidgets('권한 준비가 실패해도 종료 상태 알림은 07 을 연다', (tester) async {
+      await _pumpApp(
+        tester,
+        _FakeMessaging(
+          prepareFails: true,
+          initial: const PushMessage(data: {'alert_id': '18342'}),
+        ),
+      );
+      expect(find.byType(AlertDetailPage), findsOneWidget);
+    });
+
+    testWidgets('alert_id 없는 알림은 피드에 머문다', (tester) async {
+      final messaging = _FakeMessaging();
+      await _pumpApp(tester, messaging);
+
+      messaging.opened.add(const PushMessage(data: {'type': 'alert'}));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDetailPage), findsNothing);
+      expect(find.byType(FeedPage), findsOneWidget);
     });
 
     testWidgets('백그라운드에서 누른 재알림도 07 을 연다', (tester) async {
@@ -210,5 +247,14 @@ void main() {
     await tester.tap(find.text('보기'));
     await tester.pumpAndSettle();
     expect(find.byType(AlertDetailPage), findsOneWidget);
+  });
+
+  test('instant 는 소리 있는 HIGH, quiet 는 무음 LOW 채널이다', () {
+    expect(instantChannel.id, 'instant');
+    expect(instantChannel.importance, Importance.high);
+    expect(instantChannel.playSound, isTrue);
+    expect(quietChannel.id, 'quiet');
+    expect(quietChannel.importance, Importance.low);
+    expect(quietChannel.playSound, isFalse);
   });
 }

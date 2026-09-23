@@ -31,28 +31,32 @@ class PushController {
   final List<StreamSubscription<Object?>> _subscriptions = [];
 
   /// 스트림부터 구독해 준비 중에 온 갱신·탭을 놓치지 않는다.
+  /// 단계마다 따로 실패를 삼켜, 권한 요청이 실패해도 딥링크와 등록은 진행한다.
   Future<void> start() async {
     _subscriptions.addAll([
       messaging.onTokenRefresh.listen(_register),
       messaging.onOpened.listen(open),
       messaging.onForeground.listen(onForeground),
     ]);
-    try {
-      await messaging.prepare();
-      final initial = await messaging.initialMessage();
-      if (initial != null) open(initial);
-      final token = await messaging.getToken();
-      if (token != null) await _register(token);
-    } catch (error) {
-      debugPrint('push: 준비 실패 — $error');
-    }
+    await _attempt('권한·채널 준비', messaging.prepare);
+    final initial = await _attempt('시작 메시지 조회', messaging.initialMessage);
+    if (initial != null) open(initial);
+    final token = await _attempt('토큰 조회', messaging.getToken);
+    if (token != null) await _register(token);
   }
 
-  Future<void> _register(String token) async {
+  Future<void> _register(String token) =>
+      _attempt('기기 등록', () => registerToken(token));
+
+  static Future<T?> _attempt<T>(
+    String step,
+    Future<T> Function() action,
+  ) async {
     try {
-      await registerToken(token);
+      return await action();
     } catch (error) {
-      debugPrint('push: 기기 등록 실패 — $error');
+      debugPrint('push: $step 실패 — $error');
+      return null;
     }
   }
 
