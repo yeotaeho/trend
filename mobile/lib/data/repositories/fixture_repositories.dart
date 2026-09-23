@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import '../../core/api/api_exception.dart';
+import '../../core/json_merge.dart';
 import '../../core/labels.dart';
 import '../models/models.dart';
 import 'repositories.dart';
@@ -35,15 +36,6 @@ CursorPage<T> _paginate<T>(List<T> all, String? cursor, int? limit) {
   );
 }
 
-/// [patch] 를 [base] 위에 키 단위로 겹친다. 중첩 맵은 재귀로 합친다 (계약 4.4).
-_Json _deepMerge(_Json base, Map<String, Object?> patch) => {
-  ...base,
-  for (final MapEntry(:key, :value) in patch.entries)
-    key: value is Map && base[key] is Map
-        ? _deepMerge(base[key] as _Json, value.cast<String, Object?>())
-        : value,
-};
-
 Rationale _withRouting(Rationale r, Routing routing) => Rationale(
   score: r.score,
   routing: routing,
@@ -62,6 +54,10 @@ class FixtureStore {
   final Duration delay;
 
   Future<void>? _loading;
+
+  /// 읽기가 끝났으면 [_loading] 을 다시 기다리지 않는다. 위젯 테스트가 `runAsync` 로 미리
+  /// 읽어 둔 Future 는 실제 존의 것이라, fake async 에서 기다리면 끝나지 않는다.
+  bool _loaded = false;
 
   late Meta _meta;
   late TodayStats _todayStats;
@@ -83,7 +79,7 @@ class FixtureStore {
   int _nextId = 1000;
 
   Future<T> _run<T>(T Function() body) async {
-    await (_loading ??= _load());
+    if (!_loaded) await (_loading ??= _load());
     if (delay > Duration.zero) await Future<void>.delayed(delay);
     return body();
   }
@@ -126,6 +122,7 @@ class FixtureStore {
     _reports = await _readPage('reports', ReportSummary.fromJson);
     final report = Report.fromJson(await _read('report_12'));
     _reportDetails = {report.id: report};
+    _loaded = true;
   }
 
   // ── 알림 ──
@@ -405,7 +402,7 @@ class FixtureSettingsRepository implements SettingsRepository {
       }
     }
     return _s._notifications = NotificationSettings.fromJson({
-      ..._deepMerge(current, patch),
+      ...deepMerge(current, patch),
       'updated_at': _now().toIso8601String(),
     });
   });
