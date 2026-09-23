@@ -27,7 +27,16 @@ from app.api.v1.schemas.settings import (
     QuietHours,
     TelegramChannel,
 )
-from app.config import Rules, Settings, get_rules, get_settings, merge_overlay, yaml_rules
+from app.config import (
+    ChannelsConfig,
+    Rules,
+    Settings,
+    get_rules,
+    get_settings,
+    merge_overlay,
+    validate_overlay,
+    yaml_rules,
+)
 from app.db import prefs
 from app.schemas import Kind
 
@@ -136,10 +145,13 @@ async def _notifications(
     )
 
 
-def _require_connected(channels: ChannelsIn) -> None:
-    """꺼진 채널을 켤 때만 본다. YAML 기본으로 이미 켜진 미연결 채널을 그대로 보내는 건 된다."""
+def _require_connected(channels: ChannelsIn, current: ChannelsConfig) -> None:
+    """꺼진 채널을 켤 때만 본다. YAML 기본으로 이미 켜진 미연결 채널을 그대로 보내는 건 된다.
+
+    current 는 잠근 뒤 읽은 저장값 기준이어야 한다. 잠그기 전 캐시로 보면 동시 PATCH 가 끈
+    미연결 채널을 다시 켤 수 있다.
+    """
     connected = channel_connected(get_settings())
-    current = get_rules().notify.channels
     for name, change in channels:
         turning_on = change is not None and change.enabled and not getattr(current, name)
         if turning_on and not connected[name]:
@@ -192,9 +204,9 @@ async def get_notifications(session: Session, user_id: UserId) -> NotificationSe
 async def patch_notifications(
     body: NotificationSettingsIn, session: Session, user_id: UserId
 ) -> NotificationSettings:
-    if body.channels:
-        _require_connected(body.channels)
     data = await prefs.prefs_for_update(session, user_id)
+    if body.channels:
+        _require_connected(body.channels, validate_overlay(data).notify.channels)
     if patch := _notify_patch(body):
         data = merge_overlay(data, {"notify": patch})
     if body.dedupe_same_issue_daily is not None:
