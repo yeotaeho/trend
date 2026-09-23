@@ -1,4 +1,4 @@
-# 디스코드 리액션 피드백 테스트 — 👍/👎 시드, 리액션 → 판정 규칙, 시드 실패 무시, 사용자 1 로 동기화
+# 디스코드 리액션 피드백 테스트 — 👍/👎 시드, 리액션 → 판정, 사용자 1 동기화, 앱 판정 제외
 
 from types import SimpleNamespace
 
@@ -113,3 +113,13 @@ async def test_sync_feedback_upserts_changes_for_default_user(monkeypatch):
     # 현재 판정은 사용자 1 의 것과 비교한다.
     sql = str(session.statements[0].compile(dialect=postgresql.dialect()))  # type: ignore[attr-defined]
     assert "feedback.user_id = %(user_id_1)s" in sql
+
+
+async def test_sync_feedback_skips_app_verdicts():
+    """앱에서 정하거나 해제한 판정은 리액션 폴링 대상에서 뺀다. 판정이 없는 항목은 대상이다."""
+    session = _RowsSession([])
+
+    await fb.sync_feedback(session, {"m1": "useful"})  # type: ignore[arg-type]
+
+    sql = str(session.statements[0].compile(dialect=postgresql.dialect()))  # type: ignore[attr-defined]
+    assert "feedback.source IS NULL OR feedback.source != %(source_1)s" in sql
