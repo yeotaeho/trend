@@ -11,7 +11,7 @@
 | 구성 요소 | 파일 | 역할 |
 |---|---|---|
 | API 서버 (FastAPI) | `app/main.py` | 웹훅 수신(GitHub release, 텔레그램 콜백), 헬스체크. 같은 프로세스에서 스케줄러 기동 |
-| Scheduler/Worker (APScheduler) | `app/jobs/` | 소스별 폴링(`run_source`), 파이프라인(`run_pipeline`), 발송(`run_notify`), 피드백 폴링(`run_feedback`) |
+| Scheduler/Worker (APScheduler) | `app/jobs/` | 소스별 폴링(`run_source`), 파이프라인(`run_pipeline`), 발송(`run_notify`), 피드백 폴링(`run_feedback`), 주간 리포트(`run_weekly_report`, 월요일 09:00) |
 | Neon (Postgres) | — | 모든 상태의 단일 진실 원천. `status` + `FOR UPDATE SKIP LOCKED` 로 큐 겸용 (Redis·MQ 없음) |
 
 **Stack** — Python 3.12+ · uv · FastAPI/uvicorn · APScheduler 3.x(AsyncIOScheduler, Postgres jobstore) · httpx + tenacity · feedparser · trafilatura(본문 보강만) · Neon(Postgres 16/17, pgvector) · SQLAlchemy 2.x async(asyncpg) + Alembic · Pydantic v2 / pydantic-settings · Anthropic SDK(Claude Haiku 급, 구조화 JSON) · Voyage 임베딩 · python-telegram-bot 21.x · structlog · pytest + pytest-asyncio + respx · ruff + mypy · Docker Compose + Caddy · GitHub Actions
@@ -48,7 +48,7 @@ tech-radar/
 │   │   ├── trust.py          # 소스 신뢰도 베이즈 보정
 │   │   └── llm.py            # 본문 보강(enrich_body) → 판정·요약
 │   ├── notify/               # Notifier 어댑터 + policy.py(강도·상한·무음)
-│   ├── jobs/                 # scheduler.py, collect.py, pipeline.py, notify.py, feedback.py
+│   ├── jobs/                 # scheduler.py, collect.py, pipeline.py, notify.py, feedback.py, report.py
 │   └── api/                  # github.py, telegram.py, discord.py, health.py
 ├── config/
 │   ├── sources.yaml          # 소스 등록·폴링 주기·신뢰도·family
@@ -70,7 +70,8 @@ app/main.py (lifespan)
        ├─ jobs/collect.py         Source.fetch(since) → pipeline/normalize → pipeline/ingest (NEW 적재·병합)
        ├─ jobs/pipeline.py        NEW 항목: stale → dedupe → rules → triage(배치) → scoring → llm → SCORED
        ├─ jobs/notify.py          SCORED: notify/policy → Notifier.send → notifications
-       └─ jobs/feedback.py        리액션·콜백 폴링 → db/feedback upsert
+       ├─ jobs/feedback.py        리액션·콜백 폴링 → db/feedback upsert
+       └─ jobs/report.py          월요일 09:00(cron) 지난주 표 여덟 개 → weekly_reports upsert
 app/api/*                          웹훅 진입점 (github → ingest, telegram → feedback)
 ```
 

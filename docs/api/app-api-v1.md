@@ -853,8 +853,8 @@ PATCH `{"name": "...", "position": 0}` (둘 다 선택). DELETE 는 204 이고 �
     "id": "12",
     "title": "9월 2주차 리포트",
     "subtitle": "깔때기 · 소스별 정밀도 · 점수 구간 · 선별 보정",
-    "period_start": "2026-09-08",
-    "period_end": "2026-09-14"
+    "period_start": "2026-09-07",
+    "period_end": "2026-09-13"
   }
 }
 ```
@@ -882,7 +882,7 @@ PATCH `{"name": "...", "position": 0}` (둘 다 선택). DELETE 는 204 이고 �
 
 #### `GET /reports` · `GET /reports/{report_id}` — 주간 리포트
 
-목록 `{"items": [{"id": "12", "title": "9월 2주차 리포트", "subtitle": "…", "period_start": "2026-09-08", "period_end": "2026-09-14", "created_at": "2026-09-15T00:00:05Z"}], "next_cursor": null}`.
+목록 `{"items": [{"id": "12", "title": "9월 2주차 리포트", "subtitle": "…", "period_start": "2026-09-07", "period_end": "2026-09-13", "created_at": "2026-09-14T00:00:05Z"}], "next_cursor": null}`.
 
 상세는 표 묶음이다 (상세 디자인이 없어 범용 표로 렌더링한다).
 
@@ -891,9 +891,9 @@ PATCH `{"name": "...", "position": 0}` (둘 다 선택). DELETE 는 204 이고 �
   "id": "12",
   "title": "9월 2주차 리포트",
   "subtitle": "깔때기 · 소스별 정밀도 · 점수 구간 · 선별 보정",
-  "period_start": "2026-09-08",
-  "period_end": "2026-09-14",
-  "created_at": "2026-09-15T00:00:05Z",
+  "period_start": "2026-09-07",
+  "period_end": "2026-09-13",
+  "created_at": "2026-09-14T00:00:05Z",
   "sections": [
     {
       "key": "by_source",
@@ -905,7 +905,11 @@ PATCH `{"name": "...", "position": 0}` (둘 다 선택). DELETE 는 204 이고 �
 }
 ```
 
-`sections[].key` 는 `funnel`, `drop_reasons`, `by_source`, `by_importance`, `by_score_band`, `triage_vs_judge`, `low_relevance_samples`, `trust_adjust` 이다 (`scripts/weekly_report.py` 의 표 순서). 셀 값은 문자열·숫자·`null`.
+`sections[].key` 는 `funnel`, `drop_reasons`, `by_source`, `by_importance`, `by_score_band`, `triage_vs_judge`, `low_relevance_samples`, `trust_adjust` 이다 (`scripts/weekly_report.py` 의 표 순서). 셀 값은 문자열·숫자·불리언(`funnel` 의 `passed`)·`null`.
+
+- 리포트는 `app/jobs/report.py` 가 매주 월요일 09:00 (Asia/Seoul) 에 **지난주 월~일** 로 만든다. 기간 경계는 Asia/Seoul 자정이다. 같은 주를 다시 만들면 덮어쓴다.
+- `title` 은 `M월 N주차 리포트`. M·N 은 기간 시작일의 달과 월요일 시작 달력의 몇째 줄이다 (2026-09-07 → `9월 2주차`, 9월 1일이 화요일). `subtitle` 은 섹션 이름 요약 고정 문구다.
+- 목록은 `period_start` 내림차순 커서 페이지다. 다른 사용자의 리포트·숫자가 아닌 `report_id` 는 404.
 
 ### 4.9 FCM 기기 등록
 
