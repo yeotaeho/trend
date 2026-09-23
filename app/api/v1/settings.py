@@ -46,7 +46,7 @@ async def save_or_422(session: AsyncSession, user_id: int, data: dict[str, Any])
         ) from exc
 
 
-async def _current(
+async def current_prefs(
     session: AsyncSession, user_id: int, *, for_update: bool = False
 ) -> tuple[dict[str, Any], datetime | None]:
     row = await prefs.fetch_prefs(session, user_id, for_update=for_update)
@@ -68,13 +68,13 @@ def _interests(rules: Rules, updated_at: datetime | None) -> Interests:
 
 @router.get("/interests")
 async def get_interests(session: Session, user_id: UserId) -> Interests:
-    _, updated_at = await _current(session, user_id)
+    _, updated_at = await current_prefs(session, user_id)
     return _interests(get_rules(), updated_at)
 
 
 @router.put("/interests")
 async def put_interests(body: InterestsIn, session: Session, user_id: UserId) -> Interests:
-    data, _ = await _current(session, user_id, for_update=True)
+    data, _ = await current_prefs(session, user_id, for_update=True)
     policy = {
         "interests": body.profile.self_description,
         "not_interested": body.profile.not_interested,
@@ -188,7 +188,7 @@ def _with_cluster_cap(data: dict[str, Any], dedupe: bool) -> dict[str, Any]:
 
 @router.get("/notifications")
 async def get_notifications(session: Session, user_id: UserId) -> NotificationSettings:
-    _, updated_at = await _current(session, user_id)
+    _, updated_at = await current_prefs(session, user_id)
     return await _notifications(session, user_id, updated_at)
 
 
@@ -198,7 +198,7 @@ async def patch_notifications(
 ) -> NotificationSettings:
     if body.channels:
         _require_connected(body.channels)
-    data, _ = await _current(session, user_id, for_update=True)
+    data, _ = await current_prefs(session, user_id, for_update=True)
     if patch := _notify_patch(body):
         data = merge_overlay(data, {"notify": patch})
     if body.dedupe_same_issue_daily is not None:
