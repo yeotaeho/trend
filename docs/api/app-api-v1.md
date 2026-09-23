@@ -1015,7 +1015,7 @@ v2 계획서 Task 1 의 사용자 식별자와 앱 테이블을 **B1 의 `0004` 
 | `feedback` | `verdict` 값에 `cleared` 허용 (컬럼 변경 없음) | 앱 해제 표시. 모든 집계·사례는 `useful`·`useless` 만 |
 | `notifications` | `title text NULL` 추가 | 발송한 제목 (형제 버전 병기 포함, 4.4). `NULL` 이면 `summaries.title_ko` |
 | `notifications` | 인덱스 `ix_notifications_sent_at` | 피드 커서·통계 |
-| `notifications` | `level` 값에 `cluster_dup` 허용, `channel` 값에 `fcm`·`app` 허용 (컬럼 변경 없음) | v2 계획서 Task 3, `app` = 피드에만 남긴 행 |
+| `notifications` | `level` 을 `varchar(10)` → `varchar(20)` 으로 넓히고 `cluster_dup`(11자) 허용, `channel` 값에 `fcm`·`app` 허용 (`channel` 은 변경 없음) | v2 계획서 Task 3, `app` = 피드에만 남긴 행 |
 | `decisions` | 인덱스 `ix_decisions_created_at` | 걸러짐 창 집계 |
 | `decisions` | `stage` 값에 `user` 허용 (`Stage.USER`, 컬럼 변경 없음) | 복원 결정 로그 |
 

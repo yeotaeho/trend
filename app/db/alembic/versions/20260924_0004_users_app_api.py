@@ -63,6 +63,8 @@ def upgrade() -> None:
         sa.Column("source", sa.String(10), nullable=False, server_default="discord"),
     )
     op.add_column("notifications", sa.Column("title", sa.Text(), nullable=True))
+    # level 에 'cluster_dup'(11자)이 들어가도록 넓힌다.
+    op.alter_column("notifications", "level", type_=sa.String(20), existing_type=sa.String(10))
     op.create_index("ix_notifications_sent_at", "notifications", ["sent_at"])
     op.create_index("ix_decisions_created_at", "decisions", ["created_at"])
 
@@ -150,6 +152,7 @@ def downgrade() -> None:
 
     op.drop_index("ix_decisions_created_at", table_name="decisions")
     op.drop_index("ix_notifications_sent_at", table_name="notifications")
+    op.alter_column("notifications", "level", type_=sa.String(10), existing_type=sa.String(20))
     op.drop_column("notifications", "title")
     op.drop_column("feedback", "source")
 

@@ -126,7 +126,7 @@ class Notification(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     item_id: Mapped[int] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), index=True)
     channel: Mapped[str] = mapped_column(String(20))
-    level: Mapped[str] = mapped_column(String(10))
+    level: Mapped[str] = mapped_column(String(20))
     sent_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )
