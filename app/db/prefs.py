@@ -23,7 +23,9 @@ async def fetch_prefs(
     user_prefs 행이 아직 없으면 잠글 것이 없어, 언제나 있는 users 행을 잠근다.
     """
     if for_update:
-        await session.execute(select(User.id).where(User.id == user_id).with_for_update())
+        # FOR NO KEY UPDATE — user_id FK 를 거는 삽입(알림·피드백)의 KEY SHARE 와 부딪치지 않는다.
+        lock = select(User.id).where(User.id == user_id).with_for_update(key_share=True)
+        await session.execute(lock)
     stmt = select(UserPrefs).where(UserPrefs.user_id == user_id)
     return (await session.execute(stmt)).scalar_one_or_none()
 
@@ -69,7 +71,8 @@ async def save_prefs(session: AsyncSession, user_id: int, data: dict[str, Any]) 
     validate_overlay(data)
     updated_at = await upsert_prefs(session, user_id, data)
     await session.commit()
-    set_prefs_overlay(data, updated_at)
+    if user_id == DEFAULT_USER_ID:  # 프로세스 유효 설정은 기본 사용자 것 하나뿐이다
+        set_prefs_overlay(data, updated_at)
     return updated_at
 
 

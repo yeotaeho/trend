@@ -1,4 +1,4 @@
-# 스케줄러 테스트 — 잡 즉시·밀린 회차 1회, 앱 on/off 재기동 보존, 비활성 소스도 잡 등록
+# 스케줄러 테스트 — 잡 즉시·밀린 회차 1회, 앱 on/off 재기동 보존, 비활성 잡 등록, 이름 중복 거부
 
 import asyncio
 from contextlib import asynccontextmanager
@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+from app import config
 from app.config import SourceConfig
 from app.db.models import Source
 from app.jobs import collect
@@ -166,18 +167,12 @@ async def test_run_source_skips_disabled_source(monkeypatch):
     assert await collect.run_source(7) == 0
 
 
-async def test_duplicate_yaml_names_collapse_to_last_entry(table, monkeypatch):
-    _prefs(monkeypatch, None)
-    monkeypatch.setattr(
-        sched,
-        "get_source_configs",
-        lambda: [
-            SourceConfig(name="rss:a", type="rss", poll_interval_sec=900),
-            SourceConfig(name="rss:b", type="rss"),
-            SourceConfig(name="rss:a", type="rss", poll_interval_sec=600),
-        ],
-    )
-
-    synced = await sched.sync_sources()
-
-    assert [(s.name, s.poll_interval_sec) for s in synced] == [("rss:a", 600), ("rss:b", 900)]
+def test_duplicate_yaml_names_fail_at_load(monkeypatch):
+    dup = {"sources": [{"name": "rss:a", "type": "rss"}, {"name": "rss:a", "type": "rss"}]}
+    monkeypatch.setattr(config, "_read_yaml", lambda _path: dup)
+    config.get_source_configs.cache_clear()
+    try:
+        with pytest.raises(ValueError, match="rss:a"):
+            config.get_source_configs()
+    finally:
+        config.get_source_configs.cache_clear()

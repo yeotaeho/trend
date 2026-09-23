@@ -1,4 +1,4 @@
-# 설정 덮어쓰기 병합 테스트 — 목록 교체·dict 병합, 알 수 없는 키·taxonomy 거부, 틀린 섹션 무시
+# 설정 덮어쓰기 병합 테스트 — 목록 교체·dict 병합, 알 수 없는 키·taxonomy 거부, 틀린 키만 무시
 
 from __future__ import annotations
 
@@ -51,17 +51,21 @@ def test_unknown_key_is_rejected_on_save():
         validate_overlay({"bogus": {}})
 
 
-def test_invalid_section_is_ignored_with_warning_and_others_apply():
-    overlay = {"triage": {"removed_key": 3}, "notify": {"daily_push_cap": 20}}
+def test_invalid_keys_are_ignored_with_warning_and_rest_applies():
+    overlay = {
+        "triage": {"removed_key": 3},
+        "notify": {"removed_key": 1, "daily_push_cap": 20, "channels": {"discord": False}},
+    }
 
     with capture_logs() as logs:
         rules = rules_with_overlay(_yaml(), overlay)
 
     assert rules.triage == yaml_rules().triage
+    # 옛 키 하나 때문에 같은 섹션의 멀쩡한 값까지 버리지 않는다.
     assert rules.notify.daily_push_cap == 20
-    assert [e["section"] for e in logs if e["event"] == "config.prefs_section_ignored"] == [
-        "triage"
-    ]
+    assert rules.notify.channels.discord is False
+    ignored = [(e["section"], e["key"]) for e in logs if e["event"] == "config.prefs_key_ignored"]
+    assert ignored == [("triage", "removed_key"), ("notify", "removed_key")]
 
 
 def test_taxonomy_cannot_be_overridden():
@@ -72,7 +76,7 @@ def test_taxonomy_cannot_be_overridden():
     with capture_logs():
         rules = rules_with_overlay(_yaml(), overlay)
     assert rules.policy.taxonomy == yaml_rules().policy.taxonomy
-    assert rules.policy.interests == yaml_rules().policy.interests
+    assert rules.policy.interests == "바뀐 문장"
 
 
 def test_sources_key_is_not_a_rules_section():
@@ -111,14 +115,18 @@ def test_older_save_does_not_replace_newer_overlay():
     assert get_rules().notify.daily_push_cap == 30
 
 
-def test_sanitize_drops_only_invalid_sections():
+def test_sanitize_drops_only_invalid_keys():
     overlay = {
-        "notify": {"removed_key": 1},
+        "notify": {"removed_key": 1, "channels": {"discord": False}},
+        "policy": {"categories": ["removed-slug"], "interests": "내 문장"},
         "scoring": {"threshold": 0.5},
+        "bogus": {},
         "sources": {"rss:a": {"enabled": False}},
     }
     with capture_logs():
         assert sanitize_overlay(overlay) == {
+            "notify": {"channels": {"discord": False}},
+            "policy": {"interests": "내 문장"},
             "scoring": {"threshold": 0.5},
             "sources": {"rss:a": {"enabled": False}},
         }
