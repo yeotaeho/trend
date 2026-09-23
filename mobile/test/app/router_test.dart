@@ -9,19 +9,15 @@ import 'package:tech_radar/core/icons.dart';
 import 'package:tech_radar/core/theme/app_colors.dart';
 import 'package:tech_radar/core/theme/app_theme.dart';
 import 'package:tech_radar/core/widgets/app_tab_bar.dart';
-import 'package:tech_radar/data/repositories/fixture_repositories.dart';
-import 'package:tech_radar/data/repositories/repository_providers.dart';
+
+import '../helpers.dart';
 
 Future<GoRouter> _pumpApp(WidgetTester tester, {String? at}) async {
   final router = createRouter(initialLocation: at ?? AppRoutes.feed);
   addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
-        fixtureStoreProvider.overrideWithValue(
-          FixtureStore(delay: Duration.zero),
-        ),
-      ],
+      overrides: fixtureOverrides(),
       child: MaterialApp.router(theme: buildAppTheme(), routerConfig: router),
     ),
   );
@@ -129,7 +125,7 @@ void main() {
   testWidgets('07 은 루트 네비게이터에 올라가 탭바가 없다', (tester) async {
     final router = await _pumpApp(tester);
 
-    router.push(AppRoutes.alert('42'));
+    router.push(AppRoutes.alert('18301'));
     await tester.pumpAndSettle();
 
     expect(find.byType(AppTabBar), findsNothing);
@@ -154,9 +150,9 @@ void main() {
   });
 
   testWidgets('07 경로로 바로 들어가도 탭바가 없다', (tester) async {
-    await _pumpApp(tester, at: AppRoutes.alert('42'));
+    await _pumpApp(tester, at: AppRoutes.alert('18301'));
 
     expect(find.byType(AppTabBar), findsNothing);
-    expect(find.textContaining('화면 07'), findsOneWidget);
+    expect(find.text('피드백'), findsOneWidget);
   });
 }
