@@ -509,6 +509,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 - `selected_categories` 1개 이상, 전부 `policy.taxonomy` 안의 slug, 중복 없음.
 - `watch_keywords` 0~50개, 각 1~50자, 앞뒤 공백 제거 후 대소문자 무시 중복 제거. `/` 를 포함한 값은 `focus_repos`, 나머지는 `focus_stack` 으로 저장한다.
 - `kind_weights` 키는 `kind` 8개 중에서, 값은 −0.50 ~ +0.50. 서버가 소수 2자리로 반올림한다. 빠진 키는 현재 유효값을 유지한다 (앱은 편집하지 않는 `news`·`other` 도 GET 값을 그대로 보낸다).
+- 모르는 키(`updated_at` 포함)를 보내면 422. 본문이 맞아도 저장된 다른 설정과 합쳐 검증에 실패하면 저장하지 않고 422 이며 `details.reason` 에 이유가 있다 (05·06 저장도 같다).
 
 저장 즉시 다음 선별·판정 호출부터 반영된다 (프로세스 안의 유효 설정 캐시를 갈아끼운다). 이미 매긴 점수는 다시 계산하지 않는다.
 `selected_categories` 는 거름망이 아니라 힌트다. `render_policy` 가 선별·판정 프롬프트의 정책 블록에 `관심 카테고리: llm-model, agent, …` 한 줄을 넣는다. 선별은 여전히 `policy.taxonomy` 12개 전체에서 `topics` 를 고른다. 사용자별 카테고리 필터는 v2 계획서 범위 밖이다.
@@ -541,7 +542,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 | `channels.fcm.connected` | `.env` `FCM_PROJECT_ID`·`FCM_SERVICE_ACCOUNT_FILE` 존재 |
 | `channels.fcm.device_count` | 활성 `devices` 수. 0 이면 행 보조 줄에 `등록된 기기 없음` 권장 |
 | `channels.discord.connected` | `DISCORD_BOT_TOKEN`·`DISCORD_CHANNEL_ID` 존재 |
-| `channels.discord.channel_name` | `.env` `DISCORD_CHANNEL_NAME` (새, 표시 전용). 없으면 `#` + 채널 ID |
+| `channels.discord.channel_name` | `.env` `DISCORD_CHANNEL_NAME` (새, 표시 전용). 없으면 `#` + 채널 ID, 둘 다 없으면 `null` |
 | `channels.discord.reaction_sync` | `connected` 와 같음 (리액션 폴링 잡이 돈다) |
 | `channels.telegram.connected` | `TELEGRAM_BOT_TOKEN`·`TELEGRAM_CHAT_ID` 존재 |
 | `daily_push_cap` | `rules.notify.daily_push_cap` |
@@ -611,13 +612,13 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 ```
 
 - 목록은 `sources.yaml` 에 있는 소스만 (YAML 에서 빠져 비활성화된 과거 행은 제외). 순서는 YAML 순서, 앱은 `group` 으로 섹션을 나눈다 (`community` 섹션은 디자인에 없으므로 라벨 `커뮤니티` 로 추가).
-- 디자인 Stat `LLM 예산 41 / 60` 은 `llm_budget.triage` 다 (선별 호출 상한). 판정·탐색 예산은 보조 정보.
+- 디자인 Stat `LLM 예산 41 / 60` 은 `llm_budget.triage` 다 (선별 호출 상한). 판정·탐색 예산은 보조 정보. `used` 는 오늘(달력일) `llm_calls` 예약 수이며 상한과 같은 기준으로 센다 — `judge.used` 는 판정 예산 전체(판정 + 탐색 판정), `explore.used` 는 탐색 판정만.
 - `planned_sources` 는 **정적** (`config/app.yaml`). 디자인의 `Hacker News` 는 이미 구현된 소스(`hackernews:front`)라 목록에서 뺐다.
 - 소스 추가(헤더 `+`)는 v1 범위 밖이다. 앱은 `준비 중` 토스트를 띄운다 (사용자 결정).
 
 #### `PATCH /sources/{source_id}` — on/off
 
-요청 `{"enabled": false}`. 응답은 갱신된 `Source`.
+요청 `{"enabled": false}`. 응답은 갱신된 `Source`. `sources.yaml` 에 없는 ID 는 404 `not_found`.
 
 - `sources.enabled` 와 `user_prefs.data.sources.{name}.enabled` 를 같이 쓴다. 기동 시 `sync_sources` 가 YAML 값 위에 이 덮어쓰기를 적용하므로 재시작해도 유지된다.
 - 스케줄러는 YAML 의 모든 소스에 잡을 등록하고 `run_source` 가 비활성 소스를 건너뛴다. 그래서 켜고 끌 때 잡을 다시 등록할 필요가 없다.
