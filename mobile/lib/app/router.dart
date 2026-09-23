@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/labels.dart';
+import '../features/settings/interests_page.dart';
+import '../features/settings/settings_page.dart';
 import 'placeholder_page.dart';
 import 'routes.dart';
 import 'tab_shell.dart';
@@ -86,21 +88,11 @@ GoRouter createRouter({String initialLocation = AppRoutes.feed}) {
             routes: [
               GoRoute(
                 path: AppRoutes.settings,
-                builder: (context, state) => const PlaceholderPage(
-                  screen: '–',
-                  title: '설정',
-                  isRoot: true,
-                  links: [
-                    PlaceholderLink('관심사', AppRoutes.interests),
-                    PlaceholderLink('알림 설정', AppRoutes.notifications),
-                    PlaceholderLink('수집 소스', AppRoutes.sources),
-                  ],
-                ),
+                builder: (context, state) => const SettingsPage(),
                 routes: [
                   GoRoute(
                     path: 'interests',
-                    builder: (context, state) =>
-                        const PlaceholderPage(screen: '04', title: '관심사'),
+                    builder: (context, state) => const InterestsPage(),
                   ),
                   GoRoute(
                     path: 'notifications',
