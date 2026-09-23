@@ -34,6 +34,8 @@ policy:
     - ai-safety-eval
     - dev-community
     - video
+  # 앱 관심사 화면에서 고른 taxonomy 부분집합 (categories). 생략하면 taxonomy 전체다.
+  # 거름망이 아니라 선별·판정 프롬프트의 힌트이며, 값은 앱이 user_prefs 에 덮어쓴다.
 
 # 싸고 정확한 제외 규칙만 남긴다. exclude 는 언제나 우선한다.
 exclude:
@@ -87,3 +89,16 @@ notify:
   quiet_end_hour: 8
   timezone: Asia/Seoul
   explore_judge_cap: 3
+  # 같은 cluster_id 를 하루(달력일)에 보내는 서로 다른 항목 수 상한. 0 = 끔.
+  cluster_daily_cap: 1
+  # importance 구간(high 5·4, mid 3, low 2·1) → 알림 강도 instant | quiet | feed_only.
+  delivery_by_importance:
+    high: instant
+    mid: quiet
+    low: feed_only
+  explore_enabled: true
+  # 발송 채널 on/off. 연결 정보(.env)가 없는 채널은 앱에서 켤 수 없다.
+  channels:
+    fcm: true
+    discord: true
+    telegram: false

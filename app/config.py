@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
+import copy
 import functools
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
+import structlog
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.schemas import Kind
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config"
+# app.log 이 이 모듈을 임포트하므로 structlog 를 직접 쓴다.
+log = structlog.get_logger(__name__)
 
 
 class Settings(BaseSettings):
@@ -93,6 +97,17 @@ class PolicyConfig(_Strict):
     focus_stack: list[str] = Field(default_factory=list)
     # 선별 topics 의 분류표 (slug). 앱 표시 라벨은 config/app.yaml 이 따로 가진다.
     taxonomy: list[str] = Field(default_factory=lambda: list(DEFAULT_TAXONOMY))
+    # 앱 관심사 화면에서 고른 카테고리. 거름망이 아니라 프롬프트 힌트다. 생략하면 taxonomy 전체.
+    categories: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _categories_within_taxonomy(self) -> PolicyConfig:
+        if "categories" not in self.model_fields_set:
+            self.categories = list(self.taxonomy)
+        unknown = [c for c in self.categories if c not in self.taxonomy]
+        if unknown:
+            raise ValueError(f"policy.categories 에 taxonomy 밖 slug 가 있다: {unknown}")
+        return self
 
 
 class ExcludeConfig(_Strict):
@@ -132,12 +147,36 @@ class ScoringConfig(_Strict):
     )
 
 
+Delivery = Literal["instant", "quiet", "feed_only"]
+
+
+class DeliveryByImportanceConfig(_Strict):
+    """importance 구간 → 알림 강도. 기본값은 notify/policy.py 의 level_for 와 같다."""
+
+    high: Delivery = "instant"
+    mid: Delivery = "quiet"
+    low: Delivery = "feed_only"
+
+
+class ChannelsConfig(_Strict):
+    fcm: bool = True
+    discord: bool = True
+    telegram: bool = False
+
+
 class NotifyConfig(_Strict):
     daily_push_cap: int = 15
     quiet_start_hour: int = 23
     quiet_end_hour: int = 8
     timezone: str = "Asia/Seoul"
     explore_judge_cap: int = 3
+    # 같은 cluster_id 를 하루에 보내는 서로 다른 항목 수 상한. 0 = 끔.
+    cluster_daily_cap: int = Field(default=1, ge=0)
+    delivery_by_importance: DeliveryByImportanceConfig = Field(
+        default_factory=DeliveryByImportanceConfig
+    )
+    explore_enabled: bool = True
+    channels: ChannelsConfig = Field(default_factory=ChannelsConfig)
 
 
 class Rules(_Strict):
@@ -178,9 +217,78 @@ def get_settings() -> Settings:
     return Settings()
 
 
+# user_prefs.data 중 Rules 밖 키. sources 는 sync_sources 가 따로 읽는다.
+PREFS_NON_RULES_KEYS = frozenset({"sources"})
+# 앱이 저장한 설정 덮어쓰기 (DEFAULT_USER_ID 의 user_prefs.data). set_prefs_overlay 로만 바꾼다.
+_prefs_overlay: dict[str, Any] = {}
+
+
+def merge_overlay(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+    """깊은 병합. dict 는 키별로 내려가고 목록·값은 통째로 바꾼다. 입력은 건드리지 않는다."""
+    merged = copy.deepcopy(base)
+    for key, value in overlay.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = merge_overlay(merged[key], value)
+        else:
+            merged[key] = copy.deepcopy(value)
+    return merged
+
+
+def _check_overlay_section(name: str, value: Any) -> None:
+    if name not in Rules.model_fields:
+        raise ValueError(f"알 수 없는 설정 섹션 {name!r}")
+    if not isinstance(value, dict):
+        raise ValueError(f"설정 섹션 {name!r} 은 객체여야 한다")
+    if name == "policy" and "taxonomy" in value:
+        # 선별 어휘라 YAML 만 바꾼다.
+        raise ValueError("policy.taxonomy 는 덮어쓸 수 없다")
+
+
+def rules_with_overlay(base: dict[str, Any], overlay: dict[str, Any]) -> Rules:
+    """YAML 위에 덮어쓰기를 섹션 단위로 얹는다. 검증에 실패한 섹션은 경고 후 버린다.
+
+    YAML 키가 바뀌어 옛 덮어쓰기가 안 맞아도 기동을 멈추지 않는다. YAML 자체가 틀리면 실패한다.
+    """
+    merged = base
+    for name, value in overlay.items():
+        if name in PREFS_NON_RULES_KEYS:
+            continue
+        try:
+            _check_overlay_section(name, value)
+            candidate = merge_overlay(merged, {name: value})
+            Rules.model_validate(candidate)
+        except ValueError as exc:  # pydantic ValidationError 도 ValueError 다
+            log.warning("config.prefs_section_ignored", section=name, error=str(exc))
+            continue
+        merged = candidate
+    return Rules.model_validate(merged)
+
+
+def validate_overlay(overlay: dict[str, Any]) -> Rules:
+    """저장 전 검증. 섹션 하나라도 틀리면 ValueError. 저장된 값은 rules_with_overlay 가 읽는다."""
+    for name, value in overlay.items():
+        if name not in PREFS_NON_RULES_KEYS:
+            _check_overlay_section(name, value)
+    sections = {k: v for k, v in overlay.items() if k not in PREFS_NON_RULES_KEYS}
+    return Rules.model_validate(merge_overlay(_read_yaml(CONFIG_DIR / "rules.yaml"), sections))
+
+
+def set_prefs_overlay(overlay: dict[str, Any]) -> None:
+    """기동 시·설정 저장 직후 부른다. 다음 get_rules() 부터 새 유효 설정이다."""
+    global _prefs_overlay
+    _prefs_overlay = copy.deepcopy(overlay)
+    get_rules.cache_clear()
+
+
+def yaml_rules() -> Rules:
+    """덮어쓰기 없는 YAML 값. 앱이 '기본값으로 되돌리기' 를 계산할 때 쓴다."""
+    return Rules.model_validate(_read_yaml(CONFIG_DIR / "rules.yaml"))
+
+
 @functools.lru_cache(maxsize=1)
 def get_rules() -> Rules:
-    return Rules.model_validate(_read_yaml(CONFIG_DIR / "rules.yaml"))
+    """유효 설정 = config/rules.yaml + 앱 덮어쓰기 (단일 프로세스 전역)."""
+    return rules_with_overlay(_read_yaml(CONFIG_DIR / "rules.yaml"), _prefs_overlay)
 
 
 @functools.lru_cache(maxsize=1)
@@ -197,7 +305,7 @@ def get_source_configs() -> list[SourceConfig]:
 
 
 def reload_configs() -> None:
-    """YAML 을 다시 읽는다 (rules.yaml 핫리로드용)."""
+    """YAML 을 다시 읽는다 (rules.yaml 핫리로드용). 덮어쓰기는 그대로 유지된다."""
     get_rules.cache_clear()
     get_source_configs.cache_clear()
     get_app_config.cache_clear()
