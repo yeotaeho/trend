@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/labels.dart';
+import '../features/alert/alert_detail_page.dart';
+import '../features/feed/feed_page.dart';
 import '../features/profile/profile_page.dart';
 import '../features/profile/report_page.dart';
 import 'placeholder_page.dart';
@@ -30,22 +32,7 @@ GoRouter createRouter({String initialLocation = AppRoutes.feed}) {
             routes: [
               GoRoute(
                 path: AppRoutes.feed,
-                builder: (context, state) => PlaceholderPage(
-                  screen: '03',
-                  title: '오늘',
-                  isRoot: true,
-                  links: [
-                    PlaceholderLink(
-                      '걸러진 항목',
-                      '${AppRoutes.filtered}?view=${FilteredView.source.value}',
-                    ),
-                    PlaceholderLink(
-                      '피드백 · 판정 근거',
-                      AppRoutes.alert('sample'),
-                      push: true,
-                    ),
-                  ],
-                ),
+                builder: (context, state) => const FeedPage(),
                 routes: [
                   GoRoute(
                     path: 'filtered',
@@ -138,11 +125,8 @@ GoRouter createRouter({String initialLocation = AppRoutes.feed}) {
       GoRoute(
         path: '/alerts/:alertId',
         parentNavigatorKey: rootKey,
-        builder: (context, state) => PlaceholderPage(
-          screen: '07',
-          title: '피드백',
-          note: state.pathParameters['alertId'],
-        ),
+        builder: (context, state) =>
+            AlertDetailPage(alertId: state.pathParameters['alertId']!),
       ),
     ],
   );
