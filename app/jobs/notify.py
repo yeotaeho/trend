@@ -13,6 +13,7 @@ from app.config import NotifyConfig, Rules, get_rules
 from app.db.budget import reserve_call, today_start
 from app.db.models import Decision, Item, Notification, Source, Summary
 from app.db.session import session_scope
+from app.db.users import DEFAULT_USER_ID
 from app.log import get_logger
 from app.notify.base import Notifier, RateLimited
 from app.notify.discord import DiscordNotifier
@@ -75,7 +76,10 @@ async def run_notify(notifier: Notifier | None = None) -> int:
                     # 발송하지 않고 이력만 남긴다.
                     session.add(
                         Notification(
-                            item_id=item.id, channel=notifier.channel, level=Level.FEED.value
+                            user_id=DEFAULT_USER_ID,
+                            item_id=item.id,
+                            channel=notifier.channel,
+                            level=Level.FEED.value,
                         )
                     )
                     item.status = ItemStatus.SENT.value
@@ -95,6 +99,7 @@ async def run_notify(notifier: Notifier | None = None) -> int:
             except Exception as exc:
                 session.add(
                     Notification(
+                        user_id=DEFAULT_USER_ID,
                         item_id=item.id,
                         channel=notifier.channel,
                         level=verdict.level.value,
@@ -108,6 +113,7 @@ async def run_notify(notifier: Notifier | None = None) -> int:
 
             session.add(
                 Notification(
+                    user_id=DEFAULT_USER_ID,
                     item_id=item.id,
                     channel=notifier.channel,
                     level=verdict.level.value,
@@ -242,6 +248,7 @@ async def _explore(
     message_id = await notifier.send(item, summary, Level.EXPLORE, source.name)
     session.add(
         Notification(
+            user_id=DEFAULT_USER_ID,
             item_id=item.id,
             channel=notifier.channel,
             level=Level.EXPLORE.value,

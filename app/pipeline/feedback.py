@@ -7,8 +7,11 @@ from dataclasses import dataclass
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.users import DEFAULT_USER_ID
+
 MARK = {"useful": "👍", "useless": "👎"}
-# 피드백은 항목당 1건이라 조인이 곧 최신 판정이다. 항목의 embedding 이 NULL 이면 빈 결과.
+# 피드백은 (사용자, 항목)당 1건이라 조인이 곧 그 사용자의 최신 판정이다.
+# 항목의 embedding 이 NULL 이면 빈 결과.
 _SQL = text(
     """
     WITH q AS (SELECT embedding FROM items WHERE id = :item_id)
@@ -16,7 +19,8 @@ _SQL = text(
     FROM feedback f
     JOIN items i ON i.id = f.item_id
     JOIN summaries s ON s.item_id = f.item_id, q
-    WHERE f.item_id <> :item_id
+    WHERE f.user_id = :user_id
+      AND f.item_id <> :item_id
       AND i.embedding IS NOT NULL
       AND 1 - (i.embedding <=> q.embedding) >= :min_sim
     ORDER BY i.embedding <=> q.embedding
@@ -36,7 +40,13 @@ def format_examples(examples: list[FeedbackExample]) -> str:
 
 
 async def nearest_feedback(
-    session: AsyncSession, item_id: int, *, k: int, min_sim: float = 0.75
+    session: AsyncSession,
+    item_id: int,
+    *,
+    k: int,
+    min_sim: float = 0.75,
+    user_id: int = DEFAULT_USER_ID,
 ) -> list[FeedbackExample]:
-    rows = (await session.execute(_SQL, {"item_id": item_id, "min_sim": min_sim, "k": k})).all()
+    params = {"item_id": item_id, "user_id": user_id, "min_sim": min_sim, "k": k}
+    rows = (await session.execute(_SQL, params)).all()
     return [FeedbackExample(r.verdict, r.title_ko) for r in rows]

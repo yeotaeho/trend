@@ -1,20 +1,23 @@
-# SQLAlchemy 모델 — sources / items / decisions / summaries / notifications / feedback / llm_calls
+# SQLAlchemy 모델 — 파이프라인 테이블(sources·items·decisions·…·llm_calls)과 사용자·앱 테이블
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import (
     JSON,
     Boolean,
+    Date,
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
+    false,
     func,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
@@ -29,6 +32,14 @@ StrArray = ARRAY(Text()).with_variant(JSON(), "sqlite")
 
 class Base(DeclarativeBase):
     pass
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Source(Base):
@@ -85,7 +96,9 @@ class Decision(Base):
     passed: Mapped[bool] = mapped_column(Boolean)
     score: Mapped[float | None] = mapped_column(Float)
     details: Mapped[dict[str, Any]] = mapped_column(Json, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
 
 
 class Summary(Base):
@@ -109,22 +122,32 @@ class Notification(Base):
     __tablename__ = "notifications"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # 기본값이 없다. 빠뜨리면 NOT NULL 위반으로 드러나야 한다.
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     item_id: Mapped[int] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), index=True)
     channel: Mapped[str] = mapped_column(String(20))
     level: Mapped[str] = mapped_column(String(10))
-    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    sent_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
     message_id: Mapped[str | None] = mapped_column(String(100))
     error: Mapped[str | None] = mapped_column(Text)
+    # 발송한 제목 (형제 버전 병기 포함). NULL 이면 summaries.title_ko 를 쓴다.
+    title: Mapped[str | None] = mapped_column(Text)
 
 
 class Feedback(Base):
     __tablename__ = "feedback"
-    # 항목당 판정은 하나. 다시 누르면 덮어쓴다 (웹훅 upsert).
-    __table_args__ = (UniqueConstraint("item_id", name="uq_feedback_item_id"),)
+    # 판정은 (사용자, 항목) 당 하나. 다시 누르면 덮어쓴다 (웹훅 upsert).
+    __table_args__ = (UniqueConstraint("user_id", "item_id", name="uq_feedback_user_item"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     item_id: Mapped[int] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), index=True)
+    # useful | useless | cleared (앱 해제). 집계·사례는 useful·useless 만 본다.
     verdict: Mapped[str] = mapped_column(String(10))
+    # discord | telegram | app. 앱 판정이 리액션 폴링보다 우선한다.
+    source: Mapped[str] = mapped_column(String(10), server_default="discord")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -137,3 +160,85 @@ class LlmCall(Base):
     kind: Mapped[str] = mapped_column(String(10), index=True)  # triage | judge | explore
     batch_id: Mapped[str] = mapped_column(String(36))
     called_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class UserPrefs(Base):
+    """앱 설정 덮어쓰기. `data` 키는 Rules 섹션 이름을 따르고 YAML 위에 깊은 병합한다."""
+
+    __tablename__ = "user_prefs"
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    data: Mapped[dict[str, Any]] = mapped_column(Json, server_default="{}")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class BookmarkFolder(Base):
+    __tablename__ = "bookmark_folders"
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_bookmark_folders_user_name"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(Text)
+    position: Mapped[int] = mapped_column(Integer, server_default="0")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Bookmark(Base):
+    """찜. 키는 (사용자, 항목) — 앱의 alert_id 가 items.id 다."""
+
+    __tablename__ = "bookmarks"
+    __table_args__ = (Index("ix_bookmarks_user_saved_at", "user_id", "saved_at"),)
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    item_id: Mapped[int] = mapped_column(
+        ForeignKey("items.id", ondelete="CASCADE"), primary_key=True
+    )
+    folder_id: Mapped[int | None] = mapped_column(
+        ForeignKey("bookmark_folders.id", ondelete="SET NULL"), index=True
+    )
+    memo: Mapped[str | None] = mapped_column(Text)
+    is_read: Mapped[bool] = mapped_column(Boolean, server_default=false())
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    saved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # 읽지 않은 찜 재알림을 보낸 시각. 한 번만 보낸다.
+    resurfaced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Device(Base):
+    """FCM 기기 토큰. 활성 = disabled_at IS NULL."""
+
+    __tablename__ = "devices"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    token: Mapped[str] = mapped_column(Text, unique=True)
+    platform: Mapped[str] = mapped_column(String(10))  # android | ios
+    app_version: Mapped[str | None] = mapped_column(String(30))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(Text)
+
+
+class WeeklyReport(Base):
+    """주간 리포트 저장본. 같은 주를 다시 만들면 덮어쓴다."""
+
+    __tablename__ = "weekly_reports"
+    __table_args__ = (
+        UniqueConstraint("user_id", "period_start", name="uq_weekly_reports_user_period"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    period_start: Mapped[date] = mapped_column(Date)
+    period_end: Mapped[date] = mapped_column(Date)
+    title: Mapped[str] = mapped_column(Text)
+    subtitle: Mapped[str] = mapped_column(Text)
+    sections: Mapped[dict[str, Any]] = mapped_column(Json)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

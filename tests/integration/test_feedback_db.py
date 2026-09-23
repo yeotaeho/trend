@@ -69,10 +69,13 @@ async def test_nearest_feedback_finds_identical_vector():
                 )
             )
         s.add_all(
-            [Feedback(item_id=b.id, verdict="useful"), Feedback(item_id=c.id, verdict="useless")]
+            [
+                Feedback(user_id=1, item_id=b.id, verdict="useful"),
+                Feedback(user_id=1, item_id=c.id, verdict="useless"),
+            ]
         )
         # a 자신에게도 피드백을 달아 자기 제외를 확인한다.
-        s.add(Feedback(item_id=a.id, verdict="useless"))
+        s.add(Feedback(user_id=1, item_id=a.id, verdict="useless"))
         ids = (a.id, b.id, c.id, src.id)
 
     try:
@@ -109,7 +112,11 @@ async def test_sync_feedback_writes_only_changes():
         )
         s.add(a)
         await s.flush()
-        s.add(Notification(item_id=a.id, channel="discord", level="push", message_id="m-sync-1"))
+        s.add(
+            Notification(
+                user_id=1, item_id=a.id, channel="discord", level="push", message_id="m-sync-1"
+            )
+        )
         ids = (a.id, src.id)
 
     try:

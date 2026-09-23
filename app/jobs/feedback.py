@@ -9,6 +9,7 @@ from app.config import get_settings
 from app.db.feedback import upsert_feedback
 from app.db.models import Feedback, Notification
 from app.db.session import session_scope
+from app.db.users import DEFAULT_USER_ID
 from app.log import get_logger
 from app.notify.discord import DiscordNotifier, fetch_recent_messages, reaction_verdicts
 
@@ -25,7 +26,10 @@ async def sync_feedback(session: AsyncSession, verdicts: dict[str, str]) -> int:
         return 0
     stmt = (
         select(Notification.message_id, Notification.item_id, Feedback.verdict)
-        .outerjoin(Feedback, Feedback.item_id == Notification.item_id)
+        .outerjoin(
+            Feedback,
+            (Feedback.item_id == Notification.item_id) & (Feedback.user_id == DEFAULT_USER_ID),
+        )
         .where(
             Notification.channel == DiscordNotifier.channel,
             Notification.message_id.in_(list(verdicts)),
@@ -35,7 +39,7 @@ async def sync_feedback(session: AsyncSession, verdicts: dict[str, str]) -> int:
     for message_id, item_id, current in (await session.execute(stmt)).all():
         wanted = verdicts[message_id]
         if wanted != current:
-            await upsert_feedback(session, item_id, wanted)
+            await upsert_feedback(session, DEFAULT_USER_ID, item_id, wanted, source="discord")
             changed += 1
     return changed
 

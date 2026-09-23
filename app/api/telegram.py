@@ -9,6 +9,7 @@ from fastapi import APIRouter, Header, HTTPException, Request
 from app.config import get_settings
 from app.db.feedback import upsert_feedback
 from app.db.session import session_scope
+from app.db.users import DEFAULT_USER_ID
 from app.log import get_logger
 from app.notify.base import parse_feedback_callback
 from app.notify.telegram import answer_callback
@@ -39,7 +40,7 @@ async def telegram_webhook(
     verdict, item_id = parsed
 
     async with session_scope() as session:
-        await upsert_feedback(session, item_id, verdict)
+        await upsert_feedback(session, DEFAULT_USER_ID, item_id, verdict, source="telegram")
 
     # 토스트 응답이 실패했다고 500 을 돌려주면 텔레그램이 재전달해 피드백이 중복 기록된다.
     try:
