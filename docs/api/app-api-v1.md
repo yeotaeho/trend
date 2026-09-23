@@ -539,7 +539,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 | API 필드 | 유효 설정 / 근거 |
 |---|---|
 | `channels.*.enabled` | `rules.notify.channels.{fcm,discord,telegram}` (새 필드, 기본 fcm·discord true, telegram false) |
-| `channels.fcm.connected` | `.env` `FCM_PROJECT_ID`·`FCM_SERVICE_ACCOUNT_FILE` 존재 |
+| `channels.fcm.connected` | `.env` `FCM_PROJECT_ID`·`FCM_SERVICE_ACCOUNT_FILE` 가 있고 그 경로에 서비스 계정 파일이 실제로 있음 |
 | `channels.fcm.device_count` | 활성 `devices` 수. 0 이면 행 보조 줄에 `등록된 기기 없음` 권장 |
 | `channels.discord.connected` | `DISCORD_BOT_TOKEN`·`DISCORD_CHANNEL_ID` 존재 |
 | `channels.discord.channel_name` | `.env` `DISCORD_CHANNEL_NAME` (새, 표시 전용). 없으면 `#` + 채널 ID, 둘 다 없으면 `null` |
@@ -911,13 +911,13 @@ PATCH `{"name": "...", "position": 0}` (둘 다 선택). DELETE 는 204 이고 �
 
 #### `POST /devices`
 
-요청 `{"token": "fcm-registration-token", "platform": "android", "app_version": "0.1.0"}`. 새 토큰이면 201, 있으면 200 (`last_seen_at` 갱신, 비활성이었으면 다시 활성). 응답 `{"id": "3", "platform": "android", "registered_at": "2026-09-24T03:00:00Z"}`.
+요청 `{"token": "fcm-registration-token", "platform": "android", "app_version": "0.1.0"}`. `platform` 은 `android`·`ios`, `token` 1~4096자, `app_version` 은 생략 가능·30자 이하 (위반 시 422). 새 토큰이면 201, 있으면 200 (`last_seen_at` 갱신, 비활성이었으면 다시 활성). 응답 `{"id": "3", "platform": "android", "registered_at": "2026-09-24T03:00:00Z"}`.
 
 앱은 기동할 때와 `onTokenRefresh` 때마다 부른다. 기기는 현재 사용자(`devices.user_id`)에 묶인다. 같은 토큰이 다른 사용자로 다시 오면 `user_id` 를 옮긴다.
 
 #### `DELETE /devices/{token}`
 
-204. 로그아웃이 없으므로 앱 설정에서 푸시를 끌 때만 쓴다. FCM 이 `UNREGISTERED`·`INVALID_ARGUMENT` 를 돌려준 토큰은 서버가 스스로 비활성화한다.
+204. 로그아웃이 없으므로 앱 설정에서 푸시를 끌 때만 쓴다. 현재 사용자의 기기 행을 지우며, 없는 토큰이어도 204 다. FCM 이 `UNREGISTERED`·`INVALID_ARGUMENT` 를 돌려준 토큰은 서버가 스스로 비활성화한다.
 
 #### 푸시 페이로드 (서버 → 기기)
 
@@ -933,8 +933,10 @@ PATCH `{"name": "...", "position": 0}` (둘 다 선택). DELETE 는 204 이고 �
 }
 ```
 
-- `quiet`·`experiment` 는 Android `channel_id: "quiet"` (중요도 LOW, 소리 없음), APNs `apns-priority: 5`, `sound` 없음. `experiment` 는 제목 앞에 `🧪 `.
-- 재알림은 `data.type = "resurface"`, 제목 앞에 `📌 `.
+- `quiet`·`experiment` 는 Android `priority: "NORMAL"`·`channel_id: "quiet"` (중요도 LOW, 소리 없음), APNs `apns-priority: 5`, `sound` 없음(`aps: {}`). `experiment` 는 제목 앞에 `🧪 `.
+- 재알림은 `quiet` 와 같은 강도에 `data.type = "resurface"`·`delivery_mode = "quiet"`, 제목 앞에 `📌 `, 본문은 `찜해 두고 아직 읽지 않았어요.`
+- 제목은 200자, 본문은 500자에서 자른다 (FCM 메시지 4KB 상한).
+- 활성 기기마다 한 번씩 보낸다. 한 대라도 성공하면 그 채널 발송은 성공이다. 기기가 없거나 전부 실패하면 `notifications` 의 `fcm` 행에 오류가 남는다.
 - 앱은 알림 탭 시 `data.alert_id` 로 07 을 연다.
 
 ## 5. 화면 → 엔드포인트

@@ -63,7 +63,7 @@ NEW ──관문 통과──▶ (선별: 관련도) ──▶ (점수) ──�
 | push 상한 | `daily_push_cap` (**15**) | 오늘 `push` 로 나간 **서로 다른 항목 수**가 상한 이상이면 `silent` 로 낮춘다. 채널 수와 `cluster_dup` 은 세지 않는다 |
 | 클러스터 하루 상한 | `cluster_daily_cap` (**1**, 0 = 끔) | `push`·`silent` 항목만 본다. 오늘 같은 `cluster_id` 로 `push`·`silent`·`explore` 가 나간 서로 다른 항목 수가 상한 이상이면 `level='cluster_dup'` 행만 남긴다. `decisions` 에는 남기지 않는다 |
 | 제목 병기 | — | 보내는 항목은 같은 클러스터 형제(`SCORED`·`QUEUED`·`SENT`, 72h) 제목의 버전을 모아 `(v2.2.0 · v1.30.0)` 을 붙인다. 버전이 2개 미만이면 그대로. 모든 채널이 같은 제목을 받고 `notifications.title` 에 남는다 |
-| 채널 | `channels.{discord,telegram}` + `.env` 연결 정보 | 켜져 있고 연결된 채널 전부로 보내고 채널마다 행 하나. 켜진 채널이 없으면 전부 피드 전용 |
+| 채널 | `channels.{fcm,discord,telegram}` + `.env` 연결 정보 (FCM 은 서비스 계정 파일도 있어야 한다) | 켜져 있고 연결된 채널 전부로 보내고 채널마다 행 하나. 켜진 채널이 없으면 전부 피드 전용 |
 
 - **팬아웃 실패** — 한 채널이라도 성공하면 `SENT`, 전부 실패하면 `FAILED`. 아직 어느 채널도 성공하지 않았는데 `RateLimited` 면 기록 없이 배치를 멈추고 다음 잡이 그 항목부터 다시 시도한다. 다른 채널이 이미 나간 뒤의 `RateLimited` 는 그 채널 행에 `error='rate_limited'` 로 남긴다.
 - **탐색 슬롯** — 경계 항목(점수 0.35~0.45) 하루 1건을 판정해 🧪 silent 로 켜진 채널 전부에 보낸다. 판정 예산은 탐색 3회/일. `explore_enabled=false` 거나 켜진 채널이 없으면 판정도 하지 않는다. 클러스터 하루 상한이 켜져 있으면 오늘 이미 나간 클러스터의 항목은 후보가 아니다.
