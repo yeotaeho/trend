@@ -62,7 +62,7 @@ String _kindSummary(FilteredGroup group, List<double> borderlineRange) {
   final clusterDup = group.gateCounts[Gate.clusterDup] ?? 0;
   final parts = [
     if (weight != null && weight < 0) '감점 ${formatScore(weight)}',
-    if (feedback != null)
+    if (feedback != null && feedback.total > 0)
       '불필요 ${feedback.notUseful}/${feedback.total}'
           '${group.penaltyActive ? ' → 감점 유지 중' : ''}',
     if (group.borderlineCount > 0)
@@ -97,7 +97,10 @@ String reasonLine(
     if (item.reason != null) '"${item.reason}"',
   ].join(_sep),
   Gate.score => _scoreLine(item, view),
-  Gate.exclude => '키워드 ${item.matchedKeywords.join(', ')}'.trim(),
+  Gate.exclude =>
+    item.matchedKeywords.isEmpty
+        ? 'exclude 키워드'
+        : '키워드 ${item.matchedKeywords.join(', ')}',
   Gate.dedup => '같은 이슈 중복',
   Gate.stale => '72시간 지난 항목',
   Gate.judgment => '판정 false',

@@ -10,6 +10,7 @@ import 'package:tech_radar/core/labels.dart';
 import 'package:tech_radar/core/theme/app_colors.dart';
 import 'package:tech_radar/core/theme/app_theme.dart';
 import 'package:tech_radar/core/widgets/app_tab_bar.dart';
+import 'package:tech_radar/core/widgets/segmented_control.dart';
 import 'package:tech_radar/data/models/models.dart';
 import 'package:tech_radar/data/repositories/repositories.dart';
 import 'package:tech_radar/data/repositories/repository_providers.dart';
@@ -116,6 +117,23 @@ void main() {
       FilteredView.kind,
     );
     _expectActive(tester, '피드');
+  });
+
+  testWidgets('걸러진 항목 경로의 view 쿼리만 바뀌어도 보기를 맞춘다', (tester) async {
+    final router = await _pumpApp(tester);
+    FilteredView selected() => tester
+        .widget<SegmentedControl<FilteredView>>(
+          find.byType(SegmentedControl<FilteredView>),
+        )
+        .selected;
+
+    router.go('${AppRoutes.filtered}?view=source');
+    await tester.pumpAndSettle();
+    expect(selected(), FilteredView.source);
+
+    router.go('${AppRoutes.filtered}?view=gate');
+    await tester.pumpAndSettle();
+    expect(selected(), FilteredView.gate);
   });
 
   testWidgets('하위 화면의 뒤로가기는 탭 루트로 돌아간다', (tester) async {

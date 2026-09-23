@@ -50,14 +50,27 @@ class _FilteredPageState extends ConsumerState<FilteredPage> {
   final Map<String, _LoadedItems> _loaded = {};
   final Set<String> _loadingMore = {};
 
+  /// 보기를 바꿀 때마다 늘린다. 이전 보기에서 시작한 `더 보기` 응답을 버리는 데 쓴다.
+  int _viewGeneration = 0;
+
   /// 이 화면에서 복원·취소한 결과. 저장소를 다시 읽기 전까지 항목의 `restored` 를 덮는다.
   final Map<String, bool> _restored = {};
   final Set<String> _restoring = {};
+
+  @override
+  void didUpdateWidget(FilteredPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 같은 경로에 `view` 쿼리만 바뀌어 들어오면 화면을 재사용하므로 여기서 맞춘다.
+    if (widget.initialView != oldWidget.initialView) {
+      _setView(widget.initialView);
+    }
+  }
 
   void _setView(FilteredView view) {
     if (view == _view) return;
     setState(() {
       _view = view;
+      _viewGeneration++;
       _expanded = null;
       _loaded.clear();
       _loadingMore.clear();
@@ -81,6 +94,7 @@ class _FilteredPageState extends ConsumerState<FilteredPage> {
 
   Future<void> _loadMore(FilteredGroup group) async {
     final view = _view;
+    final generation = _viewGeneration;
     final key = group.key;
     if (!_loadingMore.add(key)) return;
     setState(() {});
@@ -89,7 +103,7 @@ class _FilteredPageState extends ConsumerState<FilteredPage> {
       final page = await ref
           .read(filteredRepositoryProvider)
           .items(view: view, key: key, cursor: loaded?.nextCursor);
-      if (!mounted || view != _view) return;
+      if (!mounted || generation != _viewGeneration) return;
       setState(() {
         _loaded[key] = _LoadedItems([
           ...?loaded?.items,
@@ -99,7 +113,9 @@ class _FilteredPageState extends ConsumerState<FilteredPage> {
     } on ApiException catch (e) {
       _showSnack(e.message);
     } finally {
-      if (mounted && view == _view) setState(() => _loadingMore.remove(key));
+      if (mounted && generation == _viewGeneration) {
+        setState(() => _loadingMore.remove(key));
+      }
     }
   }
 
@@ -184,7 +200,11 @@ class _FilteredPageState extends ConsumerState<FilteredPage> {
   List<Widget> _content(FilteredSummary summary) {
     final empty = summary.filteredTotal == 0;
     return [
-      _SummaryCard(summary: summary, note: summaryNote(summary, _view)),
+      _SummaryCard(
+        summary: summary,
+        note: summaryNote(summary, _view),
+        empty: empty,
+      ),
       if (!empty) ...[
         Semantics(
           button: true,
@@ -256,14 +276,20 @@ String _errorMessage(Object error) =>
 
 /// 요약 카드 — `오늘 걸러짐 N / 수집 M`, `최근 N시간`, GateBar + 범례, 보기별 안내.
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.summary, required this.note});
+  const _SummaryCard({
+    required this.summary,
+    required this.note,
+    required this.empty,
+  });
 
   final FilteredSummary summary;
   final String note;
 
+  /// 걸러짐 0건 — GateBar·안내 대신 빈 상태 문구.
+  final bool empty;
+
   @override
   Widget build(BuildContext context) {
-    final empty = summary.filteredTotal == 0;
     return AppCard(
       gap: 10,
       children: [

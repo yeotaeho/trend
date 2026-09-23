@@ -110,6 +110,37 @@ void main() {
     );
   });
 
+  test('빈 값 — 걸린 키워드가 없으면 exclude 키워드, 판정 0건이면 불필요 줄을 뺀다', () async {
+    final exclude = await item('18112');
+    expect(
+      reasonLine(
+        DroppedItem.fromJson({...exclude.toJson(), 'matched_keywords': []}),
+        FilteredView.source,
+      ),
+      'exclude 키워드',
+    );
+    const group = FilteredGroup(
+      key: 'news',
+      count: 3,
+      gateCounts: {Gate.score: 3},
+      kind: Kind.news,
+      kindWeight: -0.1,
+      kindFeedback: KindFeedback(notUseful: 0, total: 0),
+      penaltyActive: true,
+      borderlineCount: 0,
+      excludeKeywordHits: 0,
+      preview: [],
+    );
+    expect(
+      groupSummary(
+        group,
+        FilteredView.kind,
+        borderlineRange: const [0.35, 0.45],
+      ),
+      '감점 −0.10',
+    );
+  });
+
   test('요약 카드 안내 — 소스별·관문별은 경계, 종류별은 미분류 건수', () {
     expect(
       summaryNote(summary, FilteredView.source),
