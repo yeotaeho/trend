@@ -8,6 +8,7 @@ import '../features/alert/alert_detail_page.dart';
 import '../features/feed/feed_page.dart';
 import '../features/profile/profile_page.dart';
 import '../features/profile/report_page.dart';
+import '../features/saved/saved_page.dart';
 import 'placeholder_page.dart';
 import 'routes.dart';
 import 'tab_shell.dart';
@@ -56,18 +57,7 @@ GoRouter createRouter({String initialLocation = AppRoutes.feed}) {
             routes: [
               GoRoute(
                 path: AppRoutes.saved,
-                builder: (context, state) => PlaceholderPage(
-                  screen: '11',
-                  title: '찜',
-                  isRoot: true,
-                  links: [
-                    PlaceholderLink(
-                      '피드백 · 판정 근거',
-                      AppRoutes.alert('sample'),
-                      push: true,
-                    ),
-                  ],
-                ),
+                builder: (context, state) => const SavedPage(),
               ),
             ],
           ),
