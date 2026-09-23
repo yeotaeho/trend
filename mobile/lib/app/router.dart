@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/labels.dart';
+import '../features/notification_settings/notification_settings_page.dart';
+import '../features/sources/sources_page.dart';
 import 'placeholder_page.dart';
 import 'routes.dart';
 import 'tab_shell.dart';
@@ -105,12 +107,11 @@ GoRouter createRouter({String initialLocation = AppRoutes.feed}) {
                   GoRoute(
                     path: 'notifications',
                     builder: (context, state) =>
-                        const PlaceholderPage(screen: '05', title: '알림 설정'),
+                        const NotificationSettingsPage(),
                   ),
                   GoRoute(
                     path: 'sources',
-                    builder: (context, state) =>
-                        const PlaceholderPage(screen: '06', title: '수집 소스'),
+                    builder: (context, state) => const SourcesPage(),
                   ),
                 ],
               ),
