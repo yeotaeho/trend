@@ -39,7 +39,7 @@ async def current_prefs(
 
 
 async def prefs_for_update(session: AsyncSession, user_id: int) -> dict[str, Any]:
-    """저장 경로용 data. 잠그고 읽으며, 기동 때 무시된 틀린 섹션은 떼어 낸다."""
+    """저장 경로용 data. 잠그고 읽으며, 기동 때 무시된 틀린 키는 떼어 낸다."""
     row = await fetch_prefs(session, user_id, for_update=True)
     return sanitize_overlay(row.data) if row else {}
 

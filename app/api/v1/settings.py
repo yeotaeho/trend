@@ -31,10 +31,10 @@ from app.config import (
     ChannelsConfig,
     Rules,
     Settings,
+    effective_rules,
     get_rules,
     get_settings,
     merge_overlay,
-    validate_overlay,
     yaml_rules,
 )
 from app.db import prefs
@@ -206,7 +206,7 @@ async def patch_notifications(
 ) -> NotificationSettings:
     data = await prefs.prefs_for_update(session, user_id)
     if body.channels:
-        _require_connected(body.channels, validate_overlay(data).notify.channels)
+        _require_connected(body.channels, effective_rules(data).notify.channels)
     if patch := _notify_patch(body):
         data = merge_overlay(data, {"notify": patch})
     if body.dedupe_same_issue_daily is not None:

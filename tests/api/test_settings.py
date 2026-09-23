@@ -88,6 +88,7 @@ def test_put_interests_changes_effective_rules_immediately(client: TestClient, s
     assert body["watch_keywords"] == ["Claude", "MCP", "anthropics/*"]
     assert body["updated_at"] == "2026-09-24T02:18:01Z"
     assert "taxonomy" not in store.data["policy"]
+    assert store.data["policy"]["interests"] == "에이전트를 만드는 개발자."
 
 
 def test_missing_kind_keys_keep_current_values(client: TestClient, store: PrefsStore):
@@ -266,12 +267,12 @@ def test_stale_stored_keys_are_dropped_on_save(client: TestClient, store: PrefsS
     assert res.status_code == 200, res.text
     assert store.data == {
         "notify": {"channels": {"discord": False}, "daily_push_cap": 7},
-        "policy": {},
     }
 
     res = client.put(INTERESTS, headers=AUTH, json=_interests_body())
     assert res.status_code == 200, res.text
     assert "taxonomy" not in store.data["policy"]
+    assert store.data["policy"]["interests"] == "에이전트를 만드는 개발자."
 
 
 def test_merge_failure_on_save_is_422(client: TestClient, store: PrefsStore, monkeypatch):

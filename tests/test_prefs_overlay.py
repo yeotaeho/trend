@@ -64,8 +64,9 @@ def test_invalid_keys_are_ignored_with_warning_and_rest_applies():
     # 옛 키 하나 때문에 같은 섹션의 멀쩡한 값까지 버리지 않는다.
     assert rules.notify.daily_push_cap == 20
     assert rules.notify.channels.discord is False
-    ignored = [(e["section"], e["key"]) for e in logs if e["event"] == "config.prefs_key_ignored"]
-    assert ignored == [("triage", "removed_key"), ("notify", "removed_key")]
+    ignored = [e["path"] for e in logs if e["event"] == "config.prefs_key_ignored"]
+    assert ignored == ["triage.removed_key", "notify.removed_key"]
+    assert all(e["error"] for e in logs if e["event"] == "config.prefs_key_ignored")
 
 
 def test_taxonomy_cannot_be_overridden():
@@ -130,3 +131,24 @@ def test_sanitize_drops_only_invalid_keys():
             "scoring": {"threshold": 0.5},
             "sources": {"rss:a": {"enabled": False}},
         }
+
+
+def test_nested_stale_key_keeps_its_siblings():
+    # 없어진 채널·kind 하나 때문에 channels·kind_weights 전체를 버리지 않는다.
+    overlay = {
+        "notify": {"channels": {"discord": False, "slack": True}},
+        "scoring": {"kind_weights": {"survey": -0.2, "removed_kind": 0.1}},
+        "triage": {"removed_key": 1},
+    }
+
+    with capture_logs():
+        kept = sanitize_overlay(overlay)
+        rules = rules_with_overlay(_yaml(), overlay)
+
+    assert kept == {
+        "notify": {"channels": {"discord": False}},
+        "scoring": {"kind_weights": {"survey": -0.2}},
+    }
+    assert rules.notify.channels.discord is False
+    assert rules.scoring.kind_weights[Kind.SURVEY] == -0.2
+    assert rules.scoring.kind_weights[Kind.PROMO] == -0.30

@@ -247,13 +247,42 @@ def _check_overlay_section(name: str, value: Any) -> None:
         raise ValueError("policy.taxonomy 는 덮어쓸 수 없다")
 
 
-def _fits(base: dict[str, Any], name: str, section: dict[str, Any]) -> bool:
+def _nest(path: list[str], value: Any) -> dict[str, Any]:
+    for key in reversed(path):
+        value = {key: value}
+    assert isinstance(value, dict)
+    return value
+
+
+def _overlay_error(base: dict[str, Any], fragment: dict[str, Any]) -> str | None:
+    """fragment(섹션 하나짜리 덮어쓰기)를 base 에 얹었을 때의 검증 오류. 맞으면 None."""
     try:
-        _check_overlay_section(name, section)
-        Rules.model_validate(merge_overlay(base, {name: section}))
-    except ValueError:  # pydantic ValidationError 도 ValueError 다
-        return False
-    return True
+        for name, value in fragment.items():
+            _check_overlay_section(name, value)
+        Rules.model_validate(merge_overlay(base, fragment))
+    except ValueError as exc:  # pydantic ValidationError 도 ValueError 다
+        return str(exc)
+    return None
+
+
+def _valid_part(base: dict[str, Any], path: list[str], value: dict[str, Any]) -> dict[str, Any]:
+    """path 아래 dict 에서 얹어도 맞는 키만 남긴다. 틀린 값이 dict 면 안으로 내려가 다시 고른다.
+
+    통째로 버리면 옛 키 하나 때문에 같은 dict 의 멀쩡한 설정(채널 끔, kind 가중치 등)이 사라진다.
+    """
+    kept: dict[str, Any] = {}
+    for key, item in value.items():
+        error = _overlay_error(base, _nest(path, {**kept, key: item}))
+        if error is None:
+            kept[key] = item
+            continue
+        if isinstance(item, dict):
+            inner_base = merge_overlay(base, _nest(path, kept))
+            if inner := _valid_part(inner_base, [*path, key], item):
+                kept[key] = inner
+            continue
+        log.warning("config.prefs_key_ignored", path=".".join([*path, key]), error=error)
+    return kept
 
 
 def _apply_overlay(
@@ -261,8 +290,7 @@ def _apply_overlay(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """덮어쓰기를 섹션 단위로 얹고 (병합 결과, 실제로 쓴 덮어쓰기) 를 돌려준다.
 
-    섹션이 검증에 실패하면 그 섹션의 키를 하나씩 얹어 맞는 키만 남기고 나머지는 경고 후 버린다.
-    섹션을 통째로 버리면 옛 키 하나 때문에 같은 섹션의 멀쩡한 설정(채널 끔 등)까지 사라진다.
+    섹션이 검증에 실패하면 맞지 않는 키만 경고 후 버린다. 다 버려진 섹션은 남기지 않는다.
     """
     merged = base
     kept: dict[str, Any] = {}
@@ -271,18 +299,13 @@ def _apply_overlay(
             kept[name] = value
             continue
         if not isinstance(value, dict) or name not in Rules.model_fields:
-            log.warning("config.prefs_section_ignored", section=name)
+            log.warning("config.prefs_key_ignored", path=name, error="알 수 없는 섹션")
             continue
-        if not _fits(merged, name, value):
-            section: dict[str, Any] = {}
-            for key, item in value.items():
-                if _fits(merged, name, {**section, key: item}):
-                    section[key] = item
-                else:
-                    log.warning("config.prefs_key_ignored", section=name, key=key)
-            value = section
-        merged = merge_overlay(merged, {name: value})
-        kept[name] = value
+        if _overlay_error(merged, {name: value}) is not None:
+            value = _valid_part(merged, [name], value)
+        if value:
+            merged = merge_overlay(merged, {name: value})
+            kept[name] = value
     return merged, kept
 
 
@@ -325,6 +348,11 @@ def set_prefs_overlay(overlay: dict[str, Any], version: datetime | None = None) 
     _prefs_overlay = copy.deepcopy(overlay)
     _prefs_version = version
     get_rules.cache_clear()
+
+
+def effective_rules(overlay: dict[str, Any]) -> Rules:
+    """저장 전 덮어쓰기(잠근 뒤 읽은 값)로 본 유효 설정. 프로세스 캐시와 따로 계산한다."""
+    return rules_with_overlay(_read_yaml(CONFIG_DIR / "rules.yaml"), overlay)
 
 
 def yaml_rules() -> Rules:
