@@ -157,7 +157,9 @@ async def test_rate_limited_after_success_marks_that_channel():
 @pytest.fixture
 def loop(monkeypatch):
     """DB 없이 발송 루프를 돌린다. 대기 항목·정책 판정·발송 제목을 갈아끼운다."""
-    state = SimpleNamespace(session=FakeSession(), queue=[], verdict=Verdict(Level.PUSH, "ok"))
+    state = SimpleNamespace(
+        session=FakeSession(), queue=[], verdict=Verdict(Level.PUSH, "ok"), explore_calls=0
+    )
 
     @asynccontextmanager
     async def scope():
@@ -173,6 +175,7 @@ def loop(monkeypatch):
         return TITLE
 
     async def explore(*_, **__):
+        state.explore_calls += 1
         return False
 
     monkeypatch.setattr(job, "session_scope", scope)
@@ -191,12 +194,14 @@ async def test_loop_stops_batch_on_first_channel_rate_limit(loop):
     assert await job.run_notify([notifier]) == 0
 
     assert loop.session.rows == [] and len(notifier.calls) == 1  # 두 번째 항목은 시도하지 않음
+    assert loop.explore_calls == 0  # 대기 중인 채널로 탐색 판정 예산을 태우지 않는다
 
 
 async def test_loop_counts_items_not_channel_rows(loop):
     loop.queue = [make_triple(1), make_triple(2)]
     assert await job.run_notify([FakeNotifier("discord"), FakeNotifier("telegram")]) == 2
     assert len(loop.session.rows) == 4
+    assert loop.explore_calls == 1
 
 
 async def test_cluster_dup_records_app_row_without_adapter_call(loop):
@@ -209,6 +214,13 @@ async def test_cluster_dup_records_app_row_without_adapter_call(loop):
     assert notifier.calls == []
     [row] = loop.session.rows
     assert (row.channel, row.level, row.message_id) == (APP_CHANNEL, "cluster_dup", None)
+
+
+async def test_no_enabled_channel_keeps_cluster_dup(loop):
+    loop.queue = [make_triple()]
+    loop.verdict = Verdict(Level.CLUSTER_DUP, "cluster_dup")
+    assert await job.run_notify([]) == 0
+    assert [r.level for r in loop.session.rows] == ["cluster_dup"]
 
 
 async def test_no_enabled_channel_records_feed_only(loop):
@@ -306,3 +318,28 @@ async def test_explore_disabled_reserves_no_llm_call(monkeypatch):
     assert await job._explore(None, rules, [FakeNotifier("discord")], now=NOW) is False  # type: ignore[arg-type]
     assert await job._explore(None, Rules(), [], now=NOW) is False  # type: ignore[arg-type]
     assert calls == []
+
+
+# ---------- 발송 제목 ----------
+
+
+class TitlesSession:
+    def __init__(self, titles: list[str]) -> None:
+        self.titles = titles
+
+    async def execute(self, _stmt):
+        return SimpleNamespace(scalars=lambda: iter(self.titles))
+
+
+async def test_send_title_without_siblings_is_unchanged():
+    item, summary, _ = make_triple()
+    item.title = "Upgrade from v1.9 to v1.10"
+    title = await job._send_title(TitlesSession([]), Rules(), item, summary, NOW)  # type: ignore[arg-type]
+    assert title == summary.title_ko
+
+
+async def test_send_title_appends_sibling_versions():
+    item, summary, _ = make_triple()
+    session = TitlesSession(["MCP Python SDK v1.30.0 released"])
+    title = await job._send_title(session, Rules(), item, summary, NOW)  # type: ignore[arg-type]
+    assert title == "[릴리즈] MCP Python SDK v2.2.0 (v2.2.0 · v1.30.0)"

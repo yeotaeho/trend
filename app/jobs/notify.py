@@ -87,6 +87,9 @@ async def _send_title(
         .order_by(Item.published_at.desc(), Item.id.desc())
     )
     titles = list((await session.execute(stmt)).scalars())
+    if not titles:
+        # 형제가 없으면 제목 그대로다. 자기 제목의 버전만으로는 병기하지 않는다.
+        return summary.title_ko
     return decorate_title(summary.title_ko, sibling_versions(item.title, titles))
 
 
@@ -141,6 +144,7 @@ async def run_notify(notifiers: list[Notifier] | None = None) -> int:
     if notifiers is None:
         notifiers = enabled_notifiers(rules)
     sent = 0
+    rate_limited = False
 
     async with session_scope() as session:
         for _ in range(BATCH_SIZE):
@@ -158,8 +162,9 @@ async def run_notify(notifiers: list[Notifier] | None = None) -> int:
                 user_id=DEFAULT_USER_ID,
                 now=now,
             )
-            # 켜진 채널이 없으면 보낼 곳이 없으니 피드에만 남긴다.
-            level = verdict.level if notifiers else Level.FEED
+            # 켜진 채널이 없으면 보낼 곳이 없으니 피드에만 남긴다. 클러스터 억제는 그대로 둔다.
+            keep = notifiers or verdict.level is Level.CLUSTER_DUP
+            level = verdict.level if keep else Level.FEED
             if level in (Level.FEED, Level.CLUSTER_DUP):
                 # 발송하지 않고 이력만 남긴다. 피드·걸러진 항목 화면이 이 행을 읽는다.
                 session.add(
@@ -182,6 +187,7 @@ async def run_notify(notifiers: list[Notifier] | None = None) -> int:
                 session, notifiers, item, summary, level, source.name, title=title
             )
             if delivered is None:
+                rate_limited = True
                 break
             # 항목마다 커밋한다. 배치를 한 트랜잭션으로 묶으면 뒤쪽 한 건이 실패했을 때
             # 이미 발송이 끝난 앞쪽 항목까지 롤백돼 다음 잡에서 다시 발송된다.
@@ -190,7 +196,9 @@ async def run_notify(notifiers: list[Notifier] | None = None) -> int:
                 sent += 1
 
         try:
-            await _explore(session, rules, notifiers, now=datetime.now(UTC))
+            # 채널이 대기 중이면 탐색 판정(예산 3회/일)을 태우지 않는다. 발송에서 되돌려진다.
+            if not rate_limited:
+                await _explore(session, rules, notifiers, now=datetime.now(UTC))
         except Exception as exc:
             await session.rollback()
             log.warning("notify.explore_failed", error=str(exc))
