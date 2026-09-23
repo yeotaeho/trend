@@ -226,6 +226,19 @@ class FixtureStore {
 
   // ── 걸러진 항목 ──
 
+  /// 복원해 피드에 올리는 시각. fixture 알림은 고정 날짜라 실제 시계가 더 이르면
+  /// 가장 최근 알림 1초 뒤로 잡아 서버처럼 피드 맨 위에 오게 한다.
+  DateTime _feedTime() {
+    final now = _now();
+    final latest = _feed
+        .map((a) => a.deliveredAt)
+        .nonNulls
+        .fold<DateTime?>(null, (m, t) => m == null || t.isAfter(m) ? t : m);
+    return latest == null || now.isAfter(latest)
+        ? now
+        : latest.add(const Duration(seconds: 1));
+  }
+
   void _setRestored(String id, bool restored) {
     DroppedItem mark(DroppedItem d) =>
         d.id == id ? d.withRestored(restored) : d;
@@ -498,7 +511,7 @@ class FixtureFilteredRepository implements FilteredRepository {
         sourceId: base.sourceId,
         sourceName: base.sourceName,
         sourceType: base.sourceType,
-        deliveredAt: _now(),
+        deliveredAt: _s._feedTime(),
         deliveryMode: DeliveryMode.feedOnly,
         isExploration: false,
         title: base.title,
