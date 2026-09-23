@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from app.api.v1 import settings as settings_api
 from app.api.v1.queries import settings as queries
 from app.config import get_rules, yaml_rules
+from app.db import prefs
 from app.schemas import Kind
 from tests.api.conftest import AUTH, PrefsStore
 
@@ -254,12 +255,39 @@ def test_patch_notifications_rejects_invalid(client: TestClient, store: PrefsSto
     assert store.saves == 0
 
 
-def test_save_fails_422_when_stored_prefs_cannot_merge(client: TestClient, store: PrefsStore):
-    # 요청은 맞지만 저장된 policy 에 덮어쓸 수 없는 taxonomy 가 남아 있으면 저장하지 않는다.
-    store.data = {"policy": {"taxonomy": ["agent"]}}
+def test_stale_stored_section_is_dropped_on_save(client: TestClient, store: PrefsStore, env):
+    # 기동 때 무시된 틀린 섹션(옛 키)이 남아 있어도 새 저장은 막히지 않고, 그 섹션은 지워진다.
+    store.data = {"notify": {"removed_key": 1}, "policy": {"taxonomy": ["agent"]}}
+
+    res = client.patch(NOTIFICATIONS, headers=AUTH, json={"daily_push_cap": 7})
+    assert res.status_code == 200, res.text
+    assert store.data == {"notify": {"daily_push_cap": 7}}
+
+    res = client.put(INTERESTS, headers=AUTH, json=_interests_body())
+    assert res.status_code == 200, res.text
+    assert "taxonomy" not in store.data["policy"]
+
+
+def test_merge_failure_on_save_is_422(client: TestClient, store: PrefsStore, monkeypatch):
+    def reject(_data):
+        raise ValueError("합치면 틀린 값")
+
+    monkeypatch.setattr(prefs, "validate_overlay", reject)
 
     res = client.put(INTERESTS, headers=AUTH, json=_interests_body())
 
     assert res.status_code == 422
-    assert "taxonomy" in res.json()["error"]["details"]["reason"]
+    assert res.json()["error"]["details"] == {"reason": "합치면 틀린 값"}
     assert store.saves == 0
+
+
+def test_already_enabled_unconnected_channel_can_be_resent(
+    client: TestClient, store: PrefsStore, env
+):
+    # FCM 은 YAML 기본으로 켜져 있고 미연결이다. 409 는 꺼진 채널을 켤 때만.
+    body = {"channels": {"fcm": {"enabled": True}, "discord": {"enabled": False}}}
+
+    res = client.patch(NOTIFICATIONS, headers=AUTH, json=body)
+
+    assert res.status_code == 200, res.text
+    assert get_rules().notify.channels.discord is False

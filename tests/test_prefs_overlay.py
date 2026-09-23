@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -14,6 +15,7 @@ from app.config import (
     get_rules,
     merge_overlay,
     rules_with_overlay,
+    sanitize_overlay,
     set_prefs_overlay,
     validate_overlay,
     yaml_rules,
@@ -98,3 +100,25 @@ def test_categories_default_to_taxonomy_and_stay_within_it():
 def test_negative_cluster_cap_is_rejected():
     with pytest.raises(ValueError):
         validate_overlay({"notify": {"cluster_daily_cap": -1}})
+
+
+def test_older_save_does_not_replace_newer_overlay():
+    # 커밋 뒤 교체 호출은 순서가 섞일 수 있다. 늦게 온 옛 저장은 버린다.
+    newer, older = datetime(2026, 9, 24, 3, tzinfo=UTC), datetime(2026, 9, 24, 2, tzinfo=UTC)
+    set_prefs_overlay({"notify": {"daily_push_cap": 30}}, newer)
+    set_prefs_overlay({"notify": {"daily_push_cap": 10}}, older)
+
+    assert get_rules().notify.daily_push_cap == 30
+
+
+def test_sanitize_drops_only_invalid_sections():
+    overlay = {
+        "notify": {"removed_key": 1},
+        "scoring": {"threshold": 0.5},
+        "sources": {"rss:a": {"enabled": False}},
+    }
+    with capture_logs():
+        assert sanitize_overlay(overlay) == {
+            "scoring": {"threshold": 0.5},
+            "sources": {"rss:a": {"enabled": False}},
+        }
