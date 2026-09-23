@@ -46,3 +46,9 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Firebase 설정 — 커밋하지 않는다. Firebase 콘솔에서 받아 아래 위치에 두고 빌드한다.
+# 없으면 Firebase 초기화가 실패해 푸시 없이 동작한다. iOS 는 Xcode 에서 Push Notifications 를 켠다.
+# 페이로드·채널(instant·quiet)·기기 등록은 계약 문서 docs/api/app-api-v1.md 4.9 를 따른다.
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist

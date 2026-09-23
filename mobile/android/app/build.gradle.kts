@@ -4,12 +4,19 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// google-services.json 은 커밋하지 않는다 (mobile/.gitignore). 없으면 푸시 없이 빌드된다.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.yeotaeho.tech_radar"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // flutter_local_notifications 가 요구한다.
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -46,4 +53,8 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
