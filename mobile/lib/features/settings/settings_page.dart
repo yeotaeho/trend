@@ -26,6 +26,7 @@ class SettingsPage extends ConsumerWidget {
     String location,
   ) async {
     await context.push(location);
+    if (!context.mounted) return;
     ref
       ..invalidate(categorySummaryProvider)
       ..invalidate(pushCapSummaryProvider)
