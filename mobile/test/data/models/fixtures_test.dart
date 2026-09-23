@@ -50,7 +50,8 @@ Future<_Json> _fixture(String name) async =>
         as _Json;
 
 bool _isTimestamp(String value) =>
-    RegExp(r'^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:\d{2})?)?$').hasMatch(value);
+    RegExp(r'^\d{4}-\d{2}-\d{2}(T[\d:.]+(Z|[+-]\d{2}:\d{2})?)?$')
+        .hasMatch(value);
 
 /// [expected] 의 모든 키·값이 [actual] 에 같은 뜻으로 있는지 비교해 어긋난 경로를 모은다.
 /// 시각 문자열은 같은 순간이면, 숫자는 값이 같으면 같다고 본다. 모델이 더한 키는 값이 null 일 때만 허용한다.
