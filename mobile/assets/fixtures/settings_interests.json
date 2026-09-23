@@ -1,0 +1,37 @@
+{
+  "profile": {
+    "self_description": "AI 시스템 개발자. LLM 애플리케이션·에이전트·MCP를 직접 만든다. 주력 스택: Python(FastAPI, SQLAlchemy, Pydantic), Postgres, Docker, TypeScript/Next.js.",
+    "not_interested": "채용·홍보·입문 튜토리얼·개발과 무관한 금융 콘텐츠"
+  },
+  "selected_categories": [
+    "llm-model",
+    "agent",
+    "mcp-tooling",
+    "inference-opt",
+    "python-backend",
+    "web-frontend",
+    "dev-community",
+    "video"
+  ],
+  "watch_keywords": [
+    "claude",
+    "mcp",
+    "langgraph",
+    "fastapi",
+    "pydantic",
+    "next.js",
+    "uv",
+    "anthropics/*"
+  ],
+  "kind_weights": {
+    "release_major": 0.0,
+    "release_patch": 0.0,
+    "technique": 0.0,
+    "survey": -0.15,
+    "news": 0.0,
+    "tutorial": -0.05,
+    "promo": -0.3,
+    "other": 0.0
+  },
+  "updated_at": "2026-09-20T11:00:00Z"
+}

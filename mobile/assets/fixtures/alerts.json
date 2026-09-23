@@ -1,0 +1,473 @@
+{
+  "items": [
+    {
+      "id": "18342",
+      "source_id": "github_release:watchlist",
+      "source_name": "GitHub Releases",
+      "source_type": "github_release",
+      "delivered_at": "2026-09-24T02:18:00Z",
+      "delivery_mode": "instant",
+      "is_exploration": false,
+      "title": "[릴리즈] MCP Python SDK v2.2.0 — HTTP 리다이렉트·OAuth 검증 변경 (v2.2.0 · v1.30.0)",
+      "summary": "스트리밍 HTTP 클라이언트의 리다이렉트 처리와 OAuth 토큰 검증이 바뀐 보안 릴리즈. v1.30.0에 백포트됨.",
+      "categories": [
+        "mcp-tooling",
+        "python-backend"
+      ],
+      "tags": [
+        "mcp",
+        "oauth",
+        "python"
+      ],
+      "url": "https://github.com/modelcontextprotocol/python-sdk/releases/tag/v2.2.0",
+      "importance": 4,
+      "is_saved": true,
+      "feedback": "useful",
+      "rationale": {
+        "score": {
+          "total": 0.71,
+          "threshold": 0.45,
+          "components": {
+            "src": 0.2,
+            "rel": 0.28,
+            "hot": 0.05,
+            "multi": 0.08,
+            "fresh": 0.1,
+            "kind": 0.0
+          }
+        },
+        "routing": "passed",
+        "screening": {
+          "relevance": 0.9,
+          "kind": "release_patch",
+          "topics": [
+            "mcp-tooling",
+            "python-backend"
+          ],
+          "reason": "쓰고 있는 SDK 의 보안 동작 변경, 업그레이드 때 확인 필요"
+        },
+        "judgment": {
+          "importance": 4,
+          "worth_notifying": true,
+          "similar_feedback": []
+        },
+        "trust_note_source": "GitHub Releases"
+      }
+    },
+    {
+      "id": "18301",
+      "source_id": "rss:arxiv-cs-cl",
+      "source_name": "arXiv cs.CL",
+      "source_type": "rss",
+      "delivered_at": "2026-09-23T23:55:00Z",
+      "delivery_mode": "experiment",
+      "is_exploration": true,
+      "title": "BeaconKV: 장문 컨텍스트 KV 캐시 압축으로 추론 2.1배",
+      "summary": "고정 비콘 토큰에 문맥을 요약 저장해 KV 캐시를 8배 줄이고 품질 손실 1% 이내. 코드 공개.",
+      "categories": [
+        "inference-opt"
+      ],
+      "tags": [
+        "kv-cache",
+        "long-context"
+      ],
+      "url": "https://arxiv.org/abs/2609.04567",
+      "importance": 4,
+      "is_saved": false,
+      "feedback": null,
+      "rationale": {
+        "score": {
+          "total": 0.43,
+          "threshold": 0.45,
+          "components": {
+            "src": 0.1,
+            "rel": 0.25,
+            "hot": 0.0,
+            "multi": 0.0,
+            "fresh": 0.1,
+            "kind": 0.0
+          }
+        },
+        "routing": "explore_slot",
+        "screening": {
+          "relevance": 0.83,
+          "kind": "technique",
+          "topics": [
+            "inference-opt"
+          ],
+          "reason": "KV 캐시 압축의 구체 기법과 수치, 코드 공개"
+        },
+        "judgment": {
+          "importance": 4,
+          "worth_notifying": true,
+          "similar_feedback": [
+            {
+              "alert_id": "17220",
+              "feedback": "useful",
+              "title": "PagedAttention v2 — 페이지 단위 KV 캐시 재사용"
+            }
+          ]
+        },
+        "trust_note_source": "arXiv cs.CL"
+      }
+    },
+    {
+      "id": "18290",
+      "source_id": "rss:anthropic",
+      "source_name": "Anthropic",
+      "source_type": "rss",
+      "delivered_at": "2026-09-23T22:00:00Z",
+      "delivery_mode": "instant",
+      "is_exploration": false,
+      "title": "[모델] Claude 5 Fable — 컨텍스트 2배, 가격 동일",
+      "summary": "새 최상위 모델. 툴 사용과 장문 추론 벤치마크 갱신, API 가격은 이전 세대와 동일.",
+      "categories": [
+        "llm-model"
+      ],
+      "tags": [
+        "claude",
+        "model-release"
+      ],
+      "url": "https://www.anthropic.com/news/claude-5-fable",
+      "importance": 5,
+      "is_saved": false,
+      "feedback": null,
+      "rationale": {
+        "score": {
+          "total": 0.78,
+          "threshold": 0.45,
+          "components": {
+            "src": 0.25,
+            "rel": 0.29,
+            "hot": 0.08,
+            "multi": 0.0,
+            "fresh": 0.16,
+            "kind": 0.0
+          }
+        },
+        "routing": "passed",
+        "screening": {
+          "relevance": 0.95,
+          "kind": "release_major",
+          "topics": [
+            "llm-model"
+          ],
+          "reason": "주력으로 쓰는 모델 계열의 새 최상위 모델"
+        },
+        "judgment": {
+          "importance": 5,
+          "worth_notifying": true,
+          "similar_feedback": []
+        },
+        "trust_note_source": "Anthropic"
+      }
+    },
+    {
+      "id": "18011",
+      "source_id": "rss:arxiv-cs-se",
+      "source_name": "arXiv cs.SE",
+      "source_type": "rss",
+      "delivered_at": "2026-09-23T08:40:00Z",
+      "delivery_mode": "quiet",
+      "is_exploration": false,
+      "title": "SDLC 에이전트 서베이 — 2026 상반기 동향",
+      "summary": "소프트웨어 개발 수명주기 전 단계의 에이전트 연구를 분류한 서베이. 벤치마크 비교표 포함.",
+      "categories": [
+        "agent"
+      ],
+      "tags": [
+        "survey",
+        "sdlc"
+      ],
+      "url": "https://arxiv.org/abs/2609.02210",
+      "importance": 3,
+      "is_saved": false,
+      "feedback": "not_useful",
+      "rationale": {
+        "score": {
+          "total": 0.47,
+          "threshold": 0.45,
+          "components": {
+            "src": 0.1,
+            "rel": 0.27,
+            "hot": 0.0,
+            "multi": 0.0,
+            "fresh": 0.1,
+            "kind": 0.0
+          }
+        },
+        "routing": "passed",
+        "screening": {
+          "relevance": 0.64,
+          "kind": "survey",
+          "topics": [
+            "agent"
+          ],
+          "reason": "에이전트 연구 동향 정리, 비교표 있음"
+        },
+        "judgment": {
+          "importance": 3,
+          "worth_notifying": true,
+          "similar_feedback": []
+        },
+        "trust_note_source": "arXiv cs.SE"
+      }
+    },
+    {
+      "id": "17811",
+      "source_id": "rss:arxiv-cs-cl",
+      "source_name": "arXiv cs.CL",
+      "source_type": "rss",
+      "delivered_at": "2026-09-12T01:10:00Z",
+      "delivery_mode": "quiet",
+      "is_exploration": false,
+      "title": "BeaconKV: 장문 컨텍스트 KV 캐시 압축으로 추론 2.1배",
+      "summary": "고정 비콘 토큰에 문맥을 요약 저장해 KV 캐시를 8배 줄이고 품질 손실 1% 이내. 코드 공개.",
+      "categories": [
+        "inference-opt"
+      ],
+      "tags": [
+        "kv-cache",
+        "long-context"
+      ],
+      "url": "https://arxiv.org/abs/2609.04567",
+      "importance": 3,
+      "is_saved": true,
+      "feedback": null,
+      "rationale": {
+        "score": {
+          "total": 0.46,
+          "threshold": 0.45,
+          "components": {
+            "src": 0.1,
+            "rel": 0.25,
+            "hot": 0.0,
+            "multi": 0.0,
+            "fresh": 0.11,
+            "kind": 0.0
+          }
+        },
+        "routing": "passed",
+        "screening": {
+          "relevance": 0.8,
+          "kind": "technique",
+          "topics": [
+            "inference-opt"
+          ],
+          "reason": "KV 캐시 압축 기법과 수치"
+        },
+        "judgment": {
+          "importance": 3,
+          "worth_notifying": true,
+          "similar_feedback": []
+        },
+        "trust_note_source": "arXiv cs.CL"
+      }
+    },
+    {
+      "id": "17630",
+      "source_id": "rss:anthropic",
+      "source_name": "Anthropic",
+      "source_type": "rss",
+      "delivered_at": "2026-09-09T00:30:00Z",
+      "delivery_mode": "instant",
+      "is_exploration": false,
+      "title": "[모델] Claude 5 Fable — 컨텍스트 2배, 가격 동일",
+      "summary": "새 최상위 모델. 툴 사용과 장문 추론 벤치마크 갱신, API 가격은 이전 세대와 동일.",
+      "categories": [
+        "llm-model"
+      ],
+      "tags": [
+        "claude",
+        "model-release"
+      ],
+      "url": "https://www.anthropic.com/news/claude-5-fable",
+      "importance": 5,
+      "is_saved": true,
+      "feedback": null,
+      "rationale": {
+        "score": {
+          "total": 0.8,
+          "threshold": 0.45,
+          "components": {
+            "src": 0.25,
+            "rel": 0.29,
+            "hot": 0.1,
+            "multi": 0.0,
+            "fresh": 0.16,
+            "kind": 0.0
+          }
+        },
+        "routing": "passed",
+        "screening": {
+          "relevance": 0.95,
+          "kind": "release_major",
+          "topics": [
+            "llm-model"
+          ],
+          "reason": "주력으로 쓰는 모델 계열의 새 최상위 모델"
+        },
+        "judgment": {
+          "importance": 5,
+          "worth_notifying": true,
+          "similar_feedback": []
+        },
+        "trust_note_source": "Anthropic"
+      }
+    },
+    {
+      "id": "17502",
+      "source_id": "youtube:jocoding",
+      "source_name": "youtube:jocoding",
+      "source_type": "youtube",
+      "delivered_at": "2026-09-08T10:00:00Z",
+      "delivery_mode": "quiet",
+      "is_exploration": false,
+      "title": "Claude Code 서브에이전트로 1인 개발 팀 만들기",
+      "summary": "서브에이전트에 역할을 나눠 기획·구현·리뷰를 병렬로 돌리는 실습 영상. 설정 파일 예시 포함.",
+      "categories": [
+        "agent",
+        "video"
+      ],
+      "tags": [
+        "claude-code",
+        "subagent"
+      ],
+      "url": "https://www.youtube.com/watch?v=jc0dSubAgnt",
+      "importance": 3,
+      "is_saved": true,
+      "feedback": null,
+      "rationale": {
+        "score": {
+          "total": 0.5,
+          "threshold": 0.45,
+          "components": {
+            "src": 0.1,
+            "rel": 0.26,
+            "hot": 0.0,
+            "multi": 0.0,
+            "fresh": 0.14,
+            "kind": 0.0
+          }
+        },
+        "routing": "passed",
+        "screening": {
+          "relevance": 0.72,
+          "kind": "tutorial",
+          "topics": [
+            "agent",
+            "video"
+          ],
+          "reason": "Claude Code 서브에이전트 실습"
+        },
+        "judgment": {
+          "importance": 3,
+          "worth_notifying": true,
+          "similar_feedback": []
+        },
+        "trust_note_source": "youtube:jocoding"
+      }
+    },
+    {
+      "id": "18336",
+      "source_id": "github_release:watchlist",
+      "source_name": "GitHub Releases",
+      "source_type": "github_release",
+      "delivered_at": null,
+      "delivery_mode": null,
+      "is_exploration": false,
+      "title": "[릴리즈] MCP Python SDK v1.30.0 — OAuth 토큰 검증 백포트",
+      "summary": "v2.2.0 의 OAuth 토큰 검증 변경을 1.x 에 백포트한 패치 릴리즈.",
+      "categories": [
+        "mcp-tooling",
+        "python-backend"
+      ],
+      "tags": [
+        "mcp",
+        "oauth"
+      ],
+      "url": "https://github.com/modelcontextprotocol/python-sdk/releases/tag/v1.30.0",
+      "importance": 3,
+      "is_saved": false,
+      "feedback": null,
+      "rationale": {
+        "score": {
+          "total": 0.66,
+          "threshold": 0.45,
+          "components": {
+            "src": 0.2,
+            "rel": 0.26,
+            "hot": 0.0,
+            "multi": 0.08,
+            "fresh": 0.12,
+            "kind": 0.0
+          }
+        },
+        "routing": "cluster_dup",
+        "screening": {
+          "relevance": 0.88,
+          "kind": "release_patch",
+          "topics": [
+            "mcp-tooling",
+            "python-backend"
+          ],
+          "reason": "쓰고 있는 SDK 의 보안 백포트"
+        },
+        "judgment": {
+          "importance": 3,
+          "worth_notifying": true,
+          "similar_feedback": []
+        },
+        "trust_note_source": "GitHub Releases"
+      }
+    },
+    {
+      "id": "18107",
+      "source_id": "rss:arxiv-cs-se",
+      "source_name": "arXiv cs.SE",
+      "source_type": "rss",
+      "delivered_at": null,
+      "delivery_mode": null,
+      "is_exploration": false,
+      "title": "Survey of Agentic Software Engineering, 2026H1",
+      "summary": "2026 상반기 에이전트 기반 소프트웨어 공학 연구를 과제·평가 방식별로 정리한 서베이.",
+      "categories": [
+        "agent"
+      ],
+      "tags": [
+        "survey",
+        "agentic-se"
+      ],
+      "url": "https://arxiv.org/abs/2609.01234",
+      "importance": null,
+      "is_saved": false,
+      "feedback": null,
+      "rationale": {
+        "score": {
+          "total": 0.41,
+          "threshold": 0.45,
+          "components": {
+            "src": 0.1,
+            "rel": 0.24,
+            "hot": 0.0,
+            "multi": 0.0,
+            "fresh": 0.1,
+            "kind": -0.15
+          }
+        },
+        "routing": "dropped",
+        "screening": {
+          "relevance": 0.62,
+          "kind": "survey",
+          "topics": [
+            "agent"
+          ],
+          "reason": "서베이 성격의 동향 정리, 구체 수치 없음"
+        },
+        "judgment": null,
+        "trust_note_source": "arXiv cs.SE"
+      }
+    }
+  ],
+  "next_cursor": null
+}

@@ -1,0 +1,292 @@
+{
+  "id": "12",
+  "title": "9월 2주차 리포트",
+  "subtitle": "relevance 구간 × kind · 통과/탈락/👍/👎",
+  "period_start": "2026-09-08",
+  "period_end": "2026-09-14",
+  "created_at": "2026-09-15T00:00:05Z",
+  "sections": [
+    {
+      "key": "funnel",
+      "title": "깔때기",
+      "columns": [
+        "stage",
+        "count"
+      ],
+      "rows": [
+        [
+          "collected",
+          4210
+        ],
+        [
+          "rule_passed",
+          3620
+        ],
+        [
+          "triage_scored",
+          3550
+        ],
+        [
+          "score_passed",
+          240
+        ],
+        [
+          "judge_passed",
+          118
+        ],
+        [
+          "sent",
+          61
+        ]
+      ]
+    },
+    {
+      "key": "drop_reasons",
+      "title": "탈락 사유",
+      "columns": [
+        "stage",
+        "reason",
+        "count"
+      ],
+      "rows": [
+        [
+          "rule",
+          "exclude_keyword",
+          58
+        ],
+        [
+          "rule",
+          "dup",
+          532
+        ],
+        [
+          "score",
+          "stale",
+          0
+        ],
+        [
+          "score",
+          "low_score",
+          3310
+        ],
+        [
+          "llm",
+          "judge_false",
+          122
+        ]
+      ]
+    },
+    {
+      "key": "by_source",
+      "title": "소스별 발송·👍·👎·정밀도",
+      "columns": [
+        "source",
+        "trust",
+        "adjusted",
+        "sent",
+        "useful",
+        "useless",
+        "precision"
+      ],
+      "rows": [
+        [
+          "rss:arxiv-cs-cl",
+          0.5,
+          0.58,
+          12,
+          7,
+          2,
+          0.78
+        ],
+        [
+          "youtube:codingapple",
+          0.6,
+          0.52,
+          5,
+          1,
+          4,
+          0.2
+        ],
+        [
+          "rss:anthropic",
+          1.0,
+          null,
+          4,
+          3,
+          0,
+          1.0
+        ],
+        [
+          "rss:openai",
+          0.9,
+          null,
+          3,
+          0,
+          0,
+          null
+        ]
+      ]
+    },
+    {
+      "key": "by_importance",
+      "title": "importance 별 정밀도",
+      "columns": [
+        "importance",
+        "sent",
+        "useful",
+        "useless",
+        "precision"
+      ],
+      "rows": [
+        [
+          5,
+          6,
+          5,
+          0,
+          1.0
+        ],
+        [
+          4,
+          21,
+          12,
+          5,
+          0.71
+        ],
+        [
+          3,
+          20,
+          7,
+          6,
+          0.54
+        ],
+        [
+          2,
+          14,
+          3,
+          4,
+          0.43
+        ]
+      ]
+    },
+    {
+      "key": "by_score_band",
+      "title": "점수 구간",
+      "columns": [
+        "band",
+        "passed",
+        "dropped",
+        "useful",
+        "useless"
+      ],
+      "rows": [
+        [
+          "0.35–0.45",
+          9,
+          1480,
+          4,
+          2
+        ],
+        [
+          "0.45–0.55",
+          30,
+          120,
+          11,
+          6
+        ],
+        [
+          "0.55+",
+          22,
+          10,
+          12,
+          7
+        ]
+      ]
+    },
+    {
+      "key": "triage_vs_judge",
+      "title": "선별 보정 (relevance 구간 × kind)",
+      "columns": [
+        "relevance_band",
+        "kind",
+        "triage_passed",
+        "judge_passed",
+        "useful",
+        "useless"
+      ],
+      "rows": [
+        [
+          "0.8+",
+          "technique",
+          120,
+          48,
+          14,
+          3
+        ],
+        [
+          "0.5–0.8",
+          "survey",
+          90,
+          6,
+          0,
+          4
+        ],
+        [
+          "0.5–0.8",
+          "release_patch",
+          31,
+          18,
+          6,
+          1
+        ]
+      ]
+    },
+    {
+      "key": "low_relevance_samples",
+      "title": "낮은 relevance 표본",
+      "columns": [
+        "item_id",
+        "title",
+        "relevance",
+        "kind"
+      ],
+      "rows": [
+        [
+          "18120",
+          "LLM 기반 자율주행 의사결정 프레임워크 제안",
+          0.3,
+          "survey"
+        ],
+        [
+          "18118",
+          "Multilingual Sarcasm Detection with LLM Ensembles",
+          0.2,
+          null
+        ]
+      ]
+    },
+    {
+      "key": "trust_adjust",
+      "title": "trust 보정",
+      "columns": [
+        "source",
+        "trust",
+        "adjusted",
+        "delta"
+      ],
+      "rows": [
+        [
+          "rss:arxiv-cs-cl",
+          0.5,
+          0.58,
+          0.08
+        ],
+        [
+          "youtube:codingapple",
+          0.6,
+          0.52,
+          -0.08
+        ]
+      ]
+    }
+  ]
+}
