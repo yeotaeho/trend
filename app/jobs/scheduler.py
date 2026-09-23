@@ -1,4 +1,4 @@
-# 스케줄러 — config/sources.yaml + 앱 on/off 를 DB 에 동기화하고 소스별·파이프라인·발송 잡을 등록
+# 스케줄러 — sources.yaml + 앱 on/off 를 DB 에 동기화하고 소스별·파이프라인·발송·주간 리포트 잡 등록
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
 
-from app.config import get_source_configs
+from app.config import get_rules, get_source_configs
 from app.db.models import Source
 from app.db.prefs import fetch_prefs, source_overrides
 from app.db.session import session_scope
@@ -17,6 +17,7 @@ from app.jobs.collect import run_source
 from app.jobs.feedback import run_feedback
 from app.jobs.notify import run_notify
 from app.jobs.pipeline import run_pipeline
+from app.jobs.report import run_weekly_report
 from app.log import get_logger
 
 PIPELINE_INTERVAL_SEC = 120
@@ -90,6 +91,18 @@ async def start_scheduler() -> AsyncIOScheduler:
     scheduler.add_job(run_pipeline, id="pipeline", **_interval(PIPELINE_INTERVAL_SEC))
     scheduler.add_job(run_notify, id="notify", **_interval(NOTIFY_INTERVAL_SEC))
     scheduler.add_job(run_feedback, id="feedback", **_interval(FEEDBACK_INTERVAL_SEC))
+    # 월요일 09:00 에 지난주(월~일)를 만든다. 늦게 돌아도 같은 주를 덮어쓰므로 grace 는 무제한이다.
+    scheduler.add_job(
+        run_weekly_report,
+        id="weekly_report",
+        trigger="cron",
+        day_of_week="mon",
+        hour=9,
+        timezone=get_rules().notify.timezone,
+        coalesce=True,
+        misfire_grace_time=None,
+        max_instances=1,
+    )
     scheduler.start()
     log.info("scheduler.started", jobs=[job.id for job in scheduler.get_jobs()])
     return scheduler

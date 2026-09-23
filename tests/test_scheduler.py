@@ -1,7 +1,8 @@
-# 스케줄러 테스트 — 잡 즉시·밀린 회차 1회, 앱 on/off 재기동 보존, 비활성 잡 등록, 이름 중복 거부
+# 스케줄러 테스트 — 즉시·밀린 회차 1회, 주간 리포트 cron, 앱 on/off 보존, 비활성 잡, 이름 중복 거부
 
 import asyncio
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any
 
@@ -61,10 +62,26 @@ async def test_missed_runs_collapse_into_one_late_run(one_source, monkeypatch):
     scheduler = await sched.start_scheduler()
     jobs = {job.id: job for job in scheduler.get_jobs()}
 
-    assert set(jobs) == {"source:rss:test", "pipeline", "notify", "feedback"}
+    assert set(jobs) == {"source:rss:test", "pipeline", "notify", "feedback", "weekly_report"}
     for job in jobs.values():
         assert job.coalesce is True, job.id
         assert job.misfire_grace_time is None, job.id
+
+
+async def test_weekly_report_runs_monday_nine_seoul(one_source, monkeypatch):
+    monkeypatch.setattr(AsyncIOScheduler, "start", lambda self: None)
+    scheduler = await sched.start_scheduler()
+    job = scheduler.get_job("weekly_report")
+
+    trigger = job.trigger
+    assert str(trigger.timezone) == "Asia/Seoul"
+    assert {f.name: str(f) for f in trigger.fields if not f.is_default} == {
+        "day_of_week": "mon",
+        "hour": "9",
+    }
+    assert {f.name: str(f) for f in trigger.fields}["minute"] == "0"
+    now = datetime(2026, 9, 24, 3, 0, tzinfo=UTC)  # 목요일 12:00 KST
+    assert trigger.get_next_fire_time(None, now) == datetime(2026, 9, 28, 0, 0, tzinfo=UTC)
 
 
 class SourceTable:
