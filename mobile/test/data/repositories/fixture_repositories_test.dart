@@ -213,6 +213,7 @@ void main() {
       expect(result.restored, isTrue);
       expect(result.alert.deliveryMode, DeliveryMode.feedOnly);
       expect(result.alert.feedback, FeedbackVerdict.useful);
+      expect((await feed.feed()).items.first.id, '18107');
       final restored = await feedAlert('18107');
       expect(restored.deliveryMode, DeliveryMode.feedOnly);
       expect(restored.feedback, FeedbackVerdict.useful);

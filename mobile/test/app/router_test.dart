@@ -6,9 +6,15 @@ import 'package:go_router/go_router.dart';
 import 'package:tech_radar/app/router.dart';
 import 'package:tech_radar/app/routes.dart';
 import 'package:tech_radar/core/icons.dart';
+import 'package:tech_radar/core/labels.dart';
 import 'package:tech_radar/core/theme/app_colors.dart';
 import 'package:tech_radar/core/theme/app_theme.dart';
 import 'package:tech_radar/core/widgets/app_tab_bar.dart';
+import 'package:tech_radar/core/widgets/segmented_control.dart';
+import 'package:tech_radar/data/models/models.dart';
+import 'package:tech_radar/data/repositories/repositories.dart';
+import 'package:tech_radar/data/repositories/repository_providers.dart';
+import 'package:tech_radar/features/filtered/filtered_page.dart';
 
 import '../helpers.dart';
 
@@ -17,7 +23,13 @@ Future<GoRouter> _pumpApp(WidgetTester tester, {String? at}) async {
   addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: fixtureOverrides(),
+      overrides: fixtureOverrides(
+        extra: [
+          filteredRepositoryProvider.overrideWithValue(
+            _EmptyFilteredRepository(),
+          ),
+        ],
+      ),
       child: MaterialApp.router(theme: buildAppTheme(), routerConfig: router),
     ),
   );
@@ -104,8 +116,29 @@ void main() {
     router.go('${AppRoutes.filtered}?view=kind');
     await tester.pumpAndSettle();
     expect(find.byType(AppTabBar), findsOneWidget);
-    expect(find.text('화면 10 · 준비 중\n종류별'), findsOneWidget);
+    expect(find.text('걸러진 항목'), findsOneWidget);
+    expect(
+      tester.widget<FilteredPage>(find.byType(FilteredPage)).initialView,
+      FilteredView.kind,
+    );
     _expectActive(tester, '피드');
+  });
+
+  testWidgets('걸러진 항목 경로의 view 쿼리만 바뀌어도 보기를 맞춘다', (tester) async {
+    final router = await _pumpApp(tester);
+    FilteredView selected() => tester
+        .widget<SegmentedControl<FilteredView>>(
+          find.byType(SegmentedControl<FilteredView>),
+        )
+        .selected;
+
+    router.go('${AppRoutes.filtered}?view=source');
+    await tester.pumpAndSettle();
+    expect(selected(), FilteredView.source);
+
+    router.go('${AppRoutes.filtered}?view=gate');
+    await tester.pumpAndSettle();
+    expect(selected(), FilteredView.gate);
   });
 
   testWidgets('하위 화면의 뒤로가기는 탭 루트로 돌아간다', (tester) async {
@@ -156,4 +189,17 @@ void main() {
     expect(find.byType(AppTabBar), findsNothing);
     expect(find.text('피드백'), findsOneWidget);
   });
+}
+
+/// 걸러진 항목 화면이 fixture 를 읽지 않고 바로 그려지게 하는 빈 요약.
+class _EmptyFilteredRepository extends Fake implements FilteredRepository {
+  @override
+  Future<FilteredSummary> summary({int? hours}) async => const FilteredSummary(
+    windowHours: 24,
+    filteredTotal: 0,
+    collectedTotal: 0,
+    gateCounts: {},
+    borderline: Borderline(count: 0, range: [0.35, 0.45]),
+    unclassifiedCount: 0,
+  );
 }

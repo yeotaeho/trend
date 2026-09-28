@@ -13,6 +13,7 @@ import '../features/settings/interests_page.dart';
 import '../features/settings/settings_page.dart';
 import '../features/notification_settings/notification_settings_page.dart';
 import '../features/sources/sources_page.dart';
+import '../features/filtered/filtered_page.dart';
 import 'placeholder_page.dart';
 import 'routes.dart';
 import 'tab_shell.dart';
@@ -46,11 +47,7 @@ GoRouter createRouter({String initialLocation = AppRoutes.feed}) {
                         (v) => v.value == state.uri.queryParameters['view'],
                         orElse: () => FilteredView.source,
                       );
-                      return PlaceholderPage(
-                        screen: view == FilteredView.kind ? '10' : '09',
-                        title: '걸러진 항목',
-                        note: view.label,
-                      );
+                      return FilteredPage(initialView: view);
                     },
                   ),
                 ],
