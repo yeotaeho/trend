@@ -270,19 +270,21 @@ class SavedController extends AsyncNotifier<SavedState> {
   }
 
   /// 되돌리기 — 같은 폴더·메모·읽음으로 다시 찜하고 원래 자리에 넣는다 (계약 4.7 `DELETE`).
+  /// 다시 찜한 즉시 넣는다. 뒤 PATCH 가 실패해도 서버에 다시 생긴 찜은 목록에 남는다.
   Future<void> undoUnsave(SavedItem item, int index) async {
-    var restored = await _repo.save(item.alertId, folderId: item.folder?.id);
-    if (item.memo != null) {
-      restored = await _repo.update(
-        item.alertId,
-        SavedItemPatch.memo(item.memo),
-      );
+    _insert(await _repo.save(item.alertId, folderId: item.folder?.id), index);
+    try {
+      if (item.memo != null) {
+        _replace(
+          await _repo.update(item.alertId, SavedItemPatch.memo(item.memo)),
+        );
+      }
+      if (item.isRead) {
+        _replace(await _repo.update(item.alertId, const SavedItemPatch.read()));
+      }
+    } finally {
+      await _refreshFolders();
     }
-    if (item.isRead) {
-      restored = await _repo.update(item.alertId, const SavedItemPatch.read());
-    }
-    _insert(restored, index);
-    await _refreshFolders();
   }
 
   void _insert(SavedItem item, int index) => _set(

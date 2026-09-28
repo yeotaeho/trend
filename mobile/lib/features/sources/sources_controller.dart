@@ -14,7 +14,7 @@ class SourcesController extends AsyncNotifier<SourcesResponse> {
   Future<SourcesResponse> build() =>
       ref.watch(sourceRepositoryProvider).sources();
 
-  /// 토글을 먼저 반영하고 `PATCH /sources/{id}` 한다. 실패하면 되돌리고 예외를 다시 던진다.
+  /// 토글을 먼저 반영하고 `PATCH /sources/{id}` 한다. 실패하면 그 소스만 되돌리고 예외를 다시 던진다.
   Future<void> setEnabled(String sourceId, {required bool enabled}) async {
     final previous = state.value;
     if (previous == null) return;
@@ -29,7 +29,11 @@ class SourcesController extends AsyncNotifier<SourcesResponse> {
         state = AsyncData(_replace(current, saved));
       }
     } catch (_) {
-      if (ref.mounted) state = AsyncData(previous);
+      // 이 소스만 되돌린다. 그사이 저장된 다른 소스 토글은 남긴다.
+      final current = state.value;
+      if (ref.mounted && current != null) {
+        state = AsyncData(_replace(current, source));
+      }
       rethrow;
     }
   }
