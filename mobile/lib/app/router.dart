@@ -6,15 +6,14 @@ import 'package:go_router/go_router.dart';
 import '../core/labels.dart';
 import '../features/alert/alert_detail_page.dart';
 import '../features/feed/feed_page.dart';
+import '../features/filtered/filtered_page.dart';
+import '../features/notification_settings/notification_settings_page.dart';
 import '../features/profile/profile_page.dart';
 import '../features/profile/report_page.dart';
 import '../features/saved/saved_page.dart';
 import '../features/settings/interests_page.dart';
 import '../features/settings/settings_page.dart';
-import '../features/notification_settings/notification_settings_page.dart';
 import '../features/sources/sources_page.dart';
-import '../features/filtered/filtered_page.dart';
-import 'placeholder_page.dart';
 import 'routes.dart';
 import 'tab_shell.dart';
 
