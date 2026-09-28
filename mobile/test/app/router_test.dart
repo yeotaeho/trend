@@ -50,6 +50,7 @@ void _expectActive(WidgetTester tester, String active) {
 }
 
 void main() {
+
   testWidgets('첫 화면은 피드 탭이 활성이다', (tester) async {
     await _pumpApp(tester);
 

@@ -9,6 +9,8 @@ import '../features/feed/feed_page.dart';
 import '../features/profile/profile_page.dart';
 import '../features/profile/report_page.dart';
 import '../features/saved/saved_page.dart';
+import '../features/settings/interests_page.dart';
+import '../features/settings/settings_page.dart';
 import 'placeholder_page.dart';
 import 'routes.dart';
 import 'tab_shell.dart';
@@ -65,21 +67,11 @@ GoRouter createRouter({String initialLocation = AppRoutes.feed}) {
             routes: [
               GoRoute(
                 path: AppRoutes.settings,
-                builder: (context, state) => const PlaceholderPage(
-                  screen: '–',
-                  title: '설정',
-                  isRoot: true,
-                  links: [
-                    PlaceholderLink('관심사', AppRoutes.interests),
-                    PlaceholderLink('알림 설정', AppRoutes.notifications),
-                    PlaceholderLink('수집 소스', AppRoutes.sources),
-                  ],
-                ),
+                builder: (context, state) => const SettingsPage(),
                 routes: [
                   GoRoute(
                     path: 'interests',
-                    builder: (context, state) =>
-                        const PlaceholderPage(screen: '04', title: '관심사'),
+                    builder: (context, state) => const InterestsPage(),
                   ),
                   GoRoute(
                     path: 'notifications',
