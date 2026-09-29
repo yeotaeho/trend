@@ -1,14 +1,19 @@
-# 디스코드 발송·인터랙션 테스트 — 마크다운 이스케이프, 무음 플래그, 서명 검증, 오류 처리
+# 디스코드 발송·인터랙션 테스트 — 이스케이프, 무음 플래그, 서명 검증, 오류 처리, 버튼 피드백 기록
 
+import json
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 import httpx
 import pytest
 import respx
+from fastapi.testclient import TestClient
 from nacl.signing import SigningKey
 
+from app.api import discord as dc
 from app.api.discord import verify_signature
 from app.db.models import Item, Summary
+from app.main import app
 from app.notify.discord import (
     FLAG_SUPPRESS_NOTIFICATIONS,
     _call,
@@ -17,6 +22,7 @@ from app.notify.discord import (
     render,
 )
 from app.schemas import Level
+from tests.fakes import UpsertRecorder, fake_session_scope
 
 NOW = datetime(2026, 9, 3, 12, 0, tzinfo=UTC)
 
@@ -46,7 +52,7 @@ def test_escape_md_neutralizes_formatting():
 
 def test_render_escapes_and_includes_source():
     item, summary = make_pair()
-    text = render(item, summary, "rss:vercel", now=NOW)
+    text = render(item, summary, "rss:vercel", title=summary.title_ko, now=NOW)
 
     assert r"\*정식\*" in text
     assert "출처: rss:vercel · 12분 전" in text
@@ -55,7 +61,7 @@ def test_render_escapes_and_includes_source():
 
 def test_push_payload_has_buttons_and_no_mentions():
     item, summary = make_pair()
-    payload = build_payload(item, summary, Level.PUSH, "rss:vercel")
+    payload = build_payload(item, summary, Level.PUSH, "rss:vercel", title=summary.title_ko)
 
     assert "flags" not in payload
     assert payload["allowed_mentions"] == {"parse": []}
@@ -66,7 +72,7 @@ def test_push_payload_has_buttons_and_no_mentions():
 
 def test_silent_payload_sets_suppress_flag():
     item, summary = make_pair()
-    payload = build_payload(item, summary, Level.SILENT, "rss:vercel")
+    payload = build_payload(item, summary, Level.SILENT, "rss:vercel", title=summary.title_ko)
 
     assert payload["flags"] == FLAG_SUPPRESS_NOTIFICATIONS
 
@@ -106,11 +112,15 @@ def test_escape_md_covers_link_masking_and_line_markers():
 def test_link_button_omitted_for_bad_scheme_or_long_url():
     item, summary = make_pair()
     item.url = "javascript:alert(1)"
-    buttons = build_payload(item, summary, Level.PUSH, "rss:x")["components"][0]["components"]
+    buttons = build_payload(item, summary, Level.PUSH, "rss:x", title=summary.title_ko)[
+        "components"
+    ][0]["components"]
     assert [b.get("custom_id") for b in buttons] == ["fb:useful:7", "fb:useless:7"]
 
     item.url = "https://example.com/" + "a" * 600
-    buttons = build_payload(item, summary, Level.PUSH, "rss:x")["components"][0]["components"]
+    buttons = build_payload(item, summary, Level.PUSH, "rss:x", title=summary.title_ko)[
+        "components"
+    ][0]["components"]
     assert all("url" not in b for b in buttons)
 
 
@@ -228,6 +238,32 @@ async def test_repeated_short_429_exhausts_as_rate_limited():
 
 def test_explore_payload_has_prefix_and_is_silent():
     item, summary = make_pair()
-    payload = build_payload(item, summary, Level.EXPLORE, "rss:vercel")
+    payload = build_payload(item, summary, Level.EXPLORE, "rss:vercel", title=summary.title_ko)
     assert payload["content"].startswith("🧪 실험 · 경계 항목\n\n")
     assert payload["flags"] == FLAG_SUPPRESS_NOTIFICATIONS
+
+
+def test_button_upserts_feedback_for_default_user(monkeypatch):
+    key = SigningKey.generate()
+    recorder = UpsertRecorder()
+    monkeypatch.setattr(
+        dc,
+        "get_settings",
+        lambda: SimpleNamespace(discord_public_key=key.verify_key.encode().hex()),
+    )
+    monkeypatch.setattr(dc, "upsert_feedback", recorder)
+    monkeypatch.setattr(dc, "session_scope", fake_session_scope)
+    body = json.dumps({"type": 3, "data": {"custom_id": "fb:useful:7"}}).encode()
+    timestamp = "1700000000"
+
+    res = TestClient(app).post(
+        "/webhook/discord",
+        content=body,
+        headers={
+            "X-Signature-Ed25519": key.sign(timestamp.encode() + body).signature.hex(),
+            "X-Signature-Timestamp": timestamp,
+        },
+    )
+
+    assert res.status_code == 200
+    assert recorder.calls == [(1, 7, "useful", {"source": "discord"})]

@@ -1,0 +1,20 @@
+# 앱 전용 정적값 (GET /meta·프로필·수집 소스 화면). 파이프라인은 이 파일을 읽지 않는다.
+onboarding: {done: 8, total: 8}
+personal_model_threshold: 50
+resurface_unread_after_days: 7
+screening_relevance_floor: 0.5
+planned_sources: [Reddit, GitHub Trending, X]
+# policy.taxonomy slug → 앱 표시 라벨. 선별 어휘는 rules.yaml 이 소유하고 여기는 라벨만 둔다.
+taxonomy_labels:
+  llm-model: 새 모델·벤치마크
+  agent: 에이전트 패턴
+  mcp-tooling: MCP·IDE·CLI
+  inference-opt: 추론 최적화
+  rag-retrieval: RAG·검색
+  training-finetune: 학습·파인튜닝
+  python-backend: Python 백엔드
+  web-frontend: Next.js·React
+  devops-infra: DevOps·인프라
+  ai-safety-eval: 안전·평가
+  dev-community: 논쟁·가격·정책
+  video: 영상 채널

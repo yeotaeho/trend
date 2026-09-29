@@ -1,0 +1,77 @@
+{
+  "stats": {
+    "enabled_count": 9,
+    "total": 10,
+    "window_hours": 24,
+    "items_collected": 612,
+    "llm_budget": {
+      "triage": {
+        "used": 41,
+        "cap": 60
+      },
+      "judge": {
+        "used": 18,
+        "cap": 300
+      },
+      "explore": {
+        "used": 1,
+        "cap": 3
+      }
+    }
+  },
+  "sources": [
+    {
+      "id": "rss:anthropic",
+      "display_name": "Anthropic",
+      "type": "rss",
+      "group": "blog_rss",
+      "enabled": true,
+      "poll_interval_min": 15,
+      "trust": 1.0,
+      "trust_base": 1.0,
+      "trust_calibrated": null,
+      "consecutive_failures": 5,
+      "error_hint": "미러 확인 필요",
+      "last_error": "HTTPStatusError: 404",
+      "last_polled_at": "2026-09-23T20:00:00Z",
+      "repo_count": null
+    },
+    {
+      "id": "github_release:watchlist",
+      "display_name": "GitHub Releases",
+      "type": "github_release",
+      "group": "paper_release_video",
+      "enabled": true,
+      "poll_interval_min": 30,
+      "trust": 1.0,
+      "trust_base": 1.0,
+      "trust_calibrated": null,
+      "consecutive_failures": 0,
+      "error_hint": null,
+      "last_error": null,
+      "last_polled_at": "2026-09-24T02:30:00Z",
+      "repo_count": 10
+    },
+    {
+      "id": "youtube:codingapple",
+      "display_name": "코딩애플",
+      "type": "youtube",
+      "group": "paper_release_video",
+      "enabled": false,
+      "poll_interval_min": 15,
+      "trust": 0.52,
+      "trust_base": 0.6,
+      "trust_calibrated": 0.52,
+      "consecutive_failures": 0,
+      "error_hint": null,
+      "last_error": null,
+      "last_polled_at": "2026-09-22T10:00:00Z",
+      "repo_count": null
+    }
+  ],
+  "planned_sources": [
+    "Reddit",
+    "GitHub Trending",
+    "X"
+  ]
+}

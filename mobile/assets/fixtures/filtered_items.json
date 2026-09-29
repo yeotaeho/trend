@@ -1,0 +1,289 @@
+{
+  "items": [
+    {
+      "id": "18120",
+      "title": "LLM 기반 자율주행 의사결정 프레임워크 제안",
+      "url": "https://arxiv.org/abs/2609.03011",
+      "source_id": "rss:arxiv-cs-ai",
+      "source_name": "arXiv cs.AI",
+      "source_type": "rss",
+      "dropped_gate": "screening",
+      "dropped_at": "2026-09-24T02:40:00Z",
+      "relevance": 0.3,
+      "kind": "survey",
+      "topics": [],
+      "reason": "관심 스택과 무관한 도메인 서베이",
+      "score": {
+        "total": 0.14,
+        "threshold": 0.45,
+        "components": {
+          "src": 0.1,
+          "rel": 0.09,
+          "hot": 0.0,
+          "multi": 0.0,
+          "fresh": 0.1,
+          "kind": -0.15
+        }
+      },
+      "matched_keywords": [],
+      "exploration_candidate": false,
+      "restored": false
+    },
+    {
+      "id": "18118",
+      "title": "Multilingual Sarcasm Detection with LLM Ensembles",
+      "url": "https://arxiv.org/abs/2609.02977",
+      "source_id": "rss:arxiv-cs-cl",
+      "source_name": "arXiv cs.CL",
+      "source_type": "rss",
+      "dropped_gate": "screening",
+      "dropped_at": "2026-09-24T02:25:00Z",
+      "relevance": 0.2,
+      "kind": "technique",
+      "topics": [],
+      "reason": "관심 스택과 무관한 NLP 과제",
+      "score": {
+        "total": 0.25,
+        "threshold": 0.45,
+        "components": {
+          "src": 0.1,
+          "rel": 0.07,
+          "hot": 0.0,
+          "multi": 0.0,
+          "fresh": 0.08,
+          "kind": 0.0
+        }
+      },
+      "matched_keywords": [],
+      "exploration_candidate": false,
+      "restored": false
+    },
+    {
+      "id": "18336",
+      "title": "[릴리즈] MCP Python SDK v1.30.0 — OAuth 토큰 검증 백포트",
+      "url": "https://github.com/modelcontextprotocol/python-sdk/releases/tag/v1.30.0",
+      "source_id": "github_release:watchlist",
+      "source_name": "GitHub Releases",
+      "source_type": "github_release",
+      "dropped_gate": "cluster_dup",
+      "dropped_at": "2026-09-24T02:18:00Z",
+      "relevance": 0.88,
+      "kind": "release_patch",
+      "topics": [
+        "mcp-tooling",
+        "python-backend"
+      ],
+      "reason": "쓰고 있는 SDK 의 보안 백포트",
+      "score": {
+        "total": 0.66,
+        "threshold": 0.45,
+        "components": {
+          "src": 0.2,
+          "rel": 0.26,
+          "hot": 0.0,
+          "multi": 0.08,
+          "fresh": 0.12,
+          "kind": 0.0
+        }
+      },
+      "matched_keywords": [],
+      "exploration_candidate": false,
+      "restored": false
+    },
+    {
+      "id": "18093",
+      "title": "Survey of Agentic Software Engineering, 2026H1",
+      "url": "https://arxiv.org/abs/2609.01234",
+      "source_id": "rss:arxiv-cs-ai",
+      "source_name": "arXiv cs.AI",
+      "source_type": "rss",
+      "dropped_gate": "score",
+      "dropped_at": "2026-09-24T02:10:00Z",
+      "relevance": 0.62,
+      "kind": "survey",
+      "topics": [
+        "agent"
+      ],
+      "reason": "서베이 성격의 동향 정리, 구체 수치 없음",
+      "score": {
+        "total": 0.41,
+        "threshold": 0.45,
+        "components": {
+          "src": 0.1,
+          "rel": 0.24,
+          "hot": 0.0,
+          "multi": 0.0,
+          "fresh": 0.0,
+          "kind": -0.15
+        }
+      },
+      "matched_keywords": [],
+      "exploration_candidate": false,
+      "restored": false
+    },
+    {
+      "id": "18140",
+      "title": "SmolLM4 공개 — 온디바이스용 1.7B 모델",
+      "url": "https://huggingface.co/blog/smollm4",
+      "source_id": "rss:huggingface",
+      "source_name": "Hugging Face",
+      "source_type": "rss",
+      "dropped_gate": "dedup",
+      "dropped_at": "2026-09-24T02:05:00Z",
+      "relevance": null,
+      "kind": null,
+      "topics": [],
+      "reason": null,
+      "score": null,
+      "matched_keywords": [],
+      "exploration_candidate": false,
+      "restored": false
+    },
+    {
+      "id": "18112",
+      "title": "Vercel Ship 2026 스폰서 세션 안내",
+      "url": "https://vercel.com/blog/ship-2026-sponsors",
+      "source_id": "rss:vercel",
+      "source_name": "Vercel",
+      "source_type": "rss",
+      "dropped_gate": "exclude",
+      "dropped_at": "2026-09-24T01:50:00Z",
+      "relevance": null,
+      "kind": null,
+      "topics": [],
+      "reason": null,
+      "score": null,
+      "matched_keywords": [
+        "sponsored"
+      ],
+      "exploration_candidate": false,
+      "restored": false
+    },
+    {
+      "id": "18131",
+      "title": "Beacon-style KV compaction for 1M-token context",
+      "url": "https://arxiv.org/abs/2609.05120",
+      "source_id": "rss:arxiv-cs-ai",
+      "source_name": "arXiv cs.AI",
+      "source_type": "rss",
+      "dropped_gate": "score",
+      "dropped_at": "2026-09-24T01:30:00Z",
+      "relevance": 0.81,
+      "kind": "technique",
+      "topics": [
+        "inference-opt"
+      ],
+      "reason": "KV 캐시 압축 기법, 수치 있음",
+      "score": {
+        "total": 0.43,
+        "threshold": 0.45,
+        "components": {
+          "src": 0.1,
+          "rel": 0.24,
+          "hot": 0.0,
+          "multi": 0.0,
+          "fresh": 0.09,
+          "kind": 0.0
+        }
+      },
+      "matched_keywords": [],
+      "exploration_candidate": true,
+      "restored": false
+    },
+    {
+      "id": "18101",
+      "title": "파이썬 입문 30분 완성 — 변수부터 함수까지",
+      "url": "https://www.youtube.com/watch?v=jcPyIntro30",
+      "source_id": "youtube:jocoding",
+      "source_name": "youtube:jocoding",
+      "source_type": "youtube",
+      "dropped_gate": "judgment",
+      "dropped_at": "2026-09-24T01:10:00Z",
+      "relevance": 0.55,
+      "kind": "tutorial",
+      "topics": [
+        "python-backend",
+        "video"
+      ],
+      "reason": "입문 튜토리얼 반복",
+      "score": {
+        "total": 0.48,
+        "threshold": 0.45,
+        "components": {
+          "src": 0.1,
+          "rel": 0.23,
+          "hot": 0.0,
+          "multi": 0.0,
+          "fresh": 0.2,
+          "kind": -0.05
+        }
+      },
+      "matched_keywords": [],
+      "exploration_candidate": false,
+      "restored": false
+    },
+    {
+      "id": "18107",
+      "title": "Survey of Agentic Software Engineering, 2026H1",
+      "url": "https://arxiv.org/abs/2609.01234",
+      "source_id": "rss:arxiv-cs-se",
+      "source_name": "arXiv cs.SE",
+      "source_type": "rss",
+      "dropped_gate": "score",
+      "dropped_at": "2026-09-24T00:41:12Z",
+      "relevance": 0.62,
+      "kind": "survey",
+      "topics": [
+        "agent"
+      ],
+      "reason": "서베이 성격의 동향 정리, 구체 수치 없음",
+      "score": {
+        "total": 0.41,
+        "threshold": 0.45,
+        "components": {
+          "src": 0.1,
+          "rel": 0.24,
+          "hot": 0.0,
+          "multi": 0.0,
+          "fresh": 0.1,
+          "kind": -0.15
+        }
+      },
+      "matched_keywords": [],
+      "exploration_candidate": false,
+      "restored": false
+    },
+    {
+      "id": "18077",
+      "title": "LLM Evaluation: A Position Paper",
+      "url": "https://arxiv.org/abs/2609.00871",
+      "source_id": "rss:arxiv-cs-cl",
+      "source_name": "arXiv cs.CL",
+      "source_type": "rss",
+      "dropped_gate": "screening",
+      "dropped_at": "2026-09-24T00:20:00Z",
+      "relevance": 0.4,
+      "kind": "survey",
+      "topics": [
+        "ai-safety-eval"
+      ],
+      "reason": "수치 없는 포지션 논문",
+      "score": {
+        "total": 0.22,
+        "threshold": 0.45,
+        "components": {
+          "src": 0.1,
+          "rel": 0.17,
+          "hot": 0.0,
+          "multi": 0.0,
+          "fresh": 0.1,
+          "kind": -0.15
+        }
+      },
+      "matched_keywords": [],
+      "exploration_candidate": false,
+      "restored": false
+    }
+  ],
+  "next_cursor": null
+}

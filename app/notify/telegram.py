@@ -17,9 +17,11 @@ API = "https://api.telegram.org/bot{token}/{method}"
 TIMEOUT = httpx.Timeout(15.0)
 
 
-def render(item: Item, summary: Summary, source_name: str, *, now: datetime | None = None) -> str:
+def render(
+    item: Item, summary: Summary, source_name: str, *, title: str, now: datetime | None = None
+) -> str:
     lines = [
-        f"🆕 <b>{escape(summary.title_ko)}</b>",
+        f"🆕 <b>{escape(title)}</b>",
         escape(summary.summary_ko),
         f"<i>출처: {escape(source_name)} · {relative_time(item.published_at, now=now)}</i>",
     ]
@@ -50,10 +52,12 @@ async def _call(method: str, payload: dict[str, object]) -> dict[str, object]:
 class TelegramNotifier:
     channel = "telegram"
 
-    async def send(self, item: Item, summary: Summary, level: Level, source_name: str) -> str:
+    async def send(
+        self, item: Item, summary: Summary, level: Level, source_name: str, *, title: str
+    ) -> str:
         payload = {
             "chat_id": get_settings().telegram_chat_id,
-            "text": render(item, summary, source_name),
+            "text": render(item, summary, source_name, title=title),
             "parse_mode": "HTML",
             "link_preview_options": {"is_disabled": True},
             "disable_notification": level is not Level.PUSH,

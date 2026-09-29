@@ -1,0 +1,22 @@
+{
+  "window_hours": 24,
+  "filtered_total": 571,
+  "collected_total": 612,
+  "gate_counts": {
+    "exclude": 9,
+    "dedup": 58,
+    "stale": 0,
+    "screening": 318,
+    "score": 164,
+    "judgment": 21,
+    "cluster_dup": 1
+  },
+  "borderline": {
+    "count": 154,
+    "range": [
+      0.35,
+      0.45
+    ]
+  },
+  "unclassified_count": 67
+}

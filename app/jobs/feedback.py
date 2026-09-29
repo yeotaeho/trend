@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.db.feedback import upsert_feedback
+from app.db.feedback import APP_SOURCE, upsert_feedback
 from app.db.models import Feedback, Notification
 from app.db.session import session_scope
+from app.db.users import DEFAULT_USER_ID
 from app.log import get_logger
 from app.notify.discord import DiscordNotifier, fetch_recent_messages, reaction_verdicts
 
@@ -20,22 +21,27 @@ async def sync_feedback(session: AsyncSession, verdicts: dict[str, str]) -> int:
 
     같은 판정을 매번 다시 upsert 하면 created_at 이 폴링마다 밀려 '최근 30일' 창이 어긋난다.
     리액션을 지운 경우는 건드리지 않는다 — 마지막 판정이 남는다.
+    앱에서 정하거나 해제한 판정(source='app')은 리액션이 달라도 덮어쓰지 않는다.
     """
     if not verdicts:
         return 0
     stmt = (
         select(Notification.message_id, Notification.item_id, Feedback.verdict)
-        .outerjoin(Feedback, Feedback.item_id == Notification.item_id)
+        .outerjoin(
+            Feedback,
+            (Feedback.item_id == Notification.item_id) & (Feedback.user_id == DEFAULT_USER_ID),
+        )
         .where(
             Notification.channel == DiscordNotifier.channel,
             Notification.message_id.in_(list(verdicts)),
+            or_(Feedback.source.is_(None), Feedback.source != APP_SOURCE),
         )
     )
     changed = 0
     for message_id, item_id, current in (await session.execute(stmt)).all():
         wanted = verdicts[message_id]
         if wanted != current:
-            await upsert_feedback(session, item_id, wanted)
+            await upsert_feedback(session, DEFAULT_USER_ID, item_id, wanted, source="discord")
             changed += 1
     return changed
 

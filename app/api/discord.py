@@ -11,6 +11,7 @@ from nacl.signing import VerifyKey
 from app.config import get_settings
 from app.db.feedback import upsert_feedback
 from app.db.session import session_scope
+from app.db.users import DEFAULT_USER_ID
 from app.log import get_logger
 from app.notify.base import parse_feedback_callback
 
@@ -72,7 +73,7 @@ async def discord_interaction(
     verdict, item_id = parsed
 
     async with session_scope() as session:
-        await upsert_feedback(session, item_id, verdict)
+        await upsert_feedback(session, DEFAULT_USER_ID, item_id, verdict, source="discord")
 
     log.info("webhook.discord_feedback", item_id=item_id, verdict=verdict)
     # 3초 안에 응답해야 한다. 별도 API 호출 없이 응답 본문으로 바로 답한다.

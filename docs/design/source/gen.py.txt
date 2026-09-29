@@ -1,0 +1,415 @@
+# 기술파악 앱 화면 8장 생성기 — 공통 스타일 + 화면별 본문을 .dc.html 로 쓴다
+import json, textwrap
+
+CSS = """
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap');
+    body { margin: 0; font-family: 'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif; color: #1c1b19; background: #f5f4f0; -webkit-font-smoothing: antialiased; }
+    a { color: #2d5be3; text-decoration: none; } a:hover { color: #1f45b8; }
+    * { box-sizing: border-box; }
+"""
+
+def screen(body, h=844):
+    return f"""<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>{CSS}  </style>
+</helmet>
+<div style="width: 390px; height: {h}px; background: #f5f4f0; display: flex; flex-direction: column; overflow: hidden; position: relative;">
+{body}
+</div>
+</x-dc>
+</body>
+</html>
+"""
+
+# ---------- 공통 조각 ----------
+def icon(name, size=20, color="#1c1b19"):
+    paths = {
+        "back": '<path d="M15 5l-7 7 7 7"/>',
+        "bell": '<path d="M6 8a6 6 0 0 1 12 0v5l2 3H4l2-3z"/><path d="M10 19a2 2 0 0 0 4 0"/>',
+        "home": '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+        "user": '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+        "sliders": '<path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+        "thumbup": '<path d="M7 11v9H3v-9zM7 11l4-8a2 2 0 0 1 2 2v4h5a2 2 0 0 1 2 2l-1 7a2 2 0 0 1-2 2H7"/>',
+        "thumbdown": '<path d="M17 13V4h4v9zM17 13l-4 8a2 2 0 0 1-2-2v-4H6a2 2 0 0 1-2-2l1-7a2 2 0 0 1 2-2h10"/>',
+        "external": '<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v6H4V6h6"/>',
+        "chev": '<path d="M9 5l7 7-7 7"/>',
+        "plus": '<path d="M12 5v14M5 12h14"/>',
+        "flask": '<path d="M9 3h6M10 3v6L4 20h16l-6-11V3"/>',
+        "check": '<path d="M5 12l5 5 9-10"/>',
+        "search": '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+        "github": '<path d="M12 2a10 10 0 0 0-3 19.5c.5 0 .7-.2.7-.5v-2c-2.8.6-3.4-1.2-3.4-1.2-.4-1.1-1-1.4-1-1.4-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5a4 4 0 0 1 1-2.7 3.7 3.7 0 0 1 .1-2.7s.8-.3 2.8 1a9.5 9.5 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7a4 4 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.8v2.7c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/>',
+        "discord": '<path d="M8 17c-2.5 0-4-1.5-5-3 0-3 1-6 2.5-8.5C7 5 8.5 4.5 10 4.5l.5 1.5a12 12 0 0 1 3 0l.5-1.5c1.5 0 3 .5 4.5 1 1.5 2.5 2.5 5.5 2.5 8.5-1 1.5-2.5 3-5 3l-1-1.5c-1.5.5-3.5.5-5 0z"/><circle cx="9.5" cy="12" r="1"/><circle cx="14.5" cy="12" r="1"/>',
+        "mail": '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+        "rss": '<path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1.5"/>',
+        "youtube": '<rect x="3" y="6" width="18" height="12" rx="3"/><path d="M10 9l5 3-5 3z"/>',
+        "clock": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+        "trend": '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+        "logo": '<path d="M4 18L10 6l4 8 2-4 4 8"/>',
+        "bookmark": '<path d="M6 3h12v18l-6-4-6 4z"/>',
+        "bookmarkfill": '<path d="M6 3h12v18l-6-4-6 4z" fill="currentColor"/>',
+        "folder": '<path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+        "dots": '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
+        "chevd": '<path d="M5 9l7 7 7-7"/>',
+    }
+    return f'<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; color: {color};">{paths[name]}</svg>'
+
+def topbar(title, right=""):
+    return f"""
+  <div style="display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 16px; margin-top: 44px;">
+    <div style="display: flex; align-items: center; gap: 8px;">{icon("back")}<div style="font-size: 18px; font-weight: 600;">{title}</div></div>
+    <div style="display: flex; align-items: center; gap: 8px;">{right}</div>
+  </div>"""
+
+def tabbar(active):
+    tabs = [("home","피드"),("bookmark","찜"),("sliders","설정"),("user","내 프로필")]
+    cells = ""
+    for key, label in tabs:
+        on = key == active
+        color = "#2d5be3" if on else "#8a877f"
+        cells += f'<div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-grow: 1; padding-top: 10px;">{icon(key, 22, color)}<div style="font-size: 11px; font-weight: {600 if on else 500}; color: {color};">{label}</div></div>'
+    return f"""
+  <div style="display: flex; border-top: 1px solid #e5e2db; background: #ffffff; height: 80px; margin-top: auto;">{cells}</div>"""
+
+def section(label):
+    return f'<div style="font-size: 12px; font-weight: 600; color: #8a877f; letter-spacing: 0.04em; padding: 20px 20px 8px;">{label}</div>'
+
+def card(inner, pad="16px", gap="12px"):
+    return f'<div style="background: #ffffff; border: 1px solid #e5e2db; border-radius: 14px; padding: {pad}; display: flex; flex-direction: column; gap: {gap}; margin: 0 16px;">{inner}</div>'
+
+def row(label, value, sub=None, last=False, toggle=None):
+    border = "" if last else "border-bottom: 1px solid #efece6;"
+    subhtml = f'<div style="font-size: 12px; color: #8a877f; margin-top: 2px;">{sub}</div>' if sub else ""
+    if toggle is None:
+        right = f'<div style="display: flex; align-items: center; gap: 6px; font-size: 14px; color: #55524b;"><span>{value}</span>{icon("chev", 16, "#b8b4ab")}</div>'
+    else:
+        right = tog(toggle)
+    return f'<div style="display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding: 10px 0; {border}"><div><div style="font-size: 15px; font-weight: 500;">{label}</div>{subhtml}</div>{right}</div>'
+
+def tog(on):
+    bg = "#2d5be3" if on else "#d6d2c9"
+    left = "22px" if on else "2px"
+    return f'<div style="width: 44px; height: 26px; border-radius: 13px; background: {bg}; position: relative; flex-shrink: 0;"><div style="position: absolute; top: 2px; left: {left}; width: 22px; height: 22px; border-radius: 11px; background: #ffffff;"></div></div>'
+
+def chip(label, on=False):
+    if on:
+        return f'<div style="padding: 9px 14px; border-radius: 20px; background: #1c1b19; color: #ffffff; font-size: 13px; font-weight: 500;">{label}</div>'
+    return f'<div style="padding: 9px 14px; border-radius: 20px; background: #ffffff; border: 1px solid #d9d5cc; color: #55524b; font-size: 13px; font-weight: 500;">{label}</div>'
+
+def badge(label, kind="push"):
+    styles = {
+        "push": ("#e8eefc", "#2d5be3"),
+        "silent": ("#f0eee9", "#6b6862"),
+        "explore": ("#fdf1e2", "#b5651d"),
+        "feed": ("#eef5ee", "#3d7a4a"),
+    }
+    bg, fg = styles[kind]
+    return f'<div style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: {bg}; color: {fg};">{label}</div>'
+
+def primary_btn(label, w="100%"):
+    return f'<div style="height: 52px; border-radius: 12px; background: #1c1b19; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; width: {w};">{label}</div>'
+
+def fb_buttons(up=None):
+    def b(lbl, ic, on):
+        bg = "#1c1b19" if on else "#ffffff"; fg = "#ffffff" if on else "#55524b"; bd = "#1c1b19" if on else "#d9d5cc"
+        return f'<div style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 40px; flex-grow: 1; border-radius: 10px; border: 1px solid {bd}; background: {bg}; color: {fg}; font-size: 13px; font-weight: 600;">{icon(ic, 16, fg)}{lbl}</div>'
+    return f'<div style="display: flex; gap: 8px;">{b("유용", "thumbup", up is True)}{b("불필요", "thumbdown", up is False)}</div>'
+
+files = {}
+
+# ---------- 1. 로그인 ----------
+def oauth(ic, label):
+    return f'<div style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px; border-radius: 12px; border: 1px solid #d9d5cc; background: #ffffff; font-size: 15px; font-weight: 500;">{icon(ic, 20)}<span>{label}</span></div>'
+files["Login.dc.html"] = screen(f"""
+  <div style="display: flex; flex-direction: column; padding: 96px 24px 0; gap: 12px; flex-grow: 1;">
+    <div style="width: 48px; height: 48px; border-radius: 14px; background: #1c1b19; display: flex; align-items: center; justify-content: center;">{icon("logo", 26, "#ffffff")}</div>
+    <div style="font-size: 30px; font-weight: 700; line-height: 1.2; margin-top: 20px;">기술 파악</div>
+    <div style="font-size: 15px; color: #6b6862; line-height: 1.55;">새 모델·릴리즈·MCP·기법을 여러 소스에서 감지해 읽을 가치가 있는 것만 알려드립니다.</div>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 40px;">
+      {oauth("discord", "Discord로 계속하기")}
+      {oauth("github", "GitHub로 계속하기")}
+      {oauth("mail", "이메일로 계속하기")}
+    </div>
+    <div style="font-size: 12px; color: #8a877f; line-height: 1.6; margin-top: 12px;">Discord 계정으로 로그인하면 기존 채널의 👍/👎 피드백 이력이 그대로 이어집니다.</div>
+  </div>
+  <div style="padding: 0 24px 40px; font-size: 12px; color: #8a877f; text-align: center;">계속하면 <a href="#">이용약관</a>과 <a href="#">개인정보 처리방침</a>에 동의하는 것입니다.</div>
+""")
+
+# ---------- 2. 온보딩 콜드스타트 ----------
+def rate_card(title, src, when, tag):
+    return card(f"""
+      <div style="display: flex; align-items: center; gap: 8px;">{badge(tag, "silent")}<div style="font-size: 12px; color: #8a877f;">{src} · {when}</div></div>
+      <div style="font-size: 16px; font-weight: 600; line-height: 1.4;">{title}</div>
+      {fb_buttons()}
+    """)
+files["Onboarding.dc.html"] = screen(f"""
+  <div style="padding: 60px 20px 0; display: flex; flex-direction: column; gap: 8px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;"><div style="font-size: 12px; font-weight: 600; color: #8a877f;">시작하기 · 2 / 3</div><div style="font-size: 13px; color: #8a877f;">건너뛰기</div></div>
+    <div style="height: 4px; background: #e5e2db; border-radius: 2px; display: flex;"><div style="width: 66%; background: #2d5be3; border-radius: 2px;"></div></div>
+    <div style="font-size: 24px; font-weight: 700; line-height: 1.3; margin-top: 20px;">최근 항목 8개에<br>반응을 남겨 주세요</div>
+    <div style="font-size: 14px; color: #6b6862; line-height: 1.55;">카테고리 체크보다 실제 항목에 남긴 👍/👎가 더 정확한 시작점이 됩니다. 프로필 벡터의 초기값으로 씁니다.</div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 20px;">
+    {rate_card("Claude Code 2.2 — 서브에이전트 병렬 실행과 훅 API", "GitHub Releases", "3시간 전", "release_major")}
+    {rate_card("BeaconKV: 장문 컨텍스트 KV 캐시 압축으로 추론 2.1배", "arXiv cs.CL", "어제", "technique")}
+    {rate_card("SDLC 에이전트 서베이 — 2026 상반기 동향", "arXiv cs.SE", "어제", "survey")}
+  </div>
+  <div style="margin-top: auto; padding: 16px 20px 32px; display: flex; flex-direction: column; gap: 10px; background: #f5f4f0;">
+    <div style="font-size: 12px; color: #8a877f; text-align: center;">3 / 8 응답</div>
+    {primary_btn("다음")}
+  </div>
+""")
+
+# ---------- 3. 피드(알림 이력) ----------
+def bm_btn(on=False):
+    return f'<div style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; border: 1px solid #d9d5cc; background: #ffffff; flex-shrink: 0;">{icon("bookmarkfill" if on else "bookmark", 18, "#2d5be3" if on else "#55524b")}</div>'
+
+def feed_card(title, summary, src, when, tags, level, lvl_label, fb=None, explore=False, saved=False):
+    ex = f'<div style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #b5651d;">{icon("flask", 14, "#b5651d")}실험 · 경계 항목</div>' if explore else ""
+    tg = " ".join(f'<span style="font-size: 12px; color: #2d5be3;">#{t}</span>' for t in tags)
+    return card(f"""
+      {ex}
+      <div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #8a877f;">{src} · {when}</div>{badge(lvl_label, level)}</div>
+      <div style="font-size: 16px; font-weight: 600; line-height: 1.4;">{title}</div>
+      <div style="font-size: 13.5px; color: #55524b; line-height: 1.55;">{summary}</div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">{tg}</div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #d9d5cc; background: #ffffff; font-size: 13px; font-weight: 600; color: #1c1b19;">{icon("external", 16)}원문</div>
+        {bm_btn(saved)}
+        <div style="display: flex; gap: 8px; flex-grow: 1;">{fb_buttons(fb)}</div>
+      </div>
+    """, gap="10px")
+files["Main.dc.html"] = screen(f"""
+  <div style="display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 20px; margin-top: 44px;">
+    <div style="font-size: 22px; font-weight: 700;">오늘</div>
+    <div style="display: flex; align-items: center; gap: 14px;">{icon("search", 22)}{icon("bell", 22)}</div>
+  </div>
+  <div style="display: flex; gap: 8px; padding: 4px 16px 12px; overflow: hidden;">{chip("전체", True)}{chip("즉시")}{chip("조용히")}{chip("실험")}{chip("👍 유용")}</div>
+  <div style="display: flex; justify-content: space-between; padding: 0 20px 8px; font-size: 12px; color: #8a877f;"><span>오늘 push 4 / 15</span><span style="color: #2d5be3; font-weight: 600;">걸러짐 571건 보기 ›</span></div>
+  <div style="display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+    {feed_card("[릴리즈] MCP Python SDK v2.2.0 — HTTP 리다이렉트·OAuth 검증 변경 (v2.2.0 · v1.30.0)", "스트리밍 HTTP 클라이언트의 리다이렉트 처리와 OAuth 토큰 검증이 바뀐 보안 릴리즈. v1.30.0에 백포트됨.", "GitHub Releases", "42분 전", ["mcp-tooling","python-backend"], "push", "즉시", fb=True, saved=True)}
+    {feed_card("BeaconKV: 장문 컨텍스트 KV 캐시 압축으로 추론 2.1배", "고정 비콘 토큰에 문맥을 요약 저장해 KV 캐시를 8배 줄이고 품질 손실 1% 이내. 코드 공개.", "arXiv cs.CL", "3시간 전", ["inference-opt"], "explore", "실험", explore=True)}
+    {feed_card("[모델] Claude 5 Fable — 컨텍스트 2배, 가격 동일", "새 최상위 모델. 툴 사용과 장문 추론 벤치마크 갱신, API 가격은 이전 세대와 동일.", "Anthropic", "5시간 전", ["llm-model"], "push", "즉시")}
+  </div>
+  {tabbar("home")}
+""")
+
+# ---------- 4. 관심사 ----------
+tax = [("llm-model","새 모델·벤치마크",True),("agent","에이전트 패턴",True),("mcp-tooling","MCP·IDE·CLI",True),("inference-opt","추론 최적화",True),("rag-retrieval","RAG·검색",False),("training-finetune","학습·파인튜닝",False),("python-backend","Python 백엔드",True),("web-frontend","Next.js·React",True),("devops-infra","DevOps·인프라",False),("ai-safety-eval","안전·평가",False),("dev-community","논쟁·가격·정책",True),("video","영상 채널",True)]
+taxhtml = ""
+for key, ko, on in tax:
+    bg = "#1c1b19" if on else "#ffffff"; fg = "#ffffff" if on else "#1c1b19"; sub = "#b8b4ab" if on else "#8a877f"; bd = "#1c1b19" if on else "#d9d5cc"
+    ck = f'<div style="width: 18px; height: 18px; border-radius: 9px; background: #2d5be3; display: flex; align-items: center; justify-content: center;">{icon("check", 12, "#ffffff")}</div>' if on else '<div style="width: 18px; height: 18px; border-radius: 9px; border: 1.5px solid #d9d5cc;"></div>'
+    taxhtml += f'<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 12px; background: {bg}; border: 1px solid {bd};"><div><div style="font-size: 14px; font-weight: 600; color: {fg};">{ko}</div><div style="font-size: 11px; color: {sub}; font-family: ui-monospace, Menlo, monospace;">{key}</div></div>{ck}</div>'
+kinds = [("release_major","메이저 릴리즈","+0"),("release_patch","패치 릴리즈","0"),("technique","기법·논문","0"),("survey","서베이·전망","−0.15"),("tutorial","튜토리얼","−0.05"),("promo","홍보·구인","−0.30")]
+kindhtml = ""
+for i,(k,ko,w) in enumerate(kinds):
+    neg = w.startswith("−")
+    kindhtml += row(ko, f'<span style="font-family: ui-monospace, Menlo, monospace; color: {"#b5651d" if neg else "#55524b"};">{w}</span>', sub=k, last=(i==len(kinds)-1))
+files["Interests.dc.html"] = screen(h=1340, body=f"""
+  {topbar("관심사", '<div style="font-size: 14px; font-weight: 600; color: #2d5be3;">저장</div>')}
+  <div style="display: flex; flex-direction: column; overflow: hidden;">
+    {section("나를 한 줄로 (선별 프롬프트에 그대로 들어갑니다)")}
+    {card('<div style="font-size: 14px; line-height: 1.6; color: #1c1b19;">AI 시스템 개발자. LLM 애플리케이션·에이전트·MCP를 직접 만든다. 주력 스택: Python(FastAPI, SQLAlchemy, Pydantic), Postgres, Docker, TypeScript/Next.js.</div><div style="font-size: 12px; color: #8a877f;">관심 없음: 채용·홍보·입문 튜토리얼·개발과 무관한 금융 콘텐츠</div>')}
+    {section("카테고리 · 8 / 12 선택")}
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 0 16px;">{taxhtml}</div>
+    {section("주목 스택 · 저장소")}
+    <div style="display: flex; gap: 8px; padding: 0 16px; flex-wrap: wrap;">{chip("claude")}{chip("mcp")}{chip("langgraph")}{chip("fastapi")}{chip("pydantic")}{chip("next.js")}{chip("uv")}{chip("+ 추가")}</div>
+    {section("변화 종류별 가중치 (kind)")}
+    {card(kindhtml, pad="4px 16px", gap="0")}
+  </div>
+  {tabbar("sliders")}
+""")
+
+# ---------- 5. 알림 설정 ----------
+def seg(opts, on):
+    cells = ""
+    for o in opts:
+        act = o == on
+        cells += f'<div style="flex-grow: 1; text-align: center; padding: 8px 0; border-radius: 8px; font-size: 13px; font-weight: 600; background: {"#ffffff" if act else "transparent"}; color: {"#1c1b19" if act else "#8a877f"}; box-shadow: {"0 1px 2px rgba(0,0,0,0.08)" if act else "none"};">{o}</div>'
+    return f'<div style="display: flex; gap: 2px; padding: 3px; background: #ebe8e1; border-radius: 10px;">{cells}</div>'
+files["NotifySettings.dc.html"] = screen(h=1120, body=f"""
+  {topbar("알림 설정")}
+  <div style="display: flex; flex-direction: column; overflow: hidden;">
+    {section("채널")}
+    {card(row("앱 푸시 (FCM)", "", toggle=True) + row("Discord 채널", "", sub="#trend-alerts · 👍/👎 리액션 동기화", toggle=True) + row("Telegram 봇", "", sub="연결 안 됨", toggle=False, last=True), pad="4px 16px", gap="0")}
+    {section("알림 피로 방지")}
+    {card(row("하루 push 상한", "15건") + row("무음 시간", "23:00 – 08:00", sub="Asia/Seoul · 무음 중엔 피드에만 쌓입니다") + row("같은 이슈 하루 1건", "", sub="버전 형제 릴리즈는 제목에 병기", toggle=True, last=True), pad="4px 16px", gap="0")}
+    {section("중요도별 강도")}
+    {card('<div style="display: flex; flex-direction: column; gap: 14px;"><div><div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 500; margin-bottom: 8px;"><span>importance 5 · 4</span></div>' + seg(["즉시","조용히","피드만"], "즉시") + '</div><div><div style="font-size: 14px; font-weight: 500; margin-bottom: 8px;">importance 3</div>' + seg(["즉시","조용히","피드만"], "조용히") + '</div><div><div style="font-size: 14px; font-weight: 500; margin-bottom: 8px;">importance 2 · 1</div>' + seg(["즉시","조용히","피드만"], "피드만") + '</div></div>')}
+    {section("실험")}
+    {card(row("탐색 슬롯", "", sub="점수 경계 항목을 하루 1건 🧪로 보내 라벨을 모읍니다", toggle=True, last=True), pad="4px 16px", gap="0")}
+  </div>
+  {tabbar("sliders")}
+""")
+
+# ---------- 6. 수집 설정 ----------
+def src_row(ic, name, sub, trust, on=True, err=False, last=False):
+    border = "" if last else "border-bottom: 1px solid #efece6;"
+    status = f'<div style="font-size: 11px; font-weight: 600; color: #c2410c;">실패 5회 · 미러 확인 필요</div>' if err else f'<div style="font-size: 11px; color: #8a877f;">{sub}</div>'
+    return f'<div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; {border}"><div style="width: 36px; height: 36px; border-radius: 10px; background: #f0eee9; display: flex; align-items: center; justify-content: center;">{icon(ic, 18, "#55524b")}</div><div style="flex-grow: 1;"><div style="font-size: 14px; font-weight: 600; font-family: ui-monospace, Menlo, monospace;">{name}</div>{status}</div><div style="font-size: 12px; color: #8a877f; font-family: ui-monospace, Menlo, monospace;">trust {trust}</div>{tog(on)}</div>'
+files["SourceSettings.dc.html"] = screen(h=1140, body=f"""
+  {topbar("수집 소스", icon("plus", 22))}
+  <div style="display: flex; flex-direction: column; overflow: hidden;">
+    <div style="display: flex; gap: 12px; padding: 8px 16px 4px;">
+      {card('<div style="font-size: 11px; color: #8a877f;">활성 소스</div><div style="font-size: 22px; font-weight: 700;">9<span style="font-size: 13px; color: #8a877f; font-weight: 500;"> / 10</span></div>', pad="12px 14px", gap="2px").replace("margin: 0 16px;", "margin: 0; flex-grow: 1;")}
+      {card('<div style="font-size: 11px; color: #8a877f;">오늘 수집</div><div style="font-size: 22px; font-weight: 700;">612<span style="font-size: 13px; color: #8a877f; font-weight: 500;"> 건</span></div>', pad="12px 14px", gap="2px").replace("margin: 0 16px;", "margin: 0; flex-grow: 1;")}
+      {card('<div style="font-size: 11px; color: #8a877f;">LLM 예산</div><div style="font-size: 22px; font-weight: 700;">41<span style="font-size: 13px; color: #8a877f; font-weight: 500;"> / 60</span></div>', pad="12px 14px", gap="2px").replace("margin: 0 16px;", "margin: 0; flex-grow: 1;")}
+    </div>
+    {section("기술 블로그 · RSS")}
+    {card(src_row("rss","rss:anthropic","15분 · 커뮤니티 미러","1.0", err=True) + src_row("rss","rss:openai","15분","0.9") + src_row("rss","rss:huggingface","15분","0.8", last=True), pad="2px 16px", gap="0")}
+    {section("논문 · 릴리즈 · 영상")}
+    {card(src_row("rss","rss:arxiv-cs-ai","60분 · 보정 0.5 → 0.58","0.5") + src_row("github","github_release:watchlist","30분 · 저장소 10개","1.0") + src_row("youtube","youtube:jocoding","15분","0.6") + src_row("youtube","youtube:codingapple","15분","0.6", on=False, last=True), pad="2px 16px", gap="0")}
+    {section("미착수")}
+    <div style="display: flex; gap: 8px; padding: 0 16px; flex-wrap: wrap;">{chip("Hacker News")}{chip("Reddit")}{chip("GitHub Trending")}{chip("X")}</div>
+  </div>
+  {tabbar("sliders")}
+""")
+
+# ---------- 7. 피드백 (항목 상세 + 판정 근거) ----------
+def bar(label, val, w, color="#2d5be3"):
+    return f'<div style="display: flex; align-items: center; gap: 10px; font-size: 12px;"><div style="width: 56px; color: #8a877f; font-family: ui-monospace, Menlo, monospace;">{label}</div><div style="flex-grow: 1; height: 8px; background: #efece6; border-radius: 4px; display: flex;"><div style="width: {w}; background: {color}; border-radius: 4px;"></div></div><div style="width: 44px; text-align: right; font-family: ui-monospace, Menlo, monospace; color: #55524b;">{val}</div></div>'
+files["Feedback.dc.html"] = screen(h=1180, body=f"""
+  {topbar("피드백", icon("external", 22))}
+  <div style="display: flex; flex-direction: column; overflow: hidden; gap: 12px; padding-top: 4px;">
+    {card(f'<div style="display: flex; align-items: center; justify-content: space-between;"><div style="font-size: 12px; color: #8a877f;">arXiv cs.CL · 3시간 전</div>{badge("실험", "explore")}</div><div style="font-size: 17px; font-weight: 700; line-height: 1.4;">BeaconKV: 장문 컨텍스트 KV 캐시 압축으로 추론 2.1배</div><div style="font-size: 13.5px; color: #55524b; line-height: 1.55;">고정 비콘 토큰에 문맥을 요약 저장해 KV 캐시를 8배 줄이고 품질 손실 1% 이내. 코드 공개.</div>')}
+    {section("이 알림이 온 이유")}
+    {card(f'<div style="display: flex; justify-content: space-between; align-items: baseline;"><div style="font-size: 13px; font-weight: 600;">점수 0.43 <span style="color: #8a877f; font-weight: 500;">/ 통과선 0.45</span></div><div style="font-size: 12px; color: #b5651d; font-weight: 600;">경계 → 탐색 슬롯</div></div>' + bar("src", "0.10", "20%") + bar("rel", "0.25", "50%") + bar("fresh", "0.10", "20%") + bar("kind", "0.00", "0%", "#b8b4ab") + f'<div style="font-size: 12px; color: #6b6862; line-height: 1.55; padding-top: 4px;">선별: relevance 0.83 · kind <span style="font-family: ui-monospace, Menlo, monospace;">technique</span> — "KV 캐시 압축의 구체 기법과 수치, 코드 공개"<br>판정: importance 4 · 유사 피드백 👍 "PagedAttention v2 …"</div>')}
+    {section("당신의 판정")}
+    <div style="padding: 0 16px;">{fb_buttons(True)}</div>
+    {card('<div style="font-size: 12px; color: #8a877f; line-height: 1.6;">👍는 다음 선별·판정에 사례로 들어가고 <span style="font-family: ui-monospace, Menlo, monospace;">arXiv cs.CL</span>의 신뢰도를 보정합니다. Discord에서 누른 리액션과 자동으로 합쳐집니다.</div>', pad="12px 16px")}
+    {section("최근 판정 · 오늘 3건")}
+    {card('<div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid #efece6;">' + icon("thumbup", 16, "#2d5be3") + '<div style="flex-grow: 1; font-size: 13px;">MCP Python SDK v2.2.0 — HTTP 리다이렉트…</div><div style="font-size: 11px; color: #8a877f;">42분</div></div><div style="display: flex; align-items: center; gap: 10px; padding: 6px 0;">' + icon("thumbdown", 16, "#b5651d") + '<div style="flex-grow: 1; font-size: 13px;">SDLC 에이전트 서베이 — 2026 상반기 동향</div><div style="font-size: 11px; color: #8a877f;">어제</div></div>', pad="4px 16px", gap="0")}
+  </div>
+""")
+
+# ---------- 8. 사용자 파악 (내 프로필) ----------
+def stat(label, val, sub):
+    return f'<div style="background: #ffffff; border: 1px solid #e5e2db; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 2px; flex-grow: 1;"><div style="font-size: 11px; color: #8a877f;">{label}</div><div style="font-size: 24px; font-weight: 700;">{val}</div><div style="font-size: 11px; color: #8a877f;">{sub}</div></div>'
+def hbar(label, up, down, tot):
+    return f'<div style="display: flex; align-items: center; gap: 10px; font-size: 12px;"><div style="width: 92px; color: #55524b;">{label}</div><div style="flex-grow: 1; height: 10px; border-radius: 5px; background: #efece6; display: flex; overflow: hidden;"><div style="width: {up}; background: #2d5be3;"></div><div style="width: {down}; background: #e0a373;"></div></div><div style="width: 28px; text-align: right; color: #8a877f; font-family: ui-monospace, Menlo, monospace;">{tot}</div></div>'
+files["Profile.dc.html"] = screen(h=1060, body=f"""
+  <div style="display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 20px; margin-top: 44px;">
+    <div style="font-size: 22px; font-weight: 700;">내 프로필</div>
+    <div style="font-size: 13px; color: #8a877f;">최근 14일</div>
+  </div>
+  <div style="display: flex; flex-direction: column; overflow: hidden;">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 4px 20px 12px;">
+      <div style="width: 44px; height: 44px; border-radius: 22px; background: #1c1b19; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">여</div>
+      <div><div style="font-size: 15px; font-weight: 600;">여태호</div><div style="font-size: 12px; color: #8a877f;">Discord 연결됨 · 온보딩 8/8 완료</div></div>
+    </div>
+    <div style="display: flex; gap: 10px; padding: 0 16px;">{stat("받은 알림", "61", "push 38 · 실험 9")}{stat("유용 비율", "64%", "👍 27 / 👎 15")}{stat("놓친 이슈", "1", "직접 찾아본 건")}</div>
+    {section("반응한 카테고리 · 👍 / 👎")}
+    {card(hbar("mcp-tooling", "55%", "10%", "14") + hbar("llm-model", "48%", "8%", "11") + hbar("inference-opt", "36%", "12%", "9") + hbar("agent", "25%", "20%", "8") + hbar("video", "10%", "30%", "6") + hbar("dev-community", "8%", "24%", "4"), gap="10px")}
+    {section("학습된 취향")}
+    {card('<div style="display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; justify-content: space-between; font-size: 13px;"><span style="color: #55524b;">서베이·전망 논문</span><span style="font-weight: 600; color: #b5651d;">👎 4 / 4 → 자동 감점 중</span></div><div style="display: flex; justify-content: space-between; font-size: 13px;"><span style="color: #55524b;">arXiv cs.CL 신뢰도</span><span style="font-weight: 600; font-family: ui-monospace, Menlo, monospace;">0.50 → 0.58</span></div><div style="display: flex; justify-content: space-between; font-size: 13px;"><span style="color: #55524b;">youtube:codingapple</span><span style="font-weight: 600; font-family: ui-monospace, Menlo, monospace;">0.60 → 0.52</span></div><div style="display: flex; justify-content: space-between; font-size: 13px;"><span style="color: #55524b;">프로필 벡터 라벨</span><span style="font-weight: 600;">42건 <span style="color: #8a877f; font-weight: 500;">(개인 모델 전환 50건)</span></span></div></div>')}
+    {section("주간 리포트")}
+    {card(f'<div style="display: flex; align-items: center; justify-content: space-between;"><div><div style="font-size: 14px; font-weight: 600;">9월 2주차 리포트</div><div style="font-size: 12px; color: #8a877f;">relevance 구간 × kind · 통과/탈락/👍/👎</div></div>{icon("chev", 18, "#b8b4ab")}</div>', pad="14px 16px")}
+  </div>
+  {tabbar("user")}
+""")
+
+
+# ---------- 9/10. 걸러진 항목 ----------
+GATE=[("exclude","#b8b4ab"),("중복","#d6d2c9"),("선별","#9fb4ea"),("점수","#2d5be3"),("판정","#b5651d")]
+def gate_bar(counts):
+    tot=sum(counts)
+    segs="".join(f'<div style="width: {c/tot*100:.1f}%; background: {GATE[i][1]};"></div>' for i,c in enumerate(counts))
+    leg="".join(f'<div style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: #8a877f;"><div style="width: 8px; height: 8px; border-radius: 3px; background: {GATE[i][1]};"></div>{GATE[i][0]} {c}</div>' for i,c in enumerate(counts))
+    return f'<div style="height: 10px; border-radius: 5px; overflow: hidden; display: flex;">{segs}</div><div style="display: flex; gap: 10px; flex-wrap: wrap;">{leg}</div>'
+def stage_tag(stage):
+    m={"exclude":("#f0eee9","#6b6862"),"중복":("#f0eee9","#6b6862"),"선별":("#eaf0fc","#4a6fd0"),"점수":("#e8eefc","#2d5be3"),"판정":("#fdf1e2","#b5651d")}[stage]
+    return f'<div style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: {m[0]}; color: {m[1]}; flex-shrink: 0;">{stage} 탈락</div>'
+def drop_item(title, stage, detail, last=False):
+    border="" if last else "border-bottom: 1px solid #efece6;"
+    return f'<div style="display: flex; flex-direction: column; gap: 6px; padding: 10px 0; {border}"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;"><div style="font-size: 13.5px; font-weight: 500; line-height: 1.4;">{title}</div><div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid #d9d5cc; background: #ffffff; flex-shrink: 0;">{icon("thumbup", 15, "#55524b")}</div></div><div style="display: flex; align-items: center; gap: 8px;">{stage_tag(stage)}<div style="font-size: 11px; color: #8a877f;">{detail}</div></div></div>'
+def drop_group(ic, name, count, sub, items, open_=False):
+    icon_html=f'<div style="width: 36px; height: 36px; border-radius: 10px; background: #f0eee9; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{icon(ic, 18, "#55524b")}</div>' if ic else ""
+    border="border-bottom: 1px solid #efece6;" if open_ else ""
+    head=f'<div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; {border}">{icon_html}<div style="flex-grow: 1;"><div style="font-size: 14px; font-weight: 600;">{name}</div><div style="font-size: 11px; color: #8a877f;">{sub}</div></div><div style="font-size: 16px; font-weight: 700;">{count}</div>{icon("chevd" if open_ else "chev", 16, "#b8b4ab")}</div>'
+    body="".join(drop_item(*it, last=(i==len(items)-1)) for i,it in enumerate(items)) if open_ else ""
+    return card(head+body, pad="6px 16px", gap="0")
+def dropped_screen(mode, groups, note):
+    summary = card('<div style="display: flex; justify-content: space-between; align-items: center;"><div style="font-size: 15px; font-weight: 600;">오늘 걸러짐 571 <span style="font-size: 13px; color: #8a877f; font-weight: 400;">/ 수집 612</span></div><div style="font-size: 12px; color: #8a877f;">최근 24시간</div></div>' + gate_bar([9,58,318,164,22]) + f'<div style="font-size: 12px; color: #55524b; line-height: 1.5;">{note}</div>', gap="10px")
+    return f"""
+  {topbar("걸러진 항목", icon("search", 22))}
+  <div style="display: flex; flex-direction: column; overflow: hidden;">
+    <div style="padding: 4px 16px 10px;">{seg(["소스별","종류별","관문별"], mode)}</div>
+    {summary}
+    {section(mode + " · 많은 순")}
+    <div style="display: flex; flex-direction: column; gap: 10px;">{"".join(groups)}</div>
+  </div>
+  {tabbar("home")}
+"""
+files["DroppedBySource.dc.html"] = screen(h=1180, body=dropped_screen("소스별", [
+    drop_group("rss","rss:arxiv-cs-ai","312","선별 relevance 0.5 미만 71%",[("LLM 기반 자율주행 의사결정 프레임워크 제안","선별",'relevance 0.3 · survey · "관심 스택과 무관한 도메인 서베이"'),("Survey of Agentic Software Engineering, 2026H1","점수","0.41 (src 0.10 · rel 0.24 · kind −0.15)"),("Beacon-style KV compaction for 1M-token context","점수","0.43 · 경계 → 내일 탐색 슬롯 후보")], True),
+    drop_group("rss","rss:arxiv-cs-cl","198","선별 relevance 0.5 미만 64%",[]),
+    drop_group("rss","rss:huggingface","23","중복 9 · 선별 11 · 점수 3",[]),
+    drop_group("youtube","youtube:jocoding","14","중복 4 (같은 채널 영상 클러스터) · 판정 10",[]),
+    drop_group("github","github_release:watchlist","12","중복 8 (버전 형제) · 판정 4",[]),
+    drop_group("rss","rss:vercel","7","exclude 2 (sponsored) · 선별 5",[]),
+], "점수 탈락 중 경계(0.35–0.45) 154건 · 탐색 슬롯 후보"))
+files["DroppedByKind.dc.html"] = screen(h=1260, body=dropped_screen("종류별", [
+    drop_group(None,"survey · 서베이·전망","187","감점 −0.15 · 불필요 4/4 → 감점 유지 중",[("Survey of Agentic Software Engineering, 2026H1","점수","0.41 · arXiv cs.SE"),("LLM Evaluation: A Position Paper","선별",'relevance 0.4 · "수치 없는 포지션 논문"')], True),
+    drop_group(None,"technique · 기법·논문","176","점수 경계(0.35–0.45) 154건 · 탐색 슬롯이 하루 1건 판정",[("Beacon-style KV compaction for 1M-token context","점수","0.43 · 경계 → 내일 탐색 슬롯 후보")], True),
+    drop_group(None,"other · 기타","96","선별 relevance 0.3 이하가 대부분",[]),
+    drop_group(None,"release_patch · 패치 릴리즈","31","중복 8 (버전 형제) · 클러스터 하루 1건",[]),
+    drop_group(None,"tutorial · 튜토리얼","9","감점 −0.05",[]),
+    drop_group(None,"promo · 홍보·구인","5","감점 −0.30 · exclude 키워드 2",[]),
+    drop_group(None,"미분류 (exclude·중복)","67","선별 전 탈락 — kind 없음",[]),
+], 'kind는 선별 단계 출력이라 exclude·중복 탈락 67건은 "미분류"로 묶입니다.'))
+
+# ---------- 11. 찜 ----------
+def fchip(label, on=False, count=None):
+    c=f'<span style="font-size: 12px; color: {"#b8b4ab" if on else "#8a877f"};">{count}</span>' if count is not None else ""
+    bg="#1c1b19" if on else "#ffffff"; fg="#ffffff" if on else "#55524b"; bd="#1c1b19" if on else "#d9d5cc"
+    return f'<div style="display: flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 20px; background: {bg}; border: 1px solid {bd}; color: {fg}; font-size: 13px; font-weight: 500; white-space: nowrap;">{label}{c}</div>'
+def saved_card(folder, src, title, note=None, unread=False):
+    dot='<div style="width: 6px; height: 6px; border-radius: 3px; background: #2d5be3;"></div>' if unread else ""
+    memo=f'<div style="display: flex; gap: 8px; padding: 8px 10px; background: #f0eee9; border-radius: 8px;"><div style="font-size: 11px; font-weight: 600; color: #8a877f; flex-shrink: 0;">메모</div><div style="font-size: 12px; color: #55524b; line-height: 1.5;">{note}</div></div>' if note else ""
+    def btn(ic,l): return f'<div style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #d9d5cc; background: #ffffff; font-size: 13px; font-weight: 600;">{icon(ic, 16)}{l}</div>'
+    head=f'<div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8a877f;">{src}{dot}</div><div style="font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: #eaf0fc; color: #4a6fd0;">{folder}</div></div>'
+    ttl=f'<div style="font-size: 16px; font-weight: 600; line-height: 1.4;">{title}</div>'
+    acts=f'<div style="display: flex; gap: 8px; align-items: center;">{btn("external","원문")}{btn("folder","폴더")}<div style="flex-grow: 1;"></div>{bm_btn(True)}</div>'
+    return card(head+ttl+memo+acts, gap="10px")
+saved_list = "".join([
+    saved_card("적용해보기","GitHub Releases · 9월 14일","[릴리즈] MCP Python SDK v2.2.0 — HTTP 리다이렉트·OAuth 검증 변경","trend 레포 python-sdk 올릴 때 OAuth 검증 부분 확인"),
+    saved_card("나중에 읽기","arXiv cs.CL · 9월 12일","BeaconKV: 장문 컨텍스트 KV 캐시 압축으로 추론 2.1배", unread=True),
+    saved_card("ClickMe 참고","Anthropic · 9월 9일","[모델] Claude 5 Fable — 컨텍스트 2배, 가격 동일","페르소나 시뮬레이터 배치 비용 재계산", unread=True),
+    saved_card("나중에 읽기","youtube:jocoding · 9월 8일","Claude Code 서브에이전트로 1인 개발 팀 만들기"),
+])
+files["Saved.dc.html"] = screen(h=1240, body=f"""
+  <div style="display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 20px; margin-top: 44px;">
+    <div style="font-size: 22px; font-weight: 700;">찜</div>
+    <div style="display: flex; align-items: center; gap: 14px;">{icon("search", 22)}{icon("dots", 22)}</div>
+  </div>
+  <div style="display: flex; gap: 8px; padding: 4px 16px 12px; overflow: hidden;">{fchip("전체", True, 23)}{fchip("나중에 읽기", False, 9)}{fchip("적용해보기", False, 6)}{fchip("ClickMe 참고", False, 5)}{fchip("+")}</div>
+  <div style="display: flex; justify-content: space-between; padding: 0 20px 8px; font-size: 12px; color: #8a877f;"><span>최근 찜한 순</span><span>안 읽음 7</span></div>
+  <div style="display: flex; flex-direction: column; gap: 12px;">{saved_list}</div>
+  {section("찜 안내")}
+  {card('<div style="font-size: 12px; color: #8a877f; line-height: 1.6;">찜한 항목은 알림 상한·무음 시간과 무관하게 보관되고, 유용/불필요 판정에는 반영되지 않습니다. 읽지 않은 찜이 7일 지나면 조용한 알림으로 한 번 다시 알려드립니다.</div>', pad="12px 16px")}
+  {tabbar("bookmark")}
+""")
+
+for name, src in files.items():
+    open(name, "w", encoding="utf-8").write(src)
+
+# 캔버스 배치 — 8장, 2행
+HEIGHTS={"Interests":1340,"NotifySettings":1120,"SourceSettings":1140,"Feedback":1180,"Profile":1060,"DroppedBySource":1180,"DroppedByKind":1260,"Saved":1240}
+order = ["Login","Onboarding","Main","Interests","NotifySettings","SourceSettings","Feedback","Profile","DroppedBySource","DroppedByKind","Saved"]
+titles = {"Login":"1 로그인","Onboarding":"2 온보딩 · 콜드스타트","Main":"3 피드 (알림 이력)","Interests":"4 관심사","NotifySettings":"5 알림 설정","SourceSettings":"6 수집 소스","Feedback":"7 피드백 · 판정 근거","Profile":"8 내 프로필 (사용자 파악)","DroppedBySource":"9 걸러진 항목 · 소스별","DroppedByKind":"10 걸러진 항목 · 종류별","Saved":"11 찜"}
+boards = []
+for i, n in enumerate(order):
+    r, c = divmod(i, 4)
+    boards.append({"file": f"{n}.dc.html", "title": titles[n], "x": c*480, "y": [0,1500,3000][r], "w": 390, "h": HEIGHTS.get(n, 844)})
+canvas = {"artboards": boards,
+  "annotations": [{"id":"brief","x":0,"y":-260,"w":460,"text":"기술 파악 · 모바일 앱 화면 v0.1\n기획서 v0.1 / 구현도 v0.2 / v2-다중사용자 메모 기준.\n카테고리 12개 = rules.yaml taxonomy, kind 가중치 = scoring.kind_weights, 알림 상한·무음 = notify 설정, 소스 = sources.yaml.\n온보딩 👍/👎 8건 = 프로필 벡터 콜드스타트(메모 §3-B).\n수치는 샘플."}],
+  "launch": {"view": "canvas"}}
+json.dump(canvas, open("canvas.json","w",encoding="utf-8"), ensure_ascii=False, indent=2)
+print("ok", list(files))

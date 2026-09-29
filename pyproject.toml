@@ -20,6 +20,7 @@ dependencies = [
     "anthropic>=0.40",
     "structlog>=24.4",
     "pynacl>=1.5",
+    "google-auth>=2.30",
 ]
 
 [dependency-groups]

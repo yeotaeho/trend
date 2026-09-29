@@ -1,4 +1,4 @@
-# LLM 선별 배치 — 25건을 한 호출에 넣어 관련도 0~1 과 이유를 받는다. 정독은 판정이 한다
+# LLM 선별 배치 — 25건을 한 호출에 넣어 관련도 0~1·kind·topics 와 이유를 받는다. 정독은 판정이 한다
 
 from __future__ import annotations
 
@@ -11,9 +11,12 @@ from app.pipeline.llm import client, render_policy
 from app.schemas import Kind
 
 REASON_CHARS = 200
+MAX_TOPICS = 3
+# 출력 스키마나 눈금이 바뀔 때마다 올린다. 선별 결정 행 details 에 남는다.
+TRIAGE_PROMPT_VERSION = "2026-09-08.1"
 
 SYSTEM_PROMPT = """\
-너는 개인용 개발 트렌드 알림기의 선별 단계다. 항목마다 relevance 와 kind 를 매긴다.
+너는 개인용 개발 트렌드 알림기의 선별 단계다. 항목마다 relevance·kind·topics 를 매긴다.
 정독·요약은 다음 단계가 하니 여기서는 빠르게 판단한다.
 
 사용자 정책:
@@ -36,6 +39,9 @@ SYSTEM_PROMPT = """\
 - promo: 홍보·구인·스폰서
 - other: 위 어디에도 맞지 않음
 
+3) topics — 아래 분류표에서 1~3개. 표에 없는 값은 쓰지 않는다.
+{taxonomy}
+
 "유사 피드백" 이 붙은 항목은 사용자가 비슷한 글에 남긴 👍/👎 이다.
 참고하되, 항목 자체의 변화 크기를 우선한다.
 reason 은 20단어 이내 한국어 한 문장.
@@ -57,6 +63,7 @@ class TriageItem(BaseModel):
     relevance: float
     reason: str
     kind: Kind
+    topics: list[str]
 
 
 class TriageBatch(BaseModel):
@@ -80,24 +87,41 @@ def build_user_content(entries: list[TriageEntry]) -> str:
 
 
 def parse_triage(
-    batch: TriageBatch, expected: list[int]
+    batch: TriageBatch, expected: list[int], *, taxonomy: list[str]
 ) -> tuple[dict[int, TriageItem], list[int]]:
-    """(유효 결과, 항목 실패 idx). 개수·미지 idx 는 배치 실패다."""
+    """(유효 결과, 항목 실패 idx). 개수·미지 idx 는 배치 실패다.
+
+    분류표 밖 topics 는 버리고 앞 MAX_TOPICS 개만 남긴다. 항목 실패로 세지 않는다.
+    """
     if len(batch.items) != len(expected):
         raise TriageBatchError(f"응답 {len(batch.items)}건, 기대 {len(expected)}건")
     known = set(expected)
     if any(it.idx not in known for it in batch.items):
         raise TriageBatchError("기대하지 않은 idx 가 있음")
 
+    allowed = set(taxonomy)
     ok: dict[int, TriageItem] = {}
     for it in batch.items:
         if it.idx in ok or not 0.0 <= it.relevance <= 1.0:
             continue
+        topics = [t for t in dict.fromkeys(it.topics) if t in allowed][:MAX_TOPICS]
         ok[it.idx] = TriageItem(
-            idx=it.idx, relevance=it.relevance, reason=it.reason[:REASON_CHARS], kind=it.kind
+            idx=it.idx,
+            relevance=it.relevance,
+            reason=it.reason[:REASON_CHARS],
+            kind=it.kind,
+            topics=topics,
         )
     failed = [idx for idx in expected if idx not in ok]
     return ok, failed
+
+
+def system_prompt(rules: Rules) -> str:
+    """정책·분류표만 담는다. 배치마다 같아 캐시 접두가 유지된다."""
+    return SYSTEM_PROMPT.format(
+        policy=render_policy(rules.policy),
+        taxonomy="\n".join(f"- {t}" for t in rules.policy.taxonomy),
+    )
 
 
 async def call_triage(rules: Rules, entries: list[TriageEntry]) -> TriageBatch:
@@ -113,7 +137,7 @@ async def call_triage(rules: Rules, entries: list[TriageEntry]) -> TriageBatch:
             system=[
                 {
                     "type": "text",
-                    "text": SYSTEM_PROMPT.format(policy=render_policy(rules.policy)),
+                    "text": system_prompt(rules),
                     "cache_control": {"type": "ephemeral"},
                 }
             ],

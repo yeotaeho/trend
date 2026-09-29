@@ -1,4 +1,4 @@
-# 스케줄러 — config/sources.yaml 을 DB 에 동기화하고 소스별·파이프라인·발송 잡을 등록
+# 스케줄러 — sources.yaml·앱 on/off 를 DB 에 동기화하고 폴링·파이프라인·발송·재알림·리포트 잡 등록
 
 from __future__ import annotations
 
@@ -8,44 +8,57 @@ from typing import Any
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
 
-from app.config import get_source_configs
+from app.config import get_rules, get_source_configs
 from app.db.models import Source
+from app.db.prefs import fetch_prefs, source_overrides
 from app.db.session import session_scope
+from app.db.users import DEFAULT_USER_ID
 from app.jobs.collect import run_source
 from app.jobs.feedback import run_feedback
 from app.jobs.notify import run_notify
 from app.jobs.pipeline import run_pipeline
+from app.jobs.report import run_weekly_report
+from app.jobs.resurface import run_resurface
 from app.log import get_logger
 
 PIPELINE_INTERVAL_SEC = 120
 NOTIFY_INTERVAL_SEC = 180
 FEEDBACK_INTERVAL_SEC = 600  # 디스코드 GET 1회. 리액션은 몇 분 늦게 반영돼도 된다
+RESURFACE_INTERVAL_SEC = 3600  # 7일 지난 찜을 다시 알린다. 한 시간 늦어도 된다
 log = get_logger(__name__)
 
 
 async def sync_sources() -> list[Source]:
-    """YAML 이 진실. 이름이 같으면 갱신하고, YAML 에서 빠진 소스는 비활성화한다."""
-    configs = {cfg.name: cfg for cfg in get_source_configs()}
+    """YAML 이 진실이고 앱이 바꾼 on/off(user_prefs.data.sources)만 그 위에 얹는다.
+
+    이름이 같으면 갱신하고, YAML 에서 빠진 소스는 비활성화한다. 돌려주는 목록은 YAML 순서의
+    모든 소스다 (비활성 포함). 잡은 전부 등록하고 run_source 가 비활성 소스를 건너뛰므로
+    앱에서 켜고 끌 때 잡을 다시 등록하지 않는다.
+    """
+    configs = get_source_configs()
     async with session_scope() as session:
+        prefs = await fetch_prefs(session, DEFAULT_USER_ID)
+        overrides = source_overrides(prefs.data if prefs else {})
         existing = {s.name: s for s in (await session.execute(select(Source))).scalars()}
 
-        for name, cfg in configs.items():
-            source = existing.get(name)
+        synced: list[Source] = []
+        for cfg in configs:
+            source = existing.pop(cfg.name, None)
             if source is None:
-                source = Source(name=name)
+                source = Source(name=cfg.name)
                 session.add(source)
             source.type = cfg.type
             source.config = cfg.config
             source.poll_interval_sec = cfg.poll_interval_sec
             source.trust_score = cfg.trust_score
-            source.enabled = cfg.enabled
+            source.enabled = overrides.get(cfg.name, cfg.enabled)
+            synced.append(source)
 
-        for name, source in existing.items():
-            if name not in configs:
-                source.enabled = False
+        for source in existing.values():
+            source.enabled = False
 
         await session.flush()
-        return [s for s in (await session.execute(select(Source))).scalars() if s.enabled]
+        return synced
 
 
 def _interval(seconds: int) -> dict[str, Any]:
@@ -80,6 +93,19 @@ async def start_scheduler() -> AsyncIOScheduler:
     scheduler.add_job(run_pipeline, id="pipeline", **_interval(PIPELINE_INTERVAL_SEC))
     scheduler.add_job(run_notify, id="notify", **_interval(NOTIFY_INTERVAL_SEC))
     scheduler.add_job(run_feedback, id="feedback", **_interval(FEEDBACK_INTERVAL_SEC))
+    scheduler.add_job(run_resurface, id="resurface", **_interval(RESURFACE_INTERVAL_SEC))
+    # 월요일 09:00 에 지난주(월~일)를 만든다. 늦게 돌아도 같은 주를 덮어쓰므로 grace 는 무제한이다.
+    scheduler.add_job(
+        run_weekly_report,
+        id="weekly_report",
+        trigger="cron",
+        day_of_week="mon",
+        hour=9,
+        timezone=get_rules().notify.timezone,
+        coalesce=True,
+        misfire_grace_time=None,
+        max_instances=1,
+    )
     scheduler.start()
     log.info("scheduler.started", jobs=[job.id for job in scheduler.get_jobs()])
     return scheduler

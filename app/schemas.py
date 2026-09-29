@@ -33,6 +33,7 @@ class Stage(StrEnum):
     TRIAGE = "triage"
     SCORE = "score"
     LLM = "llm"
+    USER = "user"  # 사용자가 걸러진 항목을 복원. details.user_id 에 누가 했는지 남긴다
 
 
 class Level(StrEnum):
@@ -40,6 +41,7 @@ class Level(StrEnum):
     SILENT = "silent"
     FEED = "feed"
     EXPLORE = "explore"  # 하루 1건 경계 항목 실험. push 상한에서 제외
+    CLUSTER_DUP = "cluster_dup"  # 클러스터 하루 상한으로 억제. 실제 발송 없음, push 상한에서 제외
 
 
 class Kind(StrEnum):

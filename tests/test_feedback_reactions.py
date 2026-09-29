@@ -1,14 +1,17 @@
-# 디스코드 리액션 피드백 테스트 — 발송 직후 👍/👎 시드, 리액션 → 판정 규칙, 시드 실패 무시
+# 디스코드 리액션 피드백 테스트 — 👍/👎 시드, 리액션 → 판정, 사용자 1 동기화, 앱 판정 제외
 
 from types import SimpleNamespace
 
 import httpx
 import pytest
 import respx
+from sqlalchemy.dialects import postgresql
 
+from app.jobs import feedback as fb
 from app.notify import discord as d
 from app.notify.discord import DiscordNotifier, fetch_recent_messages, reaction_verdicts
 from app.schemas import Level
+from tests.fakes import UpsertRecorder
 from tests.test_discord import make_pair
 
 API = "https://discord.com/api/v10"
@@ -55,7 +58,12 @@ async def test_send_seeds_thumbs_reactions(settings):
         return_value=httpx.Response(204)
     )
     item, summary = make_pair()
-    assert await DiscordNotifier().send(item, summary, Level.PUSH, "rss:vercel") == "99"
+    assert (
+        await DiscordNotifier().send(
+            item, summary, Level.PUSH, "rss:vercel", title=summary.title_ko
+        )
+        == "99"
+    )
     assert up.called and down.called
 
 
@@ -69,7 +77,12 @@ async def test_seed_failure_does_not_fail_send(settings):
         return_value=httpx.Response(403, json={"message": "Missing Permissions"})
     )
     item, summary = make_pair()
-    assert await DiscordNotifier().send(item, summary, Level.PUSH, "rss:vercel") == "99"
+    assert (
+        await DiscordNotifier().send(
+            item, summary, Level.PUSH, "rss:vercel", title=summary.title_ko
+        )
+        == "99"
+    )
 
 
 @respx.mock
@@ -78,3 +91,45 @@ async def test_fetch_recent_messages_returns_list(settings):
         return_value=httpx.Response(200, json=[{"id": "1"}, {"id": "2"}])
     )
     assert [m["id"] for m in await fetch_recent_messages("42")] == ["1", "2"]
+
+
+class _RowsSession:
+    """execute 가 받은 문장을 기록하고 (message_id, item_id, 현재 판정) 행을 돌려준다."""
+
+    def __init__(self, rows: list[tuple[str, int, str | None]]) -> None:
+        self.rows = rows
+        self.statements: list[object] = []
+
+    async def execute(self, stmt: object) -> SimpleNamespace:
+        self.statements.append(stmt)
+        return SimpleNamespace(all=lambda: self.rows)
+
+
+async def test_sync_feedback_upserts_changes_for_default_user(monkeypatch):
+    recorder = UpsertRecorder()
+    monkeypatch.setattr(fb, "upsert_feedback", recorder)
+    session = _RowsSession([("m1", 7, None), ("m2", 8, "useful"), ("m3", 9, "useful")])
+
+    changed = await fb.sync_feedback(
+        session,  # type: ignore[arg-type]
+        {"m1": "useful", "m2": "useful", "m3": "useless"},
+    )
+
+    assert changed == 2
+    assert recorder.calls == [
+        (1, 7, "useful", {"source": "discord"}),
+        (1, 9, "useless", {"source": "discord"}),
+    ]
+    # 현재 판정은 사용자 1 의 것과 비교한다.
+    sql = str(session.statements[0].compile(dialect=postgresql.dialect()))  # type: ignore[attr-defined]
+    assert "feedback.user_id = %(user_id_1)s" in sql
+
+
+async def test_sync_feedback_skips_app_verdicts():
+    """앱에서 정하거나 해제한 판정은 리액션 폴링 대상에서 뺀다. 판정이 없는 항목은 대상이다."""
+    session = _RowsSession([])
+
+    await fb.sync_feedback(session, {"m1": "useful"})  # type: ignore[arg-type]
+
+    sql = str(session.statements[0].compile(dialect=postgresql.dialect()))  # type: ignore[attr-defined]
+    assert "feedback.source IS NULL OR feedback.source != %(source_1)s" in sql

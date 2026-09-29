@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_rules, get_settings
 from app.db.models import LlmCall
@@ -77,3 +79,25 @@ async def reserve_call(kind: Kind) -> str | None:
         batch_id = str(uuid.uuid4())
         session.add(LlmCall(kind=kind, batch_id=batch_id, called_at=now))
         return batch_id
+
+
+@dataclass(frozen=True, slots=True)
+class BudgetUsage:
+    used: int
+    cap: int
+
+
+async def usage_today(session: AsyncSession) -> dict[str, BudgetUsage]:
+    """상한별 오늘(달력일) 사용량. reserve_call 과 같게 센다 — judge 는 탐색 판정을 포함한다."""
+    caps = _caps()
+    now = (await session.execute(select(func.now()))).scalar_one()
+    start = today_start(get_rules().notify.timezone, now)
+    rows = await session.execute(
+        select(LlmCall.kind, func.count()).where(LlmCall.called_at >= start).group_by(LlmCall.kind)
+    )
+    by_kind: dict[str, int] = {kind: count for kind, count in rows.tuples()}
+    kinds = {**BUDGETS, "explore": ("explore",)}
+    return {
+        name: BudgetUsage(used=sum(by_kind.get(k, 0) for k in kinds[name]), cap=cap)
+        for name, cap in caps.items()
+    }

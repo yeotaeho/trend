@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Iterator
 from pathlib import Path
+
+import pytest
 
 # 통합 테스트(tests/integration)는 TEST_DATABASE_URL 의 Neon dev 브랜치를 같은 엔진으로 쓴다.
 # 셸에 DATABASE_URL(운영) 이 있어도 TEST_DATABASE_URL 이 이긴다. 테스트가 운영 DB 를 보면 안 된다.
@@ -24,3 +27,12 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 def fixture(name: str) -> bytes:
     return (FIXTURES / name).read_bytes()
+
+
+@pytest.fixture(autouse=True)
+def _reset_prefs_overlay() -> Iterator[None]:
+    """설정 API·덮어쓰기 테스트가 바꾼 프로세스 전역 유효 설정을 다음 테스트로 넘기지 않는다."""
+    yield
+    from app.config import set_prefs_overlay
+
+    set_prefs_overlay({})

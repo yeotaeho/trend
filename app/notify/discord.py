@@ -58,9 +58,11 @@ def _link_button(url: str) -> dict[str, Any] | None:
     return {"type": COMPONENT_BUTTON, "style": BUTTON_LINK, "label": "원문 보기", "url": url}
 
 
-def render(item: Item, summary: Summary, source_name: str, *, now: datetime | None = None) -> str:
+def render(
+    item: Item, summary: Summary, source_name: str, *, title: str, now: datetime | None = None
+) -> str:
     lines = [
-        f"🆕 **{escape_md(summary.title_ko)}**",
+        f"🆕 **{escape_md(title)}**",
         escape_md(summary.summary_ko),
         f"*출처: {escape_md(source_name)} · {relative_time(item.published_at, now=now)}*",
     ]
@@ -88,9 +90,11 @@ def components(item_id: int, url: str) -> list[dict[str, Any]]:
     return [{"type": COMPONENT_ACTION_ROW, "components": [b for b in buttons if b]}]
 
 
-def build_payload(item: Item, summary: Summary, level: Level, source_name: str) -> dict[str, Any]:
+def build_payload(
+    item: Item, summary: Summary, level: Level, source_name: str, *, title: str
+) -> dict[str, Any]:
     """네트워크 없이 검증할 수 있게 발송 본문을 따로 만든다."""
-    content = render(item, summary, source_name)
+    content = render(item, summary, source_name, title=title)
     if level is Level.EXPLORE:
         content = f"{EXPLORE_PREFIX}\n\n{content}"[:MAX_CONTENT]
     payload: dict[str, Any] = {
@@ -220,12 +224,14 @@ def reaction_verdicts(messages: list[dict[str, Any]]) -> dict[str, str]:
 class DiscordNotifier:
     channel = "discord"
 
-    async def send(self, item: Item, summary: Summary, level: Level, source_name: str) -> str:
+    async def send(
+        self, item: Item, summary: Summary, level: Level, source_name: str, *, title: str
+    ) -> str:
         channel_id = get_settings().discord_channel_id
         body = await _call(
             "POST",
             f"/channels/{channel_id}/messages",
-            build_payload(item, summary, level, source_name),
+            build_payload(item, summary, level, source_name, title=title),
         )
         message_id = str(body["id"])
         await add_feedback_reactions(channel_id, message_id)

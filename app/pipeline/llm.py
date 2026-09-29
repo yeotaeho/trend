@@ -136,6 +136,9 @@ def render_policy(policy: PolicyConfig) -> str:
         parts.append("특히 주목하는 저장소: " + ", ".join(policy.focus_repos))
     if policy.focus_stack:
         parts.append("특히 주목하는 스택·용어: " + ", ".join(policy.focus_stack))
+    if policy.categories:
+        # 앱에서 고른 taxonomy slug. 힌트일 뿐 거름망이 아니다.
+        parts.append("관심 카테고리: " + ", ".join(policy.categories))
     return "\n".join(parts)
 
 
