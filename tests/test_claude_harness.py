@@ -179,3 +179,43 @@ def test_plan_validation() -> None:
     bad["summary"] = "ANTHROPIC key sk-ant-abcdefghijklmnopqrstuvwx"
     errs = " ".join(tasks.validate(bad))
     assert "area" in errs and "t9" in errs and "done_when" in errs and "비밀값" in errs
+
+
+@pytest.mark.parametrize(
+    ("current", "closed", "subs", "expected"),
+    [
+        ("", False, None, "Todo"),  # 보드에 막 올라온 작업
+        ("Todo", False, None, None),
+        ("In Progress", True, None, "Done"),  # PR 머지로 닫힘
+        ("Done", True, None, None),
+        ("Done", False, None, "In Progress"),  # 다시 열림
+        ("Todo", False, [(False, "Todo"), (False, "In Progress")], "In Progress"),  # 에픽
+        ("Todo", False, [(False, "Todo")], None),
+    ],
+)
+def test_board_desired_status(
+    current: str, closed: bool, subs: list[tuple[bool, str]] | None, expected: str | None
+) -> None:
+    assert load_tasks_module().desired_status(current, closed, subs) == expected
+
+
+def test_board_plan_sync_closes_finished_epic() -> None:
+    tasks = load_tasks_module()
+    issues = {
+        1: {"closed": False, "epic": True, "title": "에픽"},
+        2: {"closed": True, "epic": False, "title": "작업 A"},
+        3: {"closed": True, "epic": False, "title": "작업 B"},
+        4: {"closed": False, "epic": False, "title": "보드에 없는 작업"},
+    }
+    items = {1: {"status": "In Progress"}, 2: {"status": "Done"}, 3: {"status": "In Progress"}}
+    moves, close = tasks.plan_sync(issues, items, {1: [2, 3]})
+    assert close == [1]
+    assert sorted(moves) == [(1, "Done"), (3, "Done"), (4, "Todo")]
+
+
+@pytest.mark.parametrize(
+    ("source", "hint"), [("startup", True), ("resume", True), ("compact", False)]
+)
+def test_session_start_points_to_board_before_first_work(source: str, hint: bool) -> None:
+    out = run_hook("session_context.py", {"source": source, "session_id": "board-hint"})
+    assert ("github_tasks.py board" in out) is hint
