@@ -1,4 +1,5 @@
 ---
+description: 엔트리·설정·스키마·공용 계층(db·pipeline)·발송 정책·YAML·배포 파일을 고치기 전에. 지정받은 범위 밖이면 수정 전에 사용자에게 묻는다.
 paths:
   - "app/main.py"
   - "app/config.py"

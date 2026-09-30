@@ -10,11 +10,11 @@
 
 | 구성 요소 | 파일 | 역할 |
 |---|---|---|
-| API 서버 (FastAPI) | `app/main.py` | 웹훅 수신(GitHub release, 텔레그램 콜백), 헬스체크. 같은 프로세스에서 스케줄러 기동 |
+| API 서버 (FastAPI) | `app/main.py` | 웹훅 수신(GitHub release, 디스코드 인터랙션, 텔레그램 콜백), 앱 API v1(`/api/v1`, 베어러 토큰), 헬스체크. 같은 프로세스에서 스케줄러 기동 |
 | Scheduler/Worker (APScheduler) | `app/jobs/` | 소스별 폴링(`run_source`), 파이프라인(`run_pipeline`), 발송(`run_notify`), 피드백 폴링(`run_feedback`), 읽지 않은 찜 재알림(`run_resurface`, 1시간), 주간 리포트(`run_weekly_report`, 월요일 09:00) |
 | Neon (Postgres) | — | 모든 상태의 단일 진실 원천. `status` + `FOR UPDATE SKIP LOCKED` 로 큐 겸용 (Redis·MQ 없음) |
 
-**Stack** — Python 3.12+ · uv · FastAPI/uvicorn · APScheduler 3.x(AsyncIOScheduler, Postgres jobstore) · httpx + tenacity · feedparser · trafilatura(본문 보강만) · Neon(Postgres 16/17, pgvector) · SQLAlchemy 2.x async(asyncpg) + Alembic · Pydantic v2 / pydantic-settings · Anthropic SDK(Claude Haiku 급, 구조화 JSON) · Voyage 임베딩 · python-telegram-bot 21.x · structlog · pytest + pytest-asyncio + respx · ruff + mypy · Docker Compose + Caddy · GitHub Actions
+**Stack** — Python 3.12+ · uv · FastAPI/uvicorn · APScheduler 3.x(AsyncIOScheduler, 메모리 jobstore — 기동 때 다시 등록) · httpx + tenacity · feedparser · trafilatura(본문 보강만) · Neon(Postgres, pgvector) · SQLAlchemy 2.x async(asyncpg) + Alembic · Pydantic v2 / pydantic-settings · Anthropic SDK(Claude Haiku 급, 구조화 JSON) · Voyage 임베딩 · 디스코드·텔레그램·FCM 은 httpx 직접 호출(디스코드 서명 pynacl, FCM JWT google-auth) · structlog · pytest + pytest-asyncio + respx · ruff + mypy · Docker Compose + Caddy · GitHub Actions
 
 ## 폴더 지도
 
@@ -47,17 +47,20 @@ tech-radar/
 │   │   ├── feedback.py       # 최근접 피드백 사례
 │   │   ├── trust.py          # 소스 신뢰도 베이즈 보정
 │   │   └── llm.py            # 본문 보강(enrich_body) → 판정·요약
-│   ├── notify/               # Notifier 어댑터 + policy.py(강도·상한·무음)
-│   ├── jobs/                 # scheduler.py, collect.py, pipeline.py, notify.py, feedback.py, report.py
+│   ├── notify/               # Notifier 어댑터(discord·fcm·telegram) + policy.py(강도·상한·무음)
+│   ├── jobs/                 # scheduler.py, collect.py, pipeline.py, notify.py, feedback.py, resurface.py, report.py
 │   └── api/                  # github.py, telegram.py, discord.py, health.py
+│       └── v1/               # 앱 API — 라우터·queries/·schemas/·deps.py(토큰)·pagination.py
 ├── config/
 │   ├── sources.yaml          # 소스 등록·폴링 주기·신뢰도·family
-│   └── rules.yaml            # policy 문장·exclude·dedupe/triage/scoring/notify 임계값
+│   ├── rules.yaml            # policy 문장·exclude·dedupe/triage/scoring/notify 임계값
+│   └── app.yaml              # 앱 화면 전용 정적값 (파이프라인은 읽지 않음)
+├── mobile/                   # 플러터 앱 — lib/(app·core·data·features), test/, assets/fixtures/
 ├── scripts/                  # run_job, backfill_embeddings, calibrate_dedupe, weekly_report
 ├── tests/                    # 단위 + sources/ + integration/ + fixtures/
-├── docs/                     # 이 문서들
+├── docs/                     # 이 문서들 + api/(앱 계약) + design/(화면 명세)
 ├── docker-compose.yml, Dockerfile, Caddyfile, alembic.ini, pyproject.toml
-└── .github/workflows/ci.yml  # ruff → mypy → pytest → 이미지 빌드(GHCR) → VM SSH 배포
+└── .github/workflows/ci.yml  # ruff check·format → mypy → pytest → 이미지 빌드(GHCR) → VM SSH 배포
 ```
 
 ## 실행 흐름과 코드 추적 순서
@@ -71,8 +74,10 @@ app/main.py (lifespan)
        ├─ jobs/pipeline.py        NEW 항목: stale → dedupe → rules → triage(배치) → scoring → llm → SCORED
        ├─ jobs/notify.py          SCORED: notify/policy → Notifier.send → notifications
        ├─ jobs/feedback.py        리액션·콜백 폴링 → db/feedback upsert
+       ├─ jobs/resurface.py       1시간마다 읽지 않은 찜 재알림
        └─ jobs/report.py          월요일 09:00(cron) 지난주 표 여덟 개 → weekly_reports upsert
-app/api/*                          웹훅 진입점 (github → ingest, telegram → feedback)
+app/api/*                          웹훅 진입점 (github → ingest, discord·telegram → feedback)
+app/api/v1/*                       앱 API (require_token → queries/ → schemas/)
 ```
 
 역인덱스 — "이걸 고치려면 어디를 보나"
@@ -90,6 +95,6 @@ app/api/*                          웹훅 진입점 (github → ingest, telegram
 
 ## 배포·시크릿
 
-- **CI/CD** — push 시 `ruff → mypy → pytest`. `main` 머지 시 이미지 빌드 → GHCR 푸시 → VM 에 SSH 로 `docker compose pull && up -d`. Alembic 마이그레이션은 컨테이너 시작 시 자동.
-- **시크릿** — `.env` 로컬 관리 (`ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`, `DISCORD_*`, `TELEGRAM_*`, `GITHUB_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `DATABASE_URL`). `.env.example` 이 참조본.
-- **Neon** — pooled 엔드포인트, 브랜치 `main`(운영) / `dev`(로컬·CI). 상세는 `docs/database.md`.
+- **CI/CD** — PR·main push 시 `ruff check → ruff format --check → mypy → pytest`. `main` 이면 이미지 빌드(`:latest` + `:<SHA>`) → GHCR 푸시 → VM 에 SSH 로 같은 SHA 의 compose·Caddyfile 을 받아 `docker compose pull && up -d --wait` → caddy reload. 롤백은 `IMAGE_TAG=<SHA>`. Alembic 마이그레이션은 컨테이너 시작 시 자동.
+- **시크릿** — `.env` 로컬 관리 (`ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`, `DISCORD_*`, `TELEGRAM_*`, `GITHUB_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `APP_API_TOKEN`, `FCM_*`, `DATABASE_URL`). `.env.example` 이 참조본. 운영 값은 VM 의 `~/tech-radar/.env` 에만 있고, CI 시크릿은 `VM_HOST`·`VM_USER`·`VM_SSH_KEY` 셋이다.
+- **Neon** — pooled 엔드포인트, 브랜치 `main`(운영) / `dev`(로컬 실험·통합 테스트). CI 는 통합 테스트를 돌리지 않는다. 상세는 `docs/database.md`.

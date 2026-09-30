@@ -1,6 +1,6 @@
 # 데이터 모델
 
-Neon(Postgres 16/17, pgvector)이 모든 상태의 단일 진실 원천이다. 큐도 `items.status` + `FOR UPDATE SKIP LOCKED` 로 Postgres 가 맡는다. 모델은 `app/db/models.py`, 마이그레이션은 `app/db/alembic/`.
+Neon(Postgres, pgvector)이 모든 상태의 단일 진실 원천이다. 큐도 `items.status` + `FOR UPDATE SKIP LOCKED` 로 Postgres 가 맡는다. 모델은 `app/db/models.py`, 마이그레이션은 `app/db/alembic/`.
 
 ## 테이블
 
@@ -35,7 +35,7 @@ Neon(Postgres 16/17, pgvector)이 모든 상태의 단일 진실 원천이다. �
 
 - SQLAlchemy 2.x async + asyncpg, `statement_cache_size=0` (pgbouncer 호환).
 - pooled 엔드포인트(`sslmode=require`). 잡 단위로 커넥션을 열고 닫는다.
-- 브랜치 `main`(운영) / `dev`(로컬·CI). 통합 테스트는 `TEST_DATABASE_URL` 로 dev 를 가리킨다.
+- 브랜치 `main`(운영) / `dev`(로컬 실험·통합 테스트). 통합 테스트는 `TEST_DATABASE_URL` 로 dev 를 가리키고, CI 에서는 돌지 않는다.
 
 ## 마이그레이션
 

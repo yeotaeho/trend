@@ -9,3 +9,5 @@ caddy_data/
 .serena/
 .ua/
 graphify-out/
+.claude/handoff/
+.claude/settings.local.json
