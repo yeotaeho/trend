@@ -62,16 +62,17 @@ def unquote(path: str) -> str:
 def git_calls(sub: str, cmd: str) -> list[tuple[str, list[str]]]:
     """명령 문자열에서 실제로 실행되는 git <sub> 마다 (실행 폴더, 뒤따르는 인자).
 
-    실행 폴더는 cwd 에 앞선 cd 와 -C 를 차례로 적용한 곳이다. 브랜치·스테이징은 그 폴더에서 본다.
+    실행 폴더는 cwd 에서 앞선 cd 를 순서대로(`cd -` 포함) 적용하고 -C 를 더한 곳이다.
+    브랜치·스테이징은 그 폴더에서 본다.
     """
     found = []
     for m in re.finditer(GIT_CMD.format(sub=sub), cmd):
-        at = cwd
-        cds = list(CD.finditer(cmd, 0, m.start()))
-        if cds:
-            at = os.path.join(at, unquote(cds[-1].group(1)))
+        at = prev = cwd
+        for c in CD.finditer(cmd, 0, m.start()):
+            target = os.path.expanduser(unquote(c.group(1)))
+            prev, at = at, (prev if target == "-" else os.path.join(at, target))
         if m.group(1):
-            at = os.path.join(at, unquote(m.group(1)))
+            at = os.path.join(at, os.path.expanduser(unquote(m.group(1))))
         try:
             args = shlex.split(m.group(2))
         except ValueError:
@@ -81,18 +82,22 @@ def git_calls(sub: str, cmd: str) -> list[tuple[str, list[str]]]:
 
 
 def pushes_origin_main(args: list[str], branch: str) -> bool:
-    """git push 인자가 origin(또는 기본 원격)의 main 을 갱신하는가. 다른 원격은 통과."""
+    """git push 인자가 origin(또는 기본 원격)의 main 을 갱신하는가. 다른 원격은 통과.
+
+    브랜치를 판정하지 못하면("" — 폴더를 잘못 풀었거나 detached) main 으로 보고 막는다.
+    """
     if {"--all", "--mirror"} & set(args):
         return True
     pos = [a for a in args if not a.startswith("-")]
     remote, refspecs = (pos[0], pos[1:]) if pos else (None, [])
     if remote not in (None, "origin"):
         return False
+    maybe_main = branch in ("main", "")
     if not refspecs:
-        return branch == "main"
+        return maybe_main
     for spec in refspecs:
         dst = spec.lstrip("+").split(":")[-1].removeprefix("refs/heads/")
-        if dst == "main" or (dst == "HEAD" and branch == "main"):
+        if dst == "main" or (dst == "HEAD" and maybe_main):
             return True
     return False
 

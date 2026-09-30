@@ -72,13 +72,28 @@ def test_guard_push_to_origin_main(repo: Path, command: str, expected: str | Non
     assert decision(run_hook("guard.py", bash(command), cwd=repo)) == expected
 
 
-@pytest.mark.parametrize("form", ['git -C "{main}" push', 'cd "{main}" && git push'])
-def test_guard_push_uses_the_folder_git_runs_in(repo: Path, tmp_path: Path, form: str) -> None:
-    # 기능 브랜치 폴더에서 main 워크트리를 가리켜 push 해도 막는다 (Codex 리뷰 P1)
+@pytest.mark.parametrize(
+    ("start", "form", "expected"),
+    [
+        # 기능 브랜치 폴더에서 main 워크트리를 가리켜 push 해도 막는다 (Codex 리뷰 P1)
+        ("feature", 'git -C "{main}" push', "deny"),
+        ("feature", 'cd "{main}" && git push', "deny"),
+        # cd 는 순서대로 적용한다. cd - 는 직전 폴더로 돌아간다 (Codex 재리뷰 P1)
+        ("main", 'cd "{feature}"; cd -; git push', "deny"),
+        ("feature", 'cd "{main}"; cd "{feature}"; git push', None),
+        ("main", 'cd "{feature}" && git push', None),
+        # 폴더를 판정하지 못하면 main 으로 보고 막는다
+        ("feature", 'cd "{feature}/없는폴더" && git push', "deny"),
+    ],
+)
+def test_guard_push_uses_the_folder_git_runs_in(
+    repo: Path, tmp_path: Path, start: str, form: str, expected: str | None
+) -> None:
     feature = tmp_path / "feature"
     subprocess.run(["git", "init", "-q", "-b", "feat/x", str(feature)], check=True)
-    command = form.format(main=repo.as_posix())
-    assert decision(run_hook("guard.py", bash(command), cwd=feature)) == "deny"
+    dirs = {"main": repo, "feature": feature}
+    command = form.format(main=repo.as_posix(), feature=feature.as_posix())
+    assert decision(run_hook("guard.py", bash(command), cwd=dirs[start])) == expected
 
 
 @pytest.mark.parametrize(
