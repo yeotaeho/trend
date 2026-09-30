@@ -1,4 +1,7 @@
 {
+  "env": {
+    "ENABLE_STOP_REVIEW": "0"
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -58,5 +61,8 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "security-guidance@claude-plugins-official": true
   }
 }
