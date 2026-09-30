@@ -1,6 +1,6 @@
 # 기술 파악 (tech-radar)
 
-개인용 개발 트렌드 알림 앱. GitHub·RSS·YouTube·HN·HF Papers 에서 새 항목을 모아 규칙 필터 → LLM 선별 → 점수 → LLM 판정·요약을 거쳐 읽을 가치가 있는 것만 디스코드(→텔레그램)로 푸시한다. 사용자는 한 명, 프로세스 하나 + Neon 하나. 이 파일은 지도다. 상세는 아래 [문서 지도](#문서-지도)의 파일을 열어 본다.
+개인용 개발 트렌드 알림 앱. GitHub·RSS·YouTube·HN·HF Papers 에서 새 항목을 모아 규칙 필터 → LLM 선별 → 점수 → LLM 판정·요약을 거쳐 읽을 가치가 있는 것만 디스코드·앱(FCM)으로 푸시한다(텔레그램은 대안 어댑터). 플러터 앱(`mobile/`)은 앱 API v1(`/api/v1`)로 피드·찜·설정을 본다. 사용자는 한 명, 프로세스 하나 + Neon 하나. 운영은 Vultr VM 의 Docker Compose 이고 **main 머지가 곧 운영 배포**다. 이 파일은 지도다. 상세는 아래 [문서 지도](#문서-지도)의 파일을 열어 본다.
 
 ## 작업 원칙
 
@@ -17,8 +17,7 @@
 
 ## 컨벤션
 
-- **브랜치** — `feat-*` / `fix-*` / `refactor-*` (또는 `feat/*` 형식).
-- **커밋 접두사** — `feat:` `fix:` `hotfix:` `refactor:` `docs:` `test:` `chore:` `perf:`
+- **브랜치·커밋·PR** — `.claude/rules/git-workflow.md`. origin main 직접 push 는 가드 훅이 막는다.
 - **설정 분리** — 소스·키워드·임계값은 `config/*.yaml`, 시크릿은 `.env`. 코드에 하드코딩하지 않는다.
 - **시크릿** — `.env` 는 커밋 금지. `.env.example` 이 안전한 참조본.
 - **결정 로그** — 통과/탈락 판단은 반드시 `decisions` 테이블에 남긴다.
@@ -45,6 +44,9 @@ uv run python scripts/calibrate_dedupe.py                           # dedupe 임
 uv run python scripts/weekly_report.py [--apply]                    # 주간 튜닝 표
 
 TEST_DATABASE_URL=<dev> uv run pytest tests/integration             # Neon dev 브랜치 필요
+
+cd mobile && flutter analyze && flutter test                         # 앱 (TEMP 는 ASCII 경로)
+python3 .claude/scripts/github_tasks.py apply .claude/tasks/<계획>.json --dry-run   # 업무 → 이슈 미리보기
 ```
 
 ## 문서 지도
@@ -56,22 +58,41 @@ TEST_DATABASE_URL=<dev> uv run pytest tests/integration             # Neon dev �
 | `docs/architecture.md` | 구성 요소·스택·폴더 지도·실행 흐름·코드 추적 순서·배포 |
 | `docs/pipeline.md` | 검증 파이프라인 v2 — 단계별 관문·임계값·LLM 예산·상태 전이·발송 정책 |
 | `docs/database.md` | 테이블·큐 겸용 방식·임베딩·Neon 연결·마이그레이션 |
+| `docs/api/app-api-v1.md` · `docs/design/` | 앱 ↔ 서버 계약, 화면 명세·픽셀 원본·백엔드 갭 |
 | 루트 `기획서.md` `구현도.md` `검증파이프라인-v2-*.md` `소스확장-1차-*.md` `v2-다중사용자-1차-구현서.md` | 기획·설계 원문 |
 
-**어떻게 할지 (규칙)** — `.claude/rules/`. `paths` 가 있는 규칙은 편집하는 파일 경로에 따라 자동 로드되고, 없는 규칙은 항상 로드된다.
+**어떻게 할지 (규칙·스킬·훅)** — `.claude/`. 작업마다 필요한 것만 붙는다. 전체 배치와 교훈 기록 규칙은 `.claude/rules/lessons.md` 다.
 
-| 파일 | 적용 경로 |
+| 작업 대상 | 규칙·스킬 | 로드 |
+|---|---|---|
+| 공통 교훈·기록 규칙 | `rules/lessons.md` | 항상 |
+| 브랜치·커밋·PR·Gas Town | `rules/git-workflow.md` | 항상 |
+| 커밋 후 최종 리뷰 | `rules/codex-review.md` | 항상 |
+| 작업 단위 종료 기록 | `rules/obsidian-worklog.md` | 항상 |
+| 엔트리·공용 파일 | `rules/core-files.md` | 해당 경로 Read 시 — 수정 전 확인 |
+| `app/sources/` `config/sources.yaml` | `rules/sources.md` | 해당 경로 Read 시 · 요청 의도로 선택 |
+| `app/pipeline/` `config/rules.yaml` | `rules/pipeline.md` | 〃 |
+| `app/notify/` 웹훅 `jobs/notify·feedback` | `rules/notify.md` | 〃 |
+| `app/db/` 통합 테스트 | `rules/database.md` | 〃 |
+| `app/api/v1/` `docs/api/` fixture | `rules/app-api.md` | 〃 |
+| `mobile/` | `rules/mobile.md` | 〃 |
+| Dockerfile·compose·Caddyfile·`.github/` | `rules/deploy.md` | 〃 |
+| `tests/` | `rules/testing.md` | 〃 |
+| 알림 원인 진단·임계값 보정 | 스킬 `pipeline-diagnose` | 요청 의도로 선택 |
+| 운영 배포 확인·롤백 | 스킬 `deploy-verify` | 〃 |
+| 교훈 기록·BANK 정리 | 스킬 `lesson-capture` | 커밋 뒤 Stop 훅 · 요청 의도로 선택 |
+| 업무 하달 → 에픽·작업 이슈 등록 | 스킬 `work-intake` | 요청 의도로 선택. 스프린트는 사용자가 정하거나 물어서 붙인다 |
+
+| 훅 (`.claude/settings.json`) | 하는 일 |
 |---|---|
-| `core-files.md` | 엔트리·공용 파일 — 수정 전 확인 |
-| `sources.md` | `app/sources/`, `config/sources.yaml`, `tests/sources/` |
-| `pipeline.md` | `app/pipeline/`, `config/rules.yaml` |
-| `notify.md` | `app/notify/`, `app/api/telegram.py`, `app/api/discord.py` |
-| `database.md` | `app/db/`, `scripts/backfill_embeddings.py` |
-| `testing.md` | `tests/` |
-| `codex-review.md` | 항상 — 커밋 후 최종 리뷰 게이트 |
-| `obsidian-worklog.md` | 항상 — 작업 단위 종료 시 옵시디언 기록 |
+| SessionStart `session_context.py` | 브랜치·upstream 대비 뒤처짐·미커밋 파일을 알린다. 압축·재개 뒤엔 인수인계를 되돌려 넣는다 |
+| UserPromptSubmit `prompt_router.py` | 규칙·스킬 머리말의 "언제 쓰는가" 를 모아 넣고, Claude 가 요청 의도로 골라 `[적용: ...]` 로 밝힌다. 첫 요청·10번째마다 전체, 그 사이엔 이름만 |
+| PreToolUse `guard.py` | 비밀 파일 커밋·origin main 직접 push 를 막고, 배포 파일 수정 전 확인을 요청한다 |
+| Stop `lesson_gate.py` | 커밋이 있던 턴 끝에 마무리 순서와 교훈 기록 여부를 한 번 확인시킨다 |
+| PreCompact `pre_compact.py` | 압축 직전 요청·고친 파일·실패·커밋을 `.claude/handoff/<세션>.md` 로 저장한다 |
+| 플러그인 security-guidance | 편집 시 위험 패턴 경고, 커밋·push 때 보안 리뷰(턴 끝 리뷰는 끔). 기준은 `.claude/claude-security-guidance.md` |
 
-작업 마무리 순서는 **커밋 → Codex 리뷰(지적 반영·재커밋 포함) → 옵시디언 기록 1회** 다.
+작업 마무리 순서는 **커밋 → Codex 리뷰(지적 반영·재커밋 포함) → 교훈 판단(`lesson-capture`) → 옵시디언 기록 1회** 다.
 
 ## graphify
 
