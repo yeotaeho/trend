@@ -16,7 +16,7 @@
 | 테스트 | `rules/testing.md` | Read |
 | 브랜치·커밋·PR·Gas Town | `rules/git-workflow.md` | 항상 + 가드가 origin main push·비밀 파일 커밋 차단 |
 | 교훈 기록·BANK 정리 | 스킬 `lesson-capture` | 커밋 뒤 Stop 훅 + 라우터 |
-| 업무 접수·이슈 등록 | 스킬 `work-intake` · `.claude/tasks/*.json` | 라우터 |
+| 업무 접수·이슈 등록·보드 칸·현황 | 스킬 `work-intake` · `.claude/tasks/*.json` | 라우터 + SessionStart 훅이 첫 업무 전 `board` 확인을 알림 |
 | 아직 굳지 않은 교훈 | `lessons/BANK.md` | 자동 로드 안 함. 고른 항목 이름으로 목적지 열을 grep |
 | 압축 전 작업 상태 | `.claude/handoff/<세션>.md` | 압축 직전 저장, 압축·재개 직후 주입 |
 | 보안 리뷰 기준 | `.claude/claude-security-guidance.md` | security-guidance 플러그인이 리뷰마다 읽음 |

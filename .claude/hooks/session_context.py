@@ -46,6 +46,12 @@ trees = [line for line in git("worktree", "list").splitlines() if line.strip()]
 ahead_behind = git("rev-list", "--left-right", "--count", "HEAD...@{u}").split()
 
 lines = [f"[세션 시작] 현재 브랜치 `{branch}`."]
+if source != "compact":  # 압축 직후는 같은 세션이 이어지는 중이라 이미 봤다
+    lines.append(
+        "- 이 세션의 첫 업무(수정·조사·배포 같은 작업) 요청을 받으면 손대기 전에 "
+        "`python3 .claude/scripts/github_tasks.py board` 로 보드 현황을 보고, "
+        "요청과 겹치는 이슈가 있으면 번호로 짚는다. 단순 질문에는 하지 않는다."
+    )
 if branch == "main":
     lines.append("- main 에서 바로 고치지 않는다. main 머지는 곧 운영 배포다. 기능 브랜치를 딴다.")
 if len(ahead_behind) == 2 and ahead_behind[1] != "0":

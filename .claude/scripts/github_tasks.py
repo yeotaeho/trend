@@ -6,9 +6,14 @@
   python3 .claude/scripts/github_tasks.py new-milestone <제목> [YYYY-MM-DD 마감] [설명]
   python3 .claude/scripts/github_tasks.py apply <계획.json> [--dry-run]
   python3 .claude/scripts/github_tasks.py status <계획.json>
+  python3 .claude/scripts/github_tasks.py board                    보드 현황과 어긋난 칸
+  python3 .claude/scripts/github_tasks.py move <번호...> <todo|in-progress|done>
+  python3 .claude/scripts/github_tasks.py sync                     닫힘·에픽 진행에 맞춰 칸 이동
+  python3 .claude/scripts/github_tasks.py board-init               보드를 만들고 레포에 잇는다
 
 인증은 gh CLI 로그인(`gh auth login`)을 그대로 쓴다. 토큰을 따로 받지 않는다.
-대상은 GITHUB_REPO(기본 yeotaeho/trend).
+보드(GitHub Projects)는 토큰에 project 권한이 있어야 한다(`gh auth refresh -s project`).
+대상은 GITHUB_REPO(기본 yeotaeho/trend), 보드는 GITHUB_PROJECT_TITLE(기본 기술파악).
 apply 는 만든 이슈 번호를 계획 파일의 "created" 에 즉시 적는다.
 중간에 실패해도 다시 돌리면 이어서 만든다.
 """
@@ -21,6 +26,10 @@ import sys
 from pathlib import Path
 
 REPO = os.environ.get("GITHUB_REPO", "yeotaeho/trend")
+OWNER = REPO.split("/", 1)[0]
+PROJECT_TITLE = os.environ.get("GITHUB_PROJECT_TITLE", "기술파악")
+# 보드 Status 칸 — GitHub Projects 기본 선택지 이름
+STATUSES = {"todo": "Todo", "in-progress": "In Progress", "done": "Done"}
 
 # (이름, 색) — GitHub 라벨에는 범위가 없어 "범위/이름" 을 이름 규칙으로만 쓴다
 LABELS = [
@@ -68,6 +77,11 @@ def gh(*args: str, body: str | None = None) -> str:
         sys.exit("gh CLI 가 없다. https://cli.github.com 에서 설치한다.")
     if r.returncode != 0:
         err = (r.stderr or r.stdout).strip()
+        if "missing required scopes" in err:
+            sys.exit(
+                "gh 토큰에 보드(project) 권한이 없다. "
+                "사용자가 직접 `gh auth refresh -s project` 를 한 번 실행한다."
+            )
         if "auth login" in err or "not logged" in err:
             sys.exit("gh 가 로그인돼 있지 않다. 사용자가 직접 `gh auth login` 을 한 번 실행한다.")
         sys.exit(f"gh {' '.join(args[:3])} 실패: {err[:300]}")
@@ -294,6 +308,15 @@ def cmd_apply(path: str, dry: bool) -> None:
         save()
 
     gh("issue", "edit", str(epic), "-R", REPO, "--body-file", "-", body=epic_body(plan, created))
+    board = find_board()
+    if board:
+        items = board_items(board)
+        for number in [epic, *(created[t["key"]] for t in plan["tasks"])]:
+            if number not in items:
+                set_status(board, add_to_board(board, number), "Todo")
+        print(f"보드 '{PROJECT_TITLE}' 의 Todo 에 올렸다.")
+    else:
+        print(f"보드 '{PROJECT_TITLE}' 가 없어 칸에는 올리지 않았다. 사용자가 원하면 board-init.")
     print(f"완료: https://github.com/{REPO}/issues/{epic}")
 
 
@@ -309,6 +332,241 @@ def cmd_status(path: str) -> None:
             i = json.loads(view)
             ms = (i.get("milestone") or {}).get("title", "-")
             print(f"#{i['number']:<4} {i['state']:<6} 스프린트 {ms:<12} {i['title']}")
+
+
+# ── 보드 (GitHub Projects) ───────────────────────────────────────────────────
+
+
+def ghj(*args: str) -> dict:
+    return json.loads(gh(*args))
+
+
+def find_board(create: bool = False) -> dict | None:
+    """제목이 PROJECT_TITLE 인 열린 보드와 Status 칸 선택지. 없으면 None(create 면 만든다)."""
+    listed = ghj("project", "list", "--owner", OWNER, "-L", "100", "--format", "json")
+    p = next(
+        (x for x in listed["projects"] if x["title"] == PROJECT_TITLE and not x.get("closed")),
+        None,
+    )
+    if p is None:
+        if not create:
+            return None
+        p = ghj("project", "create", "--owner", OWNER, "--title", PROJECT_TITLE, "--format", "json")
+        gh("project", "link", str(p["number"]), "--owner", OWNER, "--repo", REPO)
+        print(f"보드 생성: {p['url']}")
+    fields = ghj("project", "field-list", str(p["number"]), "--owner", OWNER, "--format", "json")
+    status = next(f for f in fields["fields"] if f["name"] == "Status")
+    options = {o["name"]: o["id"] for o in status.get("options", [])}
+    missing = sorted(set(STATUSES.values()) - set(options))
+    if missing:
+        sys.exit(f"보드 Status 칸에 {missing} 선택지가 없다. 보드 설정에서 이름을 맞춘다.")
+    return {
+        "number": str(p["number"]),
+        "id": p["id"],
+        "field": status["id"],
+        "options": options,
+        "url": p["url"],
+    }
+
+
+def require_board() -> dict:
+    board = find_board()
+    if board is None:
+        sys.exit(f"보드 '{PROJECT_TITLE}' 가 없다. 사용자가 원하면 board-init 으로 만든다.")
+    return board
+
+
+def board_items(board: dict) -> dict[int, dict]:
+    """이 레포 이슈의 보드 항목. 이슈 번호 → {id, status}."""
+    data = ghj(
+        "project", "item-list", board["number"], "--owner", OWNER, "-L", "1000", "--format", "json"
+    )
+    items = {}
+    for it in data["items"]:
+        c = it.get("content") or {}
+        if c.get("type") == "Issue" and c.get("repository") == REPO:
+            items[c["number"]] = {"id": it["id"], "status": it.get("status") or ""}
+    return items
+
+
+def add_to_board(board: dict, number: int) -> str:
+    url = f"https://github.com/{REPO}/issues/{number}"
+    added = ghj(
+        "project", "item-add", board["number"], "--owner", OWNER, "--url", url, "--format", "json"
+    )
+    return str(added["id"])
+
+
+def set_status(board: dict, item_id: str, status: str) -> None:
+    option = board["options"][status]
+    gh(
+        "project", "item-edit", "--id", item_id, "--project-id", board["id"],
+        "--field-id", board["field"], "--single-select-option-id", option,
+    )  # fmt: skip
+
+
+def repo_issues() -> dict[int, dict]:
+    """work-intake 로 등록한 이슈(종류/ 라벨). 번호 → {closed, epic, title}."""
+    rows = json.loads(
+        gh(
+            "issue",
+            "list",
+            "-R",
+            REPO,
+            "--state",
+            "all",
+            "-L",
+            "1000",
+            "--json",
+            "number,state,title,labels",
+        )  # fmt: skip
+    )
+    out = {}
+    for r in rows:
+        names = {label["name"] for label in r["labels"]}
+        if any(n.startswith("종류/") for n in names):
+            out[r["number"]] = {
+                "closed": r["state"] == "CLOSED",
+                "epic": "종류/에픽" in names,
+                "title": r["title"],
+            }
+    return out
+
+
+def sub_issues(number: int) -> list[tuple[int, bool]]:
+    """에픽의 작업 (번호, 닫힘). 100개를 넘어도 모든 페이지를 읽는다."""
+    out = gh(
+        "api", "--paginate", f"repos/{REPO}/issues/{number}/sub_issues?per_page=100",
+        "--jq", '.[] | "\\(.number) \\(.state)"',
+    )  # fmt: skip
+    rows = [line.split() for line in out.splitlines() if line.strip()]
+    return [(int(n), state == "closed") for n, state in rows]
+
+
+def desired_status(current: str, closed: bool, subs: list[tuple[bool, str]] | None) -> str | None:
+    """이슈 상태에 맞는 보드 칸. 지금 칸이 맞으면 None.
+
+    subs 는 에픽일 때 작업들의 (닫힘, 칸) 목록이고, 작업 이슈면 None 이다.
+    닫힌 이슈는 Done, 작업이 하나라도 시작·완료된 열린 에픽은 In Progress,
+    Done 칸에 있는데 열려 있으면(다시 열림) In Progress, 칸이 비었으면 Todo 다.
+    """
+    if closed:
+        target = "Done"
+    elif current == "Done" or (subs and any(c or s in ("In Progress", "Done") for c, s in subs)):
+        target = "In Progress"
+    elif not current:
+        target = "Todo"
+    else:
+        return None
+    return None if target == current else target
+
+
+def plan_sync(
+    issues: dict[int, dict], items: dict[int, dict], subs: dict[int, list[tuple[int, bool]]]
+) -> tuple[list[tuple[int, str]], list[int], list[int]]:
+    """(옮길 (번호, 칸) 목록, 닫을 에픽, 다시 열 에픽).
+
+    subs 는 에픽 번호 → 작업 (번호, 닫힘) 목록이다. 작업이 모두 닫힌 열린 에픽은 닫고,
+    닫힌 에픽인데 열린 작업이 In Progress 면 작업이 재개된 것이라 다시 연다.
+    """
+    moves, close, reopen = [], [], []
+    for n, info in issues.items():
+        current = items.get(n, {}).get("status", "")
+        epic_subs = None
+        if info["epic"]:
+            epic_subs = [(c, items.get(s, {}).get("status", "")) for s, c in subs.get(n, [])]
+            if not info["closed"] and epic_subs and all(c for c, _ in epic_subs):
+                close.append(n)
+                if current != "Done":
+                    moves.append((n, "Done"))
+                continue
+            if info["closed"] and any(not c and s == "In Progress" for c, s in epic_subs):
+                reopen.append(n)
+                if current != "In Progress":
+                    moves.append((n, "In Progress"))
+                continue
+        target = desired_status(current, info["closed"], epic_subs)
+        if target:
+            moves.append((n, target))
+    return moves, close, reopen
+
+
+def epic_subs(issues: dict[int, dict]) -> dict[int, list[tuple[int, bool]]]:
+    """모든 에픽(닫힌 것 포함)의 작업. 닫힌 에픽도 봐야 재개된 작업을 알아챈다."""
+    return {n: sub_issues(n) for n, i in issues.items() if i["epic"]}
+
+
+def cmd_board() -> None:
+    board = require_board()
+    issues, items = repo_issues(), board_items(board)
+    columns: dict[str, list[int]] = {}
+    for n, it in items.items():
+        columns.setdefault(it["status"] or "(칸 없음)", []).append(n)
+    print(f"보드 {board['url']}")
+    for col in ("In Progress", "Todo", "(칸 없음)"):
+        rows = sorted(columns.get(col, []))
+        if rows or col != "(칸 없음)":
+            print(f"[{col}] {len(rows)}건")
+        for n in rows:
+            print(f"  #{n} {issues.get(n, {}).get('title', '')}")
+    print(f"[Done] {len(columns.get('Done', []))}건")
+    moves, close, reopen = plan_sync(issues, items, epic_subs(issues))
+    missing = [n for n in issues if n not in items]
+    if moves or close or reopen or missing:
+        print("어긋난 칸 — sync 로 맞춘다")
+        for n in missing:
+            print(f"  #{n} 보드에 없음")
+        for n, s in moves:
+            print(f"  #{n} → {s}")
+        for n in close:
+            print(f"  에픽 #{n} 작업이 모두 닫힘")
+        for n in reopen:
+            print(f"  에픽 #{n} 닫혔는데 작업이 다시 진행 중")
+
+
+def cmd_sync(board: dict | None = None) -> None:
+    board = board or require_board()
+    issues, items = repo_issues(), board_items(board)
+    for n in issues:
+        if n not in items:
+            items[n] = {"id": add_to_board(board, n), "status": ""}
+    moves, close, reopen = plan_sync(issues, items, epic_subs(issues))
+    for n in close:
+        gh(
+            "issue", "close", str(n), "-R", REPO, "--reason", "completed",
+            "--comment", "작업 이슈가 모두 닫혀 에픽을 닫는다(github_tasks.py sync).",
+        )  # fmt: skip
+        print(f"에픽 #{n} 닫음")
+    for n in reopen:
+        gh(
+            "issue", "reopen", str(n), "-R", REPO,
+            "--comment", "작업이 다시 진행 중이라 에픽을 다시 연다(github_tasks.py sync).",
+        )  # fmt: skip
+        print(f"에픽 #{n} 다시 엶")
+    for n, s in moves:
+        set_status(board, items[n]["id"], s)
+        print(f"#{n} → {s}")
+    if not moves and not close and not reopen:
+        print("보드 칸이 이슈 상태와 맞다.")
+
+
+def cmd_move(args: list[str]) -> None:
+    *numbers, state = args
+    if state not in STATUSES or not numbers or not all(n.isdigit() for n in numbers):
+        sys.exit(__doc__)
+    board = require_board()
+    items = board_items(board)
+    for raw in numbers:
+        n = int(raw)
+        closed = json.loads(gh("issue", "view", raw, "-R", REPO, "--json", "state"))["state"]
+        if state != "done" and closed == "CLOSED":
+            sys.exit(f"#{n} 은 닫힌 이슈다. 다시 할 일이면 사용자 확인 뒤 `gh issue reopen {n}`.")
+        item = items[n]["id"] if n in items else add_to_board(board, n)
+        if state == "done" and closed != "CLOSED":
+            gh("issue", "close", raw, "-R", REPO, "--reason", "completed")
+        set_status(board, item, STATUSES[state])
+        print(f"#{n} → {STATUSES[state]}")
+    cmd_sync(board)  # 작업을 옮겼으면 에픽 칸도 따라 맞춘다
 
 
 if __name__ == "__main__":
@@ -327,5 +585,14 @@ if __name__ == "__main__":
         cmd_apply(a[1], "--dry-run" in a)
     elif a[0] == "status" and len(a) >= 2:
         cmd_status(a[1])
+    elif a[0] == "board":
+        cmd_board()
+    elif a[0] == "move" and len(a) >= 3:
+        cmd_move(a[1:])
+    elif a[0] == "sync":
+        cmd_sync()
+    elif a[0] == "board-init":
+        board = find_board(create=True)
+        print(f"보드: {board['url']}" if board else "보드를 찾지 못했다.")
     else:
         sys.exit(__doc__)
