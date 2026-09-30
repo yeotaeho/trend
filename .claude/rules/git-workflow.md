@@ -21,6 +21,12 @@
 - PR 본문에 `closes #<작업 번호>` 를 적는다. push 는 사용자가 지시했을 때만 한다.
 - push 는 `git push -u origin <브랜치>` 처럼 대상을 적는다. 가드는 cd 가 섞인 명령에서 대상을 생략한 push 를 실행 폴더를 확정할 수 없어 막는다.
 
+## 업무 보드 (GitHub Projects `기술파악`)
+
+- 등록된 작업 이슈를 시작하면(브랜치를 따고 첫 수정 전) In Progress 로, PR 머지나 완료 기준 충족이면 Done 으로 옮긴다. 명령과 판단 표는 스킬 `work-intake` 의 "보드 칸" 이다.
+- 새 세션의 첫 업무 요청, 진행 상황 질문, 등록된 업무와 겹치는 요청에는 손대기 전에 `python3 .claude/scripts/github_tasks.py board` 로 현황을 본다.
+- PR 로 들어가는 작업은 머지 전에 Done 으로 옮기지 않는다.
+
 ## Gas Town (다른 PC 의 WSL)
 
 - Polecat 브랜치(`polecat/<이름>/tr-<id>@...`)는 통합 브랜치에 차례로 병합한다. 충돌은 거의 늘 `mobile/lib/app/router.dart`·`mobile/test/app/router_test.dart` 다.

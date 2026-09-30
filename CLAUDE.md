@@ -47,6 +47,7 @@ TEST_DATABASE_URL=<dev> uv run pytest tests/integration             # Neon dev �
 
 cd mobile && flutter analyze && flutter test                         # 앱 (TEMP 는 ASCII 경로)
 python3 .claude/scripts/github_tasks.py apply .claude/tasks/<계획>.json --dry-run   # 업무 → 이슈 미리보기
+python3 .claude/scripts/github_tasks.py board                                       # 보드 현황·어긋난 칸
 ```
 
 ## 문서 지도
@@ -81,11 +82,11 @@ python3 .claude/scripts/github_tasks.py apply .claude/tasks/<계획>.json --dry-
 | 알림 원인 진단·임계값 보정 | 스킬 `pipeline-diagnose` | 요청 의도로 선택 |
 | 운영 배포 확인·롤백 | 스킬 `deploy-verify` | 〃 |
 | 교훈 기록·BANK 정리 | 스킬 `lesson-capture` | 커밋 뒤 Stop 훅 · 요청 의도로 선택 |
-| 업무 하달 → 에픽·작업 이슈 등록 | 스킬 `work-intake` | 요청 의도로 선택. 스프린트는 사용자가 정하거나 물어서 붙인다 |
+| 업무 하달 → 에픽·작업 이슈 등록, 보드 칸(Todo·In Progress·Done)·현황 | 스킬 `work-intake` | 요청 의도로 선택. 스프린트는 사용자가 정하거나 물어서 붙인다 |
 
 | 훅 (`.claude/settings.json`) | 하는 일 |
 |---|---|
-| SessionStart `session_context.py` | 브랜치·upstream 대비 뒤처짐·미커밋 파일을 알린다. 압축·재개 뒤엔 인수인계를 되돌려 넣는다 |
+| SessionStart `session_context.py` | 브랜치·upstream 대비 뒤처짐·미커밋 파일을 알리고, 첫 업무 전 보드 현황(`board`) 확인을 안내한다. 압축·재개 뒤엔 인수인계를 되돌려 넣는다 |
 | UserPromptSubmit `prompt_router.py` | 규칙·스킬 머리말의 "언제 쓰는가" 를 모아 넣고, Claude 가 요청 의도로 골라 `[적용: ...]` 로 밝힌다. 첫 요청·10번째마다 전체, 그 사이엔 이름만 |
 | PreToolUse `guard.py` | 비밀 파일 커밋·origin main 직접 push 를 막고, 배포 파일 수정 전 확인을 요청한다 |
 | Stop `lesson_gate.py` | 커밋이 있던 턴 끝에 마무리 순서와 교훈 기록 여부를 한 번 확인시킨다 |
