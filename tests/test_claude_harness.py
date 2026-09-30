@@ -208,9 +208,29 @@ def test_board_plan_sync_closes_finished_epic() -> None:
         4: {"closed": False, "epic": False, "title": "보드에 없는 작업"},
     }
     items = {1: {"status": "In Progress"}, 2: {"status": "Done"}, 3: {"status": "In Progress"}}
-    moves, close = tasks.plan_sync(issues, items, {1: [2, 3]})
-    assert close == [1]
+    moves, close, reopen = tasks.plan_sync(issues, items, {1: [(2, True), (3, True)]})
+    assert (close, reopen) == ([1], [])
     assert sorted(moves) == [(1, "Done"), (3, "Done"), (4, "Todo")]
+
+
+def test_board_plan_sync_keeps_epic_open_while_a_child_is_open() -> None:
+    # 라벨 목록에 없는 작업(예: 101번째)이라도 API 가 열림이라 하면 에픽을 닫지 않는다 (Codex P1)
+    tasks = load_tasks_module()
+    issues = {1: {"closed": False, "epic": True, "title": "에픽"}}
+    moves, close, _ = tasks.plan_sync(issues, {1: {"status": "In Progress"}}, {1: [(9, False)]})
+    assert (moves, close) == ([], [])
+
+
+def test_board_plan_sync_reopens_epic_when_work_resumes() -> None:
+    # sync 가 닫은 에픽의 작업이 다시 열려 진행 중이면 에픽도 다시 연다 (Codex P2)
+    tasks = load_tasks_module()
+    issues = {
+        1: {"closed": True, "epic": True, "title": "에픽"},
+        2: {"closed": False, "epic": False, "title": "재개한 작업"},
+    }
+    items = {1: {"status": "Done"}, 2: {"status": "In Progress"}}
+    moves, close, reopen = tasks.plan_sync(issues, items, {1: [(2, False)]})
+    assert (moves, close, reopen) == ([(1, "In Progress")], [], [1])
 
 
 @pytest.mark.parametrize(

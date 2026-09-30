@@ -433,9 +433,14 @@ def repo_issues() -> dict[int, dict]:
     return out
 
 
-def sub_issues(number: int) -> list[int]:
-    rows = json.loads(gh("api", f"repos/{REPO}/issues/{number}/sub_issues?per_page=100"))
-    return [r["number"] for r in rows]
+def sub_issues(number: int) -> list[tuple[int, bool]]:
+    """에픽의 작업 (번호, 닫힘). 100개를 넘어도 모든 페이지를 읽는다."""
+    out = gh(
+        "api", "--paginate", f"repos/{REPO}/issues/{number}/sub_issues?per_page=100",
+        "--jq", '.[] | "\\(.number) \\(.state)"',
+    )  # fmt: skip
+    rows = [line.split() for line in out.splitlines() if line.strip()]
+    return [(int(n), state == "closed") for n, state in rows]
 
 
 def desired_status(current: str, closed: bool, subs: list[tuple[bool, str]] | None) -> str | None:
@@ -457,31 +462,38 @@ def desired_status(current: str, closed: bool, subs: list[tuple[bool, str]] | No
 
 
 def plan_sync(
-    issues: dict[int, dict], items: dict[int, dict], subs: dict[int, list[int]]
-) -> tuple[list[tuple[int, str]], list[int]]:
-    """(옮길 (번호, 칸) 목록, 작업이 모두 닫혀 닫을 에픽 번호 목록)."""
-    moves, close = [], []
+    issues: dict[int, dict], items: dict[int, dict], subs: dict[int, list[tuple[int, bool]]]
+) -> tuple[list[tuple[int, str]], list[int], list[int]]:
+    """(옮길 (번호, 칸) 목록, 닫을 에픽, 다시 열 에픽).
+
+    subs 는 에픽 번호 → 작업 (번호, 닫힘) 목록이다. 작업이 모두 닫힌 열린 에픽은 닫고,
+    닫힌 에픽인데 열린 작업이 In Progress 면 작업이 재개된 것이라 다시 연다.
+    """
+    moves, close, reopen = [], [], []
     for n, info in issues.items():
         current = items.get(n, {}).get("status", "")
         epic_subs = None
         if info["epic"]:
-            epic_subs = [
-                (issues.get(s, {}).get("closed", False), items.get(s, {}).get("status", ""))
-                for s in subs.get(n, [])
-            ]
+            epic_subs = [(c, items.get(s, {}).get("status", "")) for s, c in subs.get(n, [])]
             if not info["closed"] and epic_subs and all(c for c, _ in epic_subs):
                 close.append(n)
                 if current != "Done":
                     moves.append((n, "Done"))
                 continue
+            if info["closed"] and any(not c and s == "In Progress" for c, s in epic_subs):
+                reopen.append(n)
+                if current != "In Progress":
+                    moves.append((n, "In Progress"))
+                continue
         target = desired_status(current, info["closed"], epic_subs)
         if target:
             moves.append((n, target))
-    return moves, close
+    return moves, close, reopen
 
 
-def open_epic_subs(issues: dict[int, dict]) -> dict[int, list[int]]:
-    return {n: sub_issues(n) for n, i in issues.items() if i["epic"] and not i["closed"]}
+def epic_subs(issues: dict[int, dict]) -> dict[int, list[tuple[int, bool]]]:
+    """모든 에픽(닫힌 것 포함)의 작업. 닫힌 에픽도 봐야 재개된 작업을 알아챈다."""
+    return {n: sub_issues(n) for n, i in issues.items() if i["epic"]}
 
 
 def cmd_board() -> None:
@@ -498,9 +510,9 @@ def cmd_board() -> None:
         for n in rows:
             print(f"  #{n} {issues.get(n, {}).get('title', '')}")
     print(f"[Done] {len(columns.get('Done', []))}건")
-    moves, close = plan_sync(issues, items, open_epic_subs(issues))
+    moves, close, reopen = plan_sync(issues, items, epic_subs(issues))
     missing = [n for n in issues if n not in items]
-    if moves or close or missing:
+    if moves or close or reopen or missing:
         print("어긋난 칸 — sync 로 맞춘다")
         for n in missing:
             print(f"  #{n} 보드에 없음")
@@ -508,6 +520,8 @@ def cmd_board() -> None:
             print(f"  #{n} → {s}")
         for n in close:
             print(f"  에픽 #{n} 작업이 모두 닫힘")
+        for n in reopen:
+            print(f"  에픽 #{n} 닫혔는데 작업이 다시 진행 중")
 
 
 def cmd_sync(board: dict | None = None) -> None:
@@ -516,17 +530,23 @@ def cmd_sync(board: dict | None = None) -> None:
     for n in issues:
         if n not in items:
             items[n] = {"id": add_to_board(board, n), "status": ""}
-    moves, close = plan_sync(issues, items, open_epic_subs(issues))
+    moves, close, reopen = plan_sync(issues, items, epic_subs(issues))
     for n in close:
         gh(
             "issue", "close", str(n), "-R", REPO, "--reason", "completed",
             "--comment", "작업 이슈가 모두 닫혀 에픽을 닫는다(github_tasks.py sync).",
         )  # fmt: skip
         print(f"에픽 #{n} 닫음")
+    for n in reopen:
+        gh(
+            "issue", "reopen", str(n), "-R", REPO,
+            "--comment", "작업이 다시 진행 중이라 에픽을 다시 연다(github_tasks.py sync).",
+        )  # fmt: skip
+        print(f"에픽 #{n} 다시 엶")
     for n, s in moves:
         set_status(board, items[n]["id"], s)
         print(f"#{n} → {s}")
-    if not moves and not close:
+    if not moves and not close and not reopen:
         print("보드 칸이 이슈 상태와 맞다.")
 
 
