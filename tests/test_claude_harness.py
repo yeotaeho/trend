@@ -2,11 +2,13 @@
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 HOOKS = ROOT / ".claude" / "hooks"
@@ -96,6 +98,20 @@ def test_router_full_list_then_one_line(tmp_path: Path) -> None:
     assert "`lessons`" not in first  # 항상 로드되는 규칙은 목록에 넣지 않는다
     second = run_hook("prompt_router.py", {"session_id": "t1"}, tmp=tmp_path)
     assert len(second.splitlines()) == 1
+
+
+def test_router_frontmatter_is_valid_yaml() -> None:
+    # 설명이 따옴표로 시작하는 등 YAML 이 깨지면 Claude Code 가 스킬 설명을 못 읽는다
+    files = [
+        *(ROOT / ".claude" / "rules").glob("*.md"),
+        *(ROOT / ".claude" / "skills").glob("*/SKILL.md"),
+    ]
+    for p in files:
+        m = re.match(r"---\r?\n(.*?)\r?\n---", p.read_text(encoding="utf-8"), re.S)
+        if m is None:
+            continue  # 항상 로드되는 규칙은 머리말이 없다
+        meta = yaml.safe_load(m.group(1))
+        assert isinstance(meta.get("description"), str) and meta["description"], p
 
 
 @pytest.mark.parametrize(

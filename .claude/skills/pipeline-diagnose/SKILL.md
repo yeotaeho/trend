@@ -1,6 +1,6 @@
 ---
 name: pipeline-diagnose
-description: "이 알림이 왜 왔지/왜 안 왔지", 알림이 0건이거나 갑자기 줄거나 늘 때, 중복·형제 버전 알림, LLM 예산 조기 소진, 소스가 조용할 때 원인을 찾거나, dedupe·선별·점수·판정 임계값과 소스 trust 를 실데이터로 보정할 때 쓴다. 실배치 실행과 decisions·notifications·llm_calls 조회 절차.
+description: 이 알림이 왜 왔는지·왜 안 왔는지 물을 때, 알림이 0건이거나 갑자기 줄거나 늘 때, 중복·형제 버전 알림, LLM 예산 조기 소진, 소스가 조용할 때 원인을 찾거나, dedupe·선별·점수·판정 임계값과 소스 trust 를 실데이터로 보정할 때 쓴다. 실배치 실행과 decisions·notifications·llm_calls 조회 절차.
 ---
 
 # 파이프라인 진단·보정
