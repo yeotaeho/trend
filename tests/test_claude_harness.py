@@ -75,15 +75,17 @@ def test_guard_push_to_origin_main(repo: Path, command: str, expected: str | Non
 @pytest.mark.parametrize(
     ("start", "form", "expected"),
     [
-        # 기능 브랜치 폴더에서 main 워크트리를 가리켜 push 해도 막는다 (Codex 리뷰 P1)
+        # -C 는 항상 적용되므로 그 폴더의 브랜치로 판정한다 (Codex 리뷰 P1)
         ("feature", 'git -C "{main}" push', "deny"),
+        ("main", 'git -C "{feature}" push', None),
+        # cd 가 섞이면 폴더를 확정할 수 없다. 대상을 생략한 push 는 막는다 (Codex 재리뷰 P1 두 건)
         ("feature", 'cd "{main}" && git push', "deny"),
-        # cd 는 순서대로 적용한다. cd - 는 직전 폴더로 돌아간다 (Codex 재리뷰 P1)
         ("main", 'cd "{feature}"; cd -; git push', "deny"),
-        ("feature", 'cd "{main}"; cd "{feature}"; git push', None),
-        ("main", 'cd "{feature}" && git push', None),
-        # 폴더를 판정하지 못하면 main 으로 보고 막는다
+        ("main", 'false && cd "{feature}"; git push', "deny"),
         ("feature", 'cd "{feature}/없는폴더" && git push', "deny"),
+        # 대상을 적으면 폴더와 무관하게 판정된다
+        ("main", 'cd "{feature}" && git push -u origin feat/x', None),
+        ("feature", 'cd "{main}" && git push origin HEAD:main', "deny"),
     ],
 )
 def test_guard_push_uses_the_folder_git_runs_in(
@@ -94,6 +96,15 @@ def test_guard_push_uses_the_folder_git_runs_in(
     dirs = {"main": repo, "feature": feature}
     command = form.format(main=repo.as_posix(), feature=feature.as_posix())
     assert decision(run_hook("guard.py", bash(command), cwd=dirs[start])) == expected
+
+
+def test_guard_commit_checks_every_folder_it_may_run_in(repo: Path, tmp_path: Path) -> None:
+    (repo / ".env").write_text("X=1")
+    subprocess.run(["git", "-C", str(repo), "add", ".env"], check=True)
+    clean = tmp_path / "clean"
+    subprocess.run(["git", "init", "-q", str(clean)], check=True)
+    command = f'false && cd "{repo.as_posix()}"; git commit -m x'
+    assert decision(run_hook("guard.py", bash(command), cwd=clean)) == "deny"
 
 
 @pytest.mark.parametrize(

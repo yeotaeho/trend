@@ -19,6 +19,7 @@
 
 - `gh` 가 로그인돼 있지 않으면 compare 링크 `https://github.com/yeotaeho/trend/compare/main...<브랜치>` 로 안내한다.
 - PR 본문에 `closes #<작업 번호>` 를 적는다. push 는 사용자가 지시했을 때만 한다.
+- push 는 `git push -u origin <브랜치>` 처럼 대상을 적는다. 가드는 cd 가 섞인 명령에서 대상을 생략한 push 를 실행 폴더를 확정할 수 없어 막는다.
 
 ## Gas Town (다른 PC 의 WSL)
 
