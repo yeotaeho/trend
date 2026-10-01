@@ -213,6 +213,58 @@ def test_lesson_gate(payload: dict, blocks: bool) -> None:
     assert (json.loads(out)["decision"] == "block") if blocks else out == ""
 
 
+def transcript(tmp_path: Path, calls: list[tuple[str, dict]]) -> str:
+    """도구 호출만 담은 세션 기록 파일."""
+    content = [{"type": "tool_use", "name": n, "input": i} for n, i in calls]
+    record = {"type": "assistant", "message": {"content": content}}
+    path = tmp_path / "session.jsonl"
+    path.write_text(json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8")
+    return str(path)
+
+
+RULE_READ = ("Read", {"file_path": str(ROOT / ".claude" / "rules" / "pipeline.md")})
+PATH_READ = ("Read", {"file_path": str(ROOT / "app" / "pipeline" / "scoring.py")})
+SERENA_READ = ("mcp__serena__find_symbol", {"relative_path": "app/pipeline/scoring.py"})
+SKILL_CALL = ("Skill", {"skill": "work-intake"})
+
+
+@pytest.mark.parametrize(
+    ("first_line", "calls", "blocked"),
+    [
+        ("[적용: pipeline]", [RULE_READ], None),
+        ("[적용: pipeline]", [PATH_READ], None),  # paths 에 걸리는 파일 Read 로 규칙이 붙었다
+        ("[적용: work-intake]", [SKILL_CALL], None),
+        ("[적용: pipeline]", [SERENA_READ], "pipeline"),  # Serena 읽기는 경로 규칙을 붙이지 않는다
+        ("[적용: pipeline, work-intake]", [RULE_READ], "work-intake"),
+        ("[적용: deploy-verify]", [], "deploy-verify"),  # 10-01 실제 사례
+        ("[적용: 없는규칙]", [RULE_READ], "목록에 없는"),
+        ("선언 없는 답변", [], None),
+    ],
+)
+def test_route_gate(
+    tmp_path: Path, first_line: str, calls: list[tuple[str, dict]], blocked: str | None
+) -> None:
+    payload = {
+        "last_assistant_message": f"{first_line}\n\n본문.",
+        "transcript_path": transcript(tmp_path, calls),
+    }
+    out = run_hook("route_gate.py", payload)
+    if blocked is None:
+        assert out == ""
+    else:
+        result = json.loads(out)
+        assert result["decision"] == "block" and blocked in result["reason"]
+
+
+def test_route_gate_passes_when_already_reminded(tmp_path: Path) -> None:
+    payload = {
+        "last_assistant_message": "[적용: deploy-verify]",
+        "transcript_path": transcript(tmp_path, []),
+        "stop_hook_active": True,
+    }
+    assert run_hook("route_gate.py", payload) == ""
+
+
 def load_tasks_module():  # type: ignore[no-untyped-def]
     spec = importlib.util.spec_from_file_location(
         "github_tasks", ROOT / ".claude" / "scripts" / "github_tasks.py"

@@ -91,6 +91,7 @@ python3 .claude/scripts/github_tasks.py board                                   
 | PreToolUse `guard.py` | 비밀 파일 커밋·origin main 직접 push 를 막고, 배포 파일 수정 전 확인을 요청한다(Serena 편집 도구 포함) |
 | PostToolUse `edit_check.py` | 편집 도구가 성공을 알려도 파일이 커밋본의 절반 미만으로 줄었으면 멈춰 확인시킨다 |
 | Stop `lesson_gate.py` | 커밋이 있던 턴 끝에 마무리 순서와 교훈 기록 여부를 한 번 확인시킨다 |
+| Stop `route_gate.py` | 답변 첫 줄 `[적용: ...]` 의 규칙·스킬을 이 세션에서 실제로 Read·Skill 했는지 기록과 대조해, 안 읽었으면 한 번 되돌린다 |
 | PreCompact `pre_compact.py` | 압축 직전 요청·고친 파일·실패·커밋을 `.claude/handoff/<세션>.md` 로 저장한다 |
 | 플러그인 security-guidance | 편집 시 위험 패턴 경고, 커밋·push 때 보안 리뷰(턴 끝 리뷰는 끔). 기준은 `.claude/claude-security-guidance.md` |
 
