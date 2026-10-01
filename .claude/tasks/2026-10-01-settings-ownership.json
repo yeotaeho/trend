@@ -1,0 +1,357 @@
+{
+  "project": "설정 관리 — 키마다 주인 (앱에서 모든 설정 보기, 앱 소유 키만 편집)",
+  "why": "설정이 rules.yaml·app.yaml·sources.yaml·.env·DB·코드 상수·프롬프트·모바일 상수에 약 180개로 흩어져 있고, 앱에서 볼 수 없다. 이미 있는 user_prefs 덮어쓰기는 taxonomy 말고 모든 rules 키를 받지만, 저장이 통째라 YAML 튜닝을 조용히 가리고, 되돌리기·출처 표시·이력·범위 검증이 없다. 그래서 D2(앱에서 설정 저장 안 함)를 두었다.",
+  "summary": "10-01 설정 관리 전략(설정값 전수 조사·검증·설계 3안 종합)을 따른다. 키마다 주인을 하나 정한다. 앱 소유 키(정책 문장, kind 감점, 알림 피로, 찜 재알림 일수, 소스 on/off)는 앱에서 편집하고, YAML 소유 키(관문 임계값·선별·예산·exclude·스케줄·timezone)는 앱에서 읽기와 GitHub 링크만 둔다. 비밀은 .env, 프롬프트 본문은 코드에 둔다. 값 저장용 새 테이블은 만들지 않고 user_prefs 덮어쓰기를 확장하며, 새 테이블은 이력용 settings_revisions 하나다. 사용자 결정(10-01)은 관문 임계값 읽기만, exclude 읽기만, kind 가중치는 감점만 −0.5~0, LLM_DAILY_CAP 은 rules.yaml 예산으로 이전이다. D2 는 3.5·3.6(전체 설정 API·모바일 화면) 배포 뒤 '키마다 주인' 으로 바꾸고, 그 전까지 앱 저장은 하지 않는다.",
+  "milestone": "S4 설정 관리",
+  "tasks": [
+    {
+      "key": "s1",
+      "title": "설정 모델 범위 검증과 주인 메타 (허락 필요)",
+      "kind": "작업",
+      "area": "파이프라인",
+      "priority": "높음",
+      "body": [
+        "Rules·AppConfig·SourceConfig 에 Field 범위를 넣는다. 범위는 모두 현재 YAML 값을 포함한다. notify.daily_push_cap 1~50, quiet_*_hour 0~23, cluster_daily_cap 0~5, explore_judge_cap 0~10, dedupe 임계값 0 초과 1 이하·related ≤ dup, window_hours 1~168, triage.batch_size 1~40, daily_cap_calls 0~200, min_batch ≥ 1, max_wait_minutes 1~240, scoring w_* 0~1, threshold 0~1, max_age_hours 1~168, policy 문장 길이 한도, sources poll_interval_sec ≥ 300·trust_score 0~1.",
+        "timezone 은 ZoneInfo 로 열리는 이름만 받는다. kind_weights 범위는 이 작업에서는 현행 ±0.5 로 둔다(감점 전용은 다음 작업).",
+        "Field 의 json_schema_extra 에 owner(app|yaml)·apply(반영 시점)·scope(user|global)를 단다. 덮어쓰기 허용 목록·/meta 한도·GET /settings 메타가 모두 여기서 나온다. 별도 레지스트리 파일은 두지 않는다.",
+        "/meta 한도를 모델 Field 에서 뽑는다. 응답 모양은 바꾸지 않는다.",
+        "빈 정책 문장 검사 테스트를 둔다(YAML 에서 빠지면 \"\" 기본값으로 조용히 돈다). 부르는 곳이 없는 reload_configs 를 지우고, 없는 함수 level_for 를 가리키는 주석과 app.yaml 머리 주석을 고친다."
+      ],
+      "done_when": [
+        "실제 rules.yaml·app.yaml·sources.yaml 세 파일이 검증을 통과한다",
+        "timezone='KST', threshold=5, batch_size=0, quiet_start_hour=99 가 각각 거부된다",
+        "/meta 응답이 바뀌지 않는다",
+        "uv run pytest · ruff check · ruff format · mypy app 통과"
+      ],
+      "verify": [
+        "tests/test_rules.py 에서 실제 YAML 을 읽어 검증",
+        "tests/api/test_meta.py"
+      ],
+      "files": [
+        "app/config.py",
+        "app/api/v1/schemas/common.py",
+        "app/api/v1/meta.py",
+        "config/app.yaml",
+        "tests/test_rules.py",
+        "tests/test_prefs_overlay.py",
+        "tests/api/test_meta.py"
+      ],
+      "depends_on": []
+    },
+    {
+      "key": "s1b",
+      "title": "kind 가중치를 감점 전용(−0.5~0)으로 (허락 필요)",
+      "kind": "작업",
+      "area": "API",
+      "priority": "보통",
+      "body": [
+        "사용자 결정(10-01): kind 가중치는 앱 소유, 범위는 감점만 −0.5~0. 가점은 09-09 실측으로 기각됐는데 지금 API 상한(common.KIND_WEIGHT_MAX)이 +0.5 라 그 결정과 어긋난다.",
+        "common.KIND_WEIGHT_MAX, 모델 Field 의 le, /meta 의 kind_weight 한도를 한 번에 0 으로 바꾼다. 하나만 바꾸면 API 스키마는 통과하고 덮어쓰기 검증에서 422 가 나는 식으로 검증 경로가 둘로 갈린다.",
+        "04 슬라이더는 /meta 한도를 읽으므로 앱 코드는 바꾸지 않는다."
+      ],
+      "done_when": [
+        "/meta 의 kind_weight.max 가 0 이다",
+        "+0.1 을 PUT /settings/interests 하면 422 다",
+        "실제 rules.yaml 의 kind_weights 가 모두 0 이하라 검증을 통과한다"
+      ],
+      "verify": [
+        "uv run pytest tests/api/test_meta.py tests/api/test_settings.py"
+      ],
+      "files": [
+        "app/api/v1/schemas/common.py",
+        "app/config.py",
+        "app/api/v1/meta.py",
+        "tests/api/test_meta.py",
+        "tests/api/test_settings.py"
+      ],
+      "depends_on": [
+        "s1"
+      ]
+    },
+    {
+      "key": "s2",
+      "title": "앱 소유 키만 받기·차이만 저장·키별 기본값으로 (허락 필요)",
+      "kind": "작업",
+      "area": "API",
+      "priority": "높음",
+      "body": [
+        "validate_overlay·_apply_overlay 가 주인 검사를 한다. owner 가 app 이 아닌 경로는 저장 때 422, 기동 때는 경고 로그 후 버린다. 지금의 taxonomy 금지를 키 전체로 넓힌 것이다.",
+        "공통 저장 함수 하나를 만든다. users 행 잠금 → merge → 주인 검사 → prune(현재 YAML 값과 같은 말단은 지운다. dict 는 말단 단위, 목록은 통째로, categories 는 taxonomy 전체와 비교) → 검증 → upsert user_prefs → sources 행 동기화(저장 결과의 enabled, 없으면 YAML enabled) → 커밋 → set_prefs_overlay.",
+        "PUT /settings/interests, PATCH /settings/notifications, PATCH /sources/{id} 가 이 함수를 쓴다. DELETE /settings/overrides/{key} 를 만든다(앱 소유가 아니면 404). _with_cluster_cap 의 pop 분기를 정리한다.",
+        "scripts/run_job.py 가 잡보다 load_prefs_overlay 를 먼저 부르게 한다. 지금은 앱에서 끈 채널로도 수동 잡이 보낸다.",
+        "배포 직전에 운영 user_prefs 를 다시 조회해 YAML 소유 키가 없는지 확인한다(10-01 조사 때는 0행). 있으면 배포 전에 사용자와 처리 방법을 정한다."
+      ],
+      "done_when": [
+        "GET 값을 그대로 PUT /settings/interests 하면 user_prefs.data 가 빈 객체다",
+        "kind 하나만 바꾸면 그 키 하나만 남는다",
+        "scoring.threshold 를 덮어쓰려 하면 422 다",
+        "DELETE /settings/overrides/{key} 뒤 GET 값이 YAML 값과 같다. sources.<name>.enabled 를 DELETE 하면 sources 행도 YAML 값이다",
+        "uv run pytest 통과"
+      ],
+      "verify": [
+        "tests/test_prefs_overlay.py, tests/api/test_settings.py, tests/api/test_sources.py",
+        "배포 전 Neon 읽기로 user_prefs 확인"
+      ],
+      "files": [
+        "app/config.py",
+        "app/db/prefs.py",
+        "app/api/v1/settings.py",
+        "app/api/v1/sources.py",
+        "scripts/run_job.py",
+        "tests/test_prefs_overlay.py",
+        "tests/api/test_settings.py",
+        "tests/api/test_sources.py"
+      ],
+      "depends_on": [
+        "s1"
+      ]
+    },
+    {
+      "key": "s3",
+      "title": "설정 이력 settings_revisions 와 버전 되돌리기 (허락 필요)",
+      "kind": "작업",
+      "area": "DB",
+      "priority": "높음",
+      "body": [
+        "alembic 0005 로 settings_revisions 를 만든다. 열은 id, user_id(FK users), data(저장 뒤 user_prefs.data 전체), changes([{key, old, new, default}]), origin(app|reset|restore|script), note, created_at. 인덱스 (user_id, id DESC). 행은 지우지 않는다. decisions 는 item_id 가 NOT NULL 이라 설정 이력을 담을 수 없다.",
+        "공통 저장 함수가 upsert 와 같은 트랜잭션에서 한 행을 남긴다. GET /settings/revisions(커서 페이지네이션), POST /settings/revisions/{id}/restore 를 만든다. restore 는 현재 모델·주인 기준으로 정리한 뒤 공통 저장 함수를 지나고, 버린 키는 dropped 로 응답한다.",
+        "기동 때 앱 값이 있는 키 가운데 마지막 저장 이후 YAML 값이 바뀐 키를 config.default_changed 경고로 남긴다.",
+        "deploy-verify 스킬 롤백 절과 docs/architecture.md 에 'IMAGE_TAG 롤백은 마지막 마이그레이션(0005) 이후 SHA 로만 한다' 를 적는다. 그 이전 SHA 이미지에는 0005 리비전이 없어 alembic upgrade head 가 실패하고 서버가 뜨지 않는다(추론)."
+      ],
+      "done_when": [
+        "PATCH 를 세 번 하면 revision 이 3행 생기고 각 changes 에 바뀐 키만 있다",
+        "restore 하면 값이 돌아오고 revision 이 한 행 늘어난다",
+        "06 토글 → restore 를 하면 GET /sources 와 sources.enabled 행이 함께 원래대로다",
+        "Neon dev 브랜치에서 upgrade·downgrade 통과",
+        "롤백 조건이 두 문서에 있다"
+      ],
+      "verify": [
+        "dev 브랜치로 uv run pytest tests/integration",
+        "uv run alembic upgrade head / downgrade -1 (dev)"
+      ],
+      "files": [
+        "app/db/alembic/versions/",
+        "app/db/models.py",
+        "app/db/prefs.py",
+        "app/config.py",
+        "app/api/v1/settings.py",
+        "app/api/v1/schemas/settings.py",
+        ".claude/skills/deploy-verify/SKILL.md",
+        "docs/architecture.md",
+        "docs/database.md",
+        "tests/integration/"
+      ],
+      "depends_on": [
+        "s2"
+      ]
+    },
+    {
+      "key": "s4",
+      "title": "전체 설정 조회 API 와 발송 막힘 사유 delivery_blocked (허락 필요)",
+      "kind": "작업",
+      "area": "API",
+      "priority": "높음",
+      "body": [
+        "GET /api/v1/settings 를 만든다. 응답은 revision, git_sha, delivery_blocked, items[{key, label, category, value, default, source(default|app), owner, apply, default_changed, edit_url}]. 비밀값은 키 이름도 넣지 않는다. server 소유는 llm_model·embedding_model·scheduler_enabled 만 읽기로. edit_url 은 GitHub 의 config 파일 주소.",
+        "GET /settings/interests·notifications 에 선택 필드 overridden 을 더한다.",
+        "delivery_blocked 계산 함수를 app/notify/policy.py 에 둔다(알림 피로 규칙은 한 곳). 사유는 no_channel(켜지고 연결된 채널 0개 → 모든 항목이 FEED 로 닫힘), no_instant(즉시 구간 없음 → push 0), quiet_long(무음 20시간 이상), resurface_off(FCM 꺼짐 → 찜 재알림 멈춤).",
+        "계약서(docs/api/app-api-v1.md)·서버 스키마·앱 fixture 를 같은 PR 에서 맞춘다(규칙 app-api). pipeline-diagnose 스킬에 'rules.yaml 키를 고치기 전에 GET /settings 에서 source=app 인지 본다' 를 한 줄 넣는다."
+      ],
+      "done_when": [
+        "응답 키 가운데 Settings 의 비밀 필드명이 0개다",
+        "앱에서 저장한 키는 source=app 이다",
+        "채널 셋을 모두 끄면 delivery_blocked 에 no_channel 이 있다",
+        "운영에서 curl 로 200 이 나온다"
+      ],
+      "verify": [
+        "tests/api/test_settings.py, tests/test_policy.py",
+        "운영 curl"
+      ],
+      "files": [
+        "app/api/v1/settings.py",
+        "app/api/v1/schemas/settings.py",
+        "app/notify/policy.py",
+        "docs/api/app-api-v1.md",
+        "mobile/assets/fixtures/",
+        ".claude/skills/pipeline-diagnose/SKILL.md",
+        "tests/api/test_settings.py",
+        "tests/test_policy.py"
+      ],
+      "depends_on": [
+        "s3"
+      ]
+    },
+    {
+      "key": "s5",
+      "title": "모바일 설정 화면 — 출처 배지·기본값으로·되돌리기·전체 설정·이력",
+      "kind": "작업",
+      "area": "앱",
+      "priority": "높음",
+      "body": [
+        "04 관심사는 저장 버튼을 유지하고 필드 옆에 '앱 값' 배지와 '기본값으로' 버튼을 단다. 요청 모양은 그대로(서버 prune 이 거른다).",
+        "05 알림 설정은 탭 즉시 저장을 유지하고 저장 직후 '되돌리기' 스낵바를 띄운다. 맨 위에 delivery_blocked 상태 줄을 두고, 저장 결과가 사유를 새로 만들면(채널 모두 끔, high 를 피드만, 무음 20시간 이상) 저장 전에 확인창을 띄운다. push 상한 1/50 하드코딩과 '클러스터 하루 1건' 라벨은 /meta 와 현재 값에서 읽는다. 무음 시작=끝이면 '무음 끔' 으로 보인다.",
+        "06 수집 소스 on/off 도 되돌리기 스낵바. 끌 때 '대기 중인 항목 처리와 GitHub 웹훅 적재도 멈춘다' 한 줄.",
+        "새 '전체 설정' 화면은 분류별 읽기 전용 색인이다. 행마다 값·기본값·출처 배지·반영 시점. 앱 소유 행은 04·05·06 으로, YAML 소유 행은 GitHub 파일 링크로 간다. 운영 알림은 항상 디스코드라는 한 줄을 둔다. 모바일 빌드값은 넣지 않는다.",
+        "새 '설정 이력' 화면은 revision 목록과 바뀐 키, '이 버전으로 되돌리기'(확인창에 되돌려도 돌아오지 않는 것: FILTERED_OUT·FEED 로 닫힌 항목·이미 매긴 점수).",
+        "배포 뒤 D2 해제 점검: 운영 user_prefs 확인 → 05 토글 하나 저장 → settings_revisions 1행·user_prefs 에 그 키 하나 → 되돌리기 → 빈 객체. 06 토글도 같은 순서로 sources.enabled 까지. 결정 기록(.claude/tasks D2 행, 옵시디언 결정 기록)을 '키마다 주인' 으로 바꾼다."
+      ],
+      "done_when": [
+        "TEMP=C:\\tmp\\fltemp 로 flutter analyze 0건·flutter test 통과",
+        "fixture 모드에서 새 화면이 그려진다",
+        "운영 빌드에서 05 토글 → 되돌리기 → 값이 원래대로다",
+        "채널을 모두 끄려 하면 확인창이 뜬다",
+        "D2 해제 점검 통과와 결정 기록 갱신"
+      ],
+      "verify": [
+        "flutter test (위젯·컨트롤러)",
+        "운영 빌드 실기 확인"
+      ],
+      "files": [
+        "mobile/lib/data/models/settings.dart",
+        "mobile/lib/data/repositories/",
+        "mobile/lib/features/settings/",
+        "mobile/lib/features/notification_settings/",
+        "mobile/lib/features/sources/sources_page.dart",
+        "mobile/lib/core/labels.dart",
+        "mobile/assets/fixtures/"
+      ],
+      "depends_on": [
+        "s4"
+      ]
+    },
+    {
+      "key": "s6a",
+      "title": "흩어진 설정 옮기기 — 재알림 일수·탐색 폭·판정 예산 (허락 필요)",
+      "kind": "작업",
+      "area": "파이프라인",
+      "priority": "보통",
+      "body": [
+        "resurface_unread_after_days(app.yaml)를 rules.notify.resurface_after_days(앱 소유, 1~30)로 옮긴다. 재알림은 push 상한을 거치지 않으므로 회차당 상한 상수(예 5건)를 둔다. 일수를 크게 줄였을 때 밀린 찜이 한 회차에 몰리지 않게 한다.",
+        "EXPLORE_BAND(jobs/notify.py 상수 0.10)를 rules.scoring.explore_band(YAML 소유)로 옮긴다. 걸러짐 API 의 경계 구간도 같은 값을 읽는다.",
+        "사용자 결정(10-01): LLM_DAILY_CAP 을 .env 에서 rules.yaml 예산 묶음(rules.budget, YAML 소유)으로 옮긴다. 먼저 VM .env 의 실제 LLM_DAILY_CAP 값을 사용자에게 확인받고 같은 값으로 옮긴다. .env.example 과 VM .env 정리를 사용자에게 알린다.",
+        "docs/pipeline.md 수치를 같이 고친다."
+      ],
+      "done_when": [
+        "값이 이전과 같다(GET /sources 의 llm_budget 60/300/3, /meta 의 재알림 7일)",
+        "기한 지난 찜이 12개여도 한 회차에 상한만큼만 나간다",
+        "uv run pytest 통과"
+      ],
+      "verify": [
+        "tests/test_resurface.py, tests/test_budget.py"
+      ],
+      "files": [
+        "config/rules.yaml",
+        "config/app.yaml",
+        "app/config.py",
+        "app/jobs/resurface.py",
+        "app/jobs/notify.py",
+        "app/api/v1/queries/filtered.py",
+        "app/api/v1/meta.py",
+        "app/api/v1/settings.py",
+        "app/db/budget.py",
+        ".env.example",
+        "docs/pipeline.md",
+        "tests/test_resurface.py",
+        "tests/test_budget.py"
+      ],
+      "depends_on": [
+        "s2"
+      ]
+    },
+    {
+      "key": "s6b",
+      "title": "05 알림 설정에 찜 재알림 일수 행",
+      "kind": "작업",
+      "area": "앱",
+      "priority": "낮음",
+      "body": [
+        "05 에 재알림 일수(1~30) 행을 더한다. 값은 notifications 응답의 resurface_after_days, 한도는 /meta.",
+        "계약서와 앱 fixture 를 맞춘다."
+      ],
+      "done_when": [
+        "05 에서 재알림 일수를 바꾸면 다음 재알림 잡부터 반영된다",
+        "flutter test 통과"
+      ],
+      "verify": [
+        "flutter test",
+        "운영 GET /settings/notifications"
+      ],
+      "files": [
+        "mobile/lib/features/notification_settings/",
+        "mobile/lib/data/models/settings.dart",
+        "mobile/assets/fixtures/settings_notifications.json"
+      ],
+      "depends_on": [
+        "s5",
+        "s6a"
+      ]
+    },
+    {
+      "key": "s7",
+      "title": "결정 행에 판단 기준 남기기 — threshold·settings_rev·git_sha (허락 필요)",
+      "kind": "작업",
+      "area": "파이프라인",
+      "priority": "보통",
+      "body": [
+        "점수·탐색 결정 details 에 당시 threshold 를 넣는다. 지금은 남지 않아 화면이 옛 점수를 현재 임계값으로 다시 해석한다.",
+        "선별·점수·판정·탐색 결정에 settings_rev(잡 시작 때의 revision id)와 git_sha 를 넣는다. 판정 프롬프트 버전은 git_sha 로 대신한다(사용자 결정 기본값).",
+        "Dockerfile 에 ARG GIT_SHA 를 두고 CI 빌드가 build-arg 로 넘긴다.",
+        "알림 상세 API 와 걸러짐 API 는 기록된 threshold 가 있으면 그 값을 쓰고, 옛 행은 현재 값을 쓴다."
+      ],
+      "done_when": [
+        "새 결정 행에 threshold·settings_rev·git_sha 가 있다",
+        "임계값을 바꾼 뒤에도 옛 알림 상세가 옛 임계값을 보인다",
+        "운영 최신 행의 git_sha 가 배포 커밋과 같다"
+      ],
+      "verify": [
+        "tests/integration/test_pipeline_db.py (dev)",
+        "운영 Neon 읽기로 최신 decisions 확인"
+      ],
+      "files": [
+        "Dockerfile",
+        ".github/workflows/ci.yml",
+        "app/config.py",
+        "app/jobs/pipeline.py",
+        "app/jobs/notify.py",
+        "app/api/v1/queries/alerts.py",
+        "app/api/v1/queries/filtered.py",
+        "tests/integration/test_pipeline_db.py"
+      ],
+      "depends_on": [
+        "s3"
+      ]
+    }
+  ],
+  "created": {
+    "epic": 30,
+    "s1": 31,
+    "s1b": 32,
+    "s2": 33,
+    "s3": 34,
+    "s4": 35,
+    "s5": 36,
+    "s6a": 37,
+    "s6b": 38,
+    "s7": 39
+  },
+  "linked": [
+    "dep:s1b>s1",
+    "dep:s2>s1",
+    "dep:s3>s2",
+    "dep:s4>s3",
+    "dep:s5>s4",
+    "dep:s6a>s2",
+    "dep:s6b>s5",
+    "dep:s6b>s6a",
+    "dep:s7>s3",
+    "sub:epic>s1",
+    "sub:epic>s1b",
+    "sub:epic>s2",
+    "sub:epic>s3",
+    "sub:epic>s4",
+    "sub:epic>s5",
+    "sub:epic>s6a",
+    "sub:epic>s6b",
+    "sub:epic>s7"
+  ]
+}
