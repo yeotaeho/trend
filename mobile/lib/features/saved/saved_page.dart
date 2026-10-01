@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/routes.dart';
+import '../../core/error_log.dart';
 import '../../core/icons.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -39,7 +40,8 @@ class _SavedPageState extends ConsumerState<SavedPage> {
   Future<void> _run(Future<void> Function() body) async {
     try {
       await body();
-    } catch (e) {
+    } catch (e, stack) {
+      logError('saved', e, stack);
       if (mounted) _message(errorMessage(e));
     }
   }
@@ -101,7 +103,8 @@ class _SavedPageState extends ConsumerState<SavedPage> {
     final int index;
     try {
       index = await _controller.unsave(item);
-    } catch (e) {
+    } catch (e, stack) {
+      logError('saved.unsave', e, stack);
       if (mounted) _message(errorMessage(e));
       return;
     }

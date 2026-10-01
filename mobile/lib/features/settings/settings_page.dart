@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/routes.dart';
 import '../../core/api/api_exception.dart';
+import '../../core/config.dart';
+import '../../core/providers.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/widgets/widgets.dart';
 import '../../data/repositories/repository_providers.dart';
@@ -63,6 +65,10 @@ class SettingsPage extends ConsumerWidget {
     final sources = ref.watch(sourceSummaryProvider).value;
     final displayName = ref.watch(displayNameProvider).value;
     final version = ref.watch(appVersionProvider).value;
+    final connection = connectionLabel(
+      useFixtures: ref.watch(useFixturesProvider),
+      baseUrl: AppConfig.apiBaseUrl,
+    );
 
     return Scaffold(
       appBar: const RootTopBar(title: '설정'),
@@ -121,8 +127,9 @@ class SettingsPage extends ConsumerWidget {
               SettingRow(
                 title: '앱 버전',
                 isLast: true,
+                // 어느 서버에 붙었는지(또는 fixture 인지) 함께 보여 준다. 인자를 빠뜨린 빌드를 바로 알아본다.
                 trailing: Text(
-                  version ?? _missing,
+                  '${version ?? _missing} · $connection',
                   style: AppText.mono(AppText.bodyMd),
                 ),
               ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'api/api_exception.dart';
+import 'error_log.dart';
 
 /// 앱 루트 ScaffoldMessenger. context 없이 띄울 때(포그라운드 푸시) 쓴다.
 final messengerKeyProvider = Provider<GlobalKey<ScaffoldMessengerState>>(
@@ -19,14 +20,15 @@ void showSnack(BuildContext context, String message) {
     ..showSnackBar(SnackBar(content: Text(message)));
 }
 
-/// [action] 이 실패하면 오류 문구를 스낵바로 보여 준다.
+/// [action] 이 실패하면 오류 문구를 스낵바로 보여 주고, 원래 예외는 로그에 남긴다.
 Future<void> runOrSnack(
   BuildContext context,
   Future<void> Function() action,
 ) async {
   try {
     await action();
-  } catch (error) {
+  } catch (error, stack) {
+    logError('runOrSnack', error, stack);
     if (context.mounted) showSnack(context, errorMessage(error));
   }
 }
