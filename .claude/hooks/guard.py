@@ -128,8 +128,10 @@ if tool in ("Bash", "PowerShell"):
                 "머지한다. cd 가 섞인 명령에서 대상을 생략하면 폴더를 확정할 수 없어 막는다.",
             )
 
-if tool in ("Edit", "Write", "MultiEdit", "NotebookEdit"):
-    path = (inp.get("file_path") or inp.get("notebook_path") or "").replace("\\", "/")
+if tool in ("Edit", "Write", "MultiEdit", "NotebookEdit") or tool.startswith("mcp__serena__"):
+    # Serena 편집 도구는 relative_path 로 받는다. 기본 도구만 보면 Serena 편집이 확인을 건너뛴다
+    raw = inp.get("file_path") or inp.get("notebook_path") or inp.get("relative_path") or ""
+    path = raw.replace("\\", "/")
     root = (os.environ.get("CLAUDE_PROJECT_DIR") or cwd).replace("\\", "/").rstrip("/")
     rel = path[len(root) + 1 :] if path.lower().startswith(root.lower() + "/") else path
     if DEPLOY_FILE.fullmatch(rel):

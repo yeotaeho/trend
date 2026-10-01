@@ -14,8 +14,14 @@ ROOT = Path(__file__).resolve().parents[1]
 HOOKS = ROOT / ".claude" / "hooks"
 
 
-def run_hook(name: str, payload: dict, cwd: Path = ROOT, tmp: Path | None = None) -> str:
-    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(ROOT)}
+def run_hook(
+    name: str,
+    payload: dict,
+    cwd: Path = ROOT,
+    tmp: Path | None = None,
+    project: Path = ROOT,
+) -> str:
+    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(project)}
     if tmp is not None:
         env.update(TMP=str(tmp), TEMP=str(tmp), TMPDIR=str(tmp))
     r = subprocess.run(
@@ -114,6 +120,59 @@ def test_guard_commit_checks_every_folder_it_may_run_in(repo: Path, tmp_path: Pa
 def test_guard_asks_before_deploy_file_edit(rel: str, expected: str | None) -> None:
     payload = {"tool_name": "Edit", "tool_input": {"file_path": str(ROOT / rel)}}
     assert decision(run_hook("guard.py", payload)) == expected
+
+
+def test_guard_asks_before_serena_edit_of_deploy_file() -> None:
+    # Serena 편집 도구는 relative_path 를 쓴다. 기본 도구만 보면 확인을 건너뛴다 (#28)
+    payload = {
+        "tool_name": "mcp__serena__replace_content",
+        "tool_input": {"relative_path": ".github/workflows/ci.yml"},
+    }
+    assert decision(run_hook("guard.py", payload)) == "ask"
+
+
+@pytest.fixture
+def committed(tmp_path: Path) -> Path:
+    """20줄 파일 하나를 커밋한 저장소."""
+    repo = tmp_path / "repo"
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    (repo / "mod.py").write_text("".join(f"x{i} = {i}\n" for i in range(20)), encoding="utf-8")
+    run = ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t"]
+    subprocess.run([*run, "add", "mod.py"], check=True)
+    subprocess.run([*run, "commit", "-q", "-m", "init"], check=True)
+    return repo
+
+
+@pytest.mark.parametrize(
+    ("tool", "key", "lines", "blocks"),
+    [
+        ("mcp__serena__replace_content", "relative_path", 1, True),  # 09-30 DOTALL 치환 재현
+        ("Edit", "file_path", 1, True),
+        ("Edit", "file_path", 19, False),  # 정상 편집
+        ("Edit", "file_path", 10, False),  # 절반까지는 통과
+    ],
+)
+def test_edit_check_blocks_when_file_shrinks(
+    committed: Path, tool: str, key: str, lines: int, blocks: bool
+) -> None:
+    target = committed / "mod.py"
+    target.write_text("".join(f"x{i} = {i}\n" for i in range(lines)), encoding="utf-8")
+    value = "mod.py" if key == "relative_path" else str(target)
+    payload = {"tool_name": tool, "tool_input": {key: value}}
+    out = run_hook("edit_check.py", payload, cwd=committed, project=committed)
+    assert (json.loads(out)["decision"] == "block") if blocks else out == ""
+
+
+def test_edit_check_ignores_new_files_and_repeats(committed: Path, tmp_path: Path) -> None:
+    (committed / "new.py").write_text("y = 1\n", encoding="utf-8")
+    new = {"tool_name": "Write", "tool_input": {"file_path": str(committed / "new.py")}}
+    assert run_hook("edit_check.py", new, cwd=committed, project=committed) == ""
+    (committed / "mod.py").write_text("x = 0\n", encoding="utf-8")
+    shrink = {"tool_name": "Edit", "tool_input": {"file_path": str(committed / "mod.py")}}
+    shrink["session_id"] = "edit-check-once"
+    first = run_hook("edit_check.py", shrink, cwd=committed, tmp=tmp_path, project=committed)
+    again = run_hook("edit_check.py", shrink, cwd=committed, tmp=tmp_path, project=committed)
+    assert json.loads(first)["decision"] == "block" and again == ""
 
 
 def test_router_full_list_then_one_line(tmp_path: Path) -> None:
