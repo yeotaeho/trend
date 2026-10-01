@@ -131,7 +131,9 @@ void main() {
       throwsA(
         isA<ApiException>()
             .having((e) => e.code, 'code', ApiException.unknown)
-            .having((e) => e.status, 'status', 500),
+            .having((e) => e.status, 'status', 500)
+            // 배포 중 502 와 서버 버그(500)를 문구로 구분한다.
+            .having((e) => e.message, 'message', contains('HTTP 500')),
       ),
     );
   });

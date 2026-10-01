@@ -35,7 +35,12 @@ class ApiException implements Exception {
         details: (body['details'] as Map?)?.cast<String, dynamic>(),
       );
     }
-    return ApiException(unknown, '알 수 없는 오류가 발생했습니다.', status: status);
+    // 상태 코드를 문구에 넣어 배포 중 502 와 서버 버그(500)를 화면에서 구분한다.
+    return ApiException(
+      unknown,
+      '알 수 없는 오류가 발생했습니다 (HTTP $status).',
+      status: status,
+    );
   }
 
   @override
