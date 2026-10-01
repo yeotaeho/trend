@@ -14,8 +14,14 @@ ROOT = Path(__file__).resolve().parents[1]
 HOOKS = ROOT / ".claude" / "hooks"
 
 
-def run_hook(name: str, payload: dict, cwd: Path = ROOT, tmp: Path | None = None) -> str:
-    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(ROOT)}
+def run_hook(
+    name: str,
+    payload: dict,
+    cwd: Path = ROOT,
+    tmp: Path | None = None,
+    project: Path = ROOT,
+) -> str:
+    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(project)}
     if tmp is not None:
         env.update(TMP=str(tmp), TEMP=str(tmp), TMPDIR=str(tmp))
     r = subprocess.run(
@@ -116,6 +122,59 @@ def test_guard_asks_before_deploy_file_edit(rel: str, expected: str | None) -> N
     assert decision(run_hook("guard.py", payload)) == expected
 
 
+def test_guard_asks_before_serena_edit_of_deploy_file() -> None:
+    # Serena 편집 도구는 relative_path 를 쓴다. 기본 도구만 보면 확인을 건너뛴다 (#28)
+    payload = {
+        "tool_name": "mcp__serena__replace_content",
+        "tool_input": {"relative_path": ".github/workflows/ci.yml"},
+    }
+    assert decision(run_hook("guard.py", payload)) == "ask"
+
+
+@pytest.fixture
+def committed(tmp_path: Path) -> Path:
+    """20줄 파일 하나를 커밋한 저장소."""
+    repo = tmp_path / "repo"
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    (repo / "mod.py").write_text("".join(f"x{i} = {i}\n" for i in range(20)), encoding="utf-8")
+    run = ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@t"]
+    subprocess.run([*run, "add", "mod.py"], check=True)
+    subprocess.run([*run, "commit", "-q", "-m", "init"], check=True)
+    return repo
+
+
+@pytest.mark.parametrize(
+    ("tool", "key", "lines", "blocks"),
+    [
+        ("mcp__serena__replace_content", "relative_path", 1, True),  # 09-30 DOTALL 치환 재현
+        ("Edit", "file_path", 1, True),
+        ("Edit", "file_path", 19, False),  # 정상 편집
+        ("Edit", "file_path", 10, False),  # 절반까지는 통과
+    ],
+)
+def test_edit_check_blocks_when_file_shrinks(
+    committed: Path, tool: str, key: str, lines: int, blocks: bool
+) -> None:
+    target = committed / "mod.py"
+    target.write_text("".join(f"x{i} = {i}\n" for i in range(lines)), encoding="utf-8")
+    value = "mod.py" if key == "relative_path" else str(target)
+    payload = {"tool_name": tool, "tool_input": {key: value}}
+    out = run_hook("edit_check.py", payload, cwd=committed, project=committed)
+    assert (json.loads(out)["decision"] == "block") if blocks else out == ""
+
+
+def test_edit_check_ignores_new_files_and_repeats(committed: Path, tmp_path: Path) -> None:
+    (committed / "new.py").write_text("y = 1\n", encoding="utf-8")
+    new = {"tool_name": "Write", "tool_input": {"file_path": str(committed / "new.py")}}
+    assert run_hook("edit_check.py", new, cwd=committed, project=committed) == ""
+    (committed / "mod.py").write_text("x = 0\n", encoding="utf-8")
+    shrink = {"tool_name": "Edit", "tool_input": {"file_path": str(committed / "mod.py")}}
+    shrink["session_id"] = "edit-check-once"
+    first = run_hook("edit_check.py", shrink, cwd=committed, tmp=tmp_path, project=committed)
+    again = run_hook("edit_check.py", shrink, cwd=committed, tmp=tmp_path, project=committed)
+    assert json.loads(first)["decision"] == "block" and again == ""
+
+
 def test_router_full_list_then_one_line(tmp_path: Path) -> None:
     first = run_hook("prompt_router.py", {"session_id": "t1"}, tmp=tmp_path)
     assert "[작업 라우터]" in first
@@ -152,6 +211,58 @@ def test_router_frontmatter_is_valid_yaml() -> None:
 def test_lesson_gate(payload: dict, blocks: bool) -> None:
     out = run_hook("lesson_gate.py", payload)
     assert (json.loads(out)["decision"] == "block") if blocks else out == ""
+
+
+def transcript(tmp_path: Path, calls: list[tuple[str, dict]]) -> str:
+    """도구 호출만 담은 세션 기록 파일."""
+    content = [{"type": "tool_use", "name": n, "input": i} for n, i in calls]
+    record = {"type": "assistant", "message": {"content": content}}
+    path = tmp_path / "session.jsonl"
+    path.write_text(json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8")
+    return str(path)
+
+
+RULE_READ = ("Read", {"file_path": str(ROOT / ".claude" / "rules" / "pipeline.md")})
+PATH_READ = ("Read", {"file_path": str(ROOT / "app" / "pipeline" / "scoring.py")})
+SERENA_READ = ("mcp__serena__find_symbol", {"relative_path": "app/pipeline/scoring.py"})
+SKILL_CALL = ("Skill", {"skill": "work-intake"})
+
+
+@pytest.mark.parametrize(
+    ("first_line", "calls", "blocked"),
+    [
+        ("[적용: pipeline]", [RULE_READ], None),
+        ("[적용: pipeline]", [PATH_READ], None),  # paths 에 걸리는 파일 Read 로 규칙이 붙었다
+        ("[적용: work-intake]", [SKILL_CALL], None),
+        ("[적용: pipeline]", [SERENA_READ], "pipeline"),  # Serena 읽기는 경로 규칙을 붙이지 않는다
+        ("[적용: pipeline, work-intake]", [RULE_READ], "work-intake"),
+        ("[적용: deploy-verify]", [], "deploy-verify"),  # 10-01 실제 사례
+        ("[적용: 없는규칙]", [RULE_READ], "목록에 없는"),
+        ("선언 없는 답변", [], None),
+    ],
+)
+def test_route_gate(
+    tmp_path: Path, first_line: str, calls: list[tuple[str, dict]], blocked: str | None
+) -> None:
+    payload = {
+        "last_assistant_message": f"{first_line}\n\n본문.",
+        "transcript_path": transcript(tmp_path, calls),
+    }
+    out = run_hook("route_gate.py", payload)
+    if blocked is None:
+        assert out == ""
+    else:
+        result = json.loads(out)
+        assert result["decision"] == "block" and blocked in result["reason"]
+
+
+def test_route_gate_passes_when_already_reminded(tmp_path: Path) -> None:
+    payload = {
+        "last_assistant_message": "[적용: deploy-verify]",
+        "transcript_path": transcript(tmp_path, []),
+        "stop_hook_active": True,
+    }
+    assert run_hook("route_gate.py", payload) == ""
 
 
 def load_tasks_module():  # type: ignore[no-untyped-def]
