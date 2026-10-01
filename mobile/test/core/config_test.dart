@@ -30,6 +30,16 @@ void main() {
         'localhost',
       );
     });
+
+    test('주소가 깨져도 던지지 않고 받은 문자열을 그대로 보인다', () {
+      expect(
+        connectionLabel(
+          useFixtures: false,
+          baseUrl: 'https://trend.example:abc/api/v1',
+        ),
+        'https://trend.example:abc/api/v1',
+      );
+    });
   });
 
   group('releaseConfigProblem', () {
@@ -64,6 +74,24 @@ void main() {
         ),
         contains('https'),
       );
+    });
+
+    test('호스트가 없거나 깨진 https 주소는 거부한다', () {
+      for (final baseUrl in [
+        'https://',
+        'https:///api/v1',
+        'https://trend.example:abc/api/v1',
+      ]) {
+        expect(
+          releaseConfigProblem(
+            useFixtures: false,
+            baseUrl: baseUrl,
+            token: 'token',
+          ),
+          contains('API_BASE_URL'),
+          reason: baseUrl,
+        );
+      }
     });
 
     test('빈 토큰은 거부한다 — 모든 요청이 401 이다', () {

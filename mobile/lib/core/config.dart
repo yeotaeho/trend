@@ -15,8 +15,12 @@ abstract final class AppConfig {
 }
 
 /// 설정 화면 버전 줄에 붙이는 연결 대상 — fixture 모드면 `fixture`, 아니면 API 호스트명.
-String connectionLabel({required bool useFixtures, required String baseUrl}) =>
-    useFixtures ? 'fixture' : Uri.parse(baseUrl).host;
+/// 주소가 깨졌으면 받은 문자열을 그대로 보여 오타를 화면에서 찾게 한다.
+String connectionLabel({required bool useFixtures, required String baseUrl}) {
+  if (useFixtures) return 'fixture';
+  final host = Uri.tryParse(baseUrl)?.host ?? '';
+  return host.isEmpty ? baseUrl : host;
+}
 
 /// 실서버 릴리스 빌드에 빠진 주입값. 문제없으면 null 이다.
 ///
@@ -28,8 +32,9 @@ String? releaseConfigProblem({
   required String token,
 }) {
   if (useFixtures) return null;
-  if (!baseUrl.startsWith('https://')) {
-    return 'API_BASE_URL 이 https 주소가 아니다: $baseUrl';
+  final uri = Uri.tryParse(baseUrl);
+  if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+    return 'API_BASE_URL 이 호스트가 있는 https 주소가 아니다: $baseUrl';
   }
   if (token.isEmpty) return 'APP_API_TOKEN 이 비어 있다';
   return null;
