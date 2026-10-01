@@ -62,10 +62,14 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 ```bash
 flutter analyze
-TEMP='C:\tmp\fltemp' TMP='C:\tmp\fltemp' flutter test
+TEMP='C:\tmp\fltemp' TMP='C:\tmp\fltemp' flutter test             # Git Bash
 ```
 
-Windows 임시 폴더 경로에 한글이 있으면 flutter_tester 가 로드에 실패하므로 ASCII 경로로 돌린다.
+```powershell
+$env:TEMP='C:\tmp\fltemp'; $env:TMP='C:\tmp\fltemp'; flutter test   # PowerShell
+```
+
+Windows 임시 폴더 경로에 한글이 있으면 flutter_tester 가 로드에 실패하므로 미리 만들어 둔 ASCII 경로(`C:\tmp\fltemp`)로 돌린다.
 
 화면에 '알 수 없는 오류' 만 보이면 로그에서 원인을 본다. 조회 실패와 쓰기 실패는 원래 예외와 스택이 함께 찍힌다.
 
