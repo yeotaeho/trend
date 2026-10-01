@@ -52,3 +52,6 @@ app.*.map.json
 # 페이로드·채널(instant·quiet)·기기 등록은 계약 문서 docs/api/app-api-v1.md 4.9 를 따른다.
 /android/app/google-services.json
 /ios/Runner/GoogleService-Info.plist
+
+# 빌드 주입값 — --dart-define-from-file=env/<환경>.json. API 토큰이 들어 있어 커밋하지 않는다.
+/env/
