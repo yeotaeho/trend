@@ -19,10 +19,10 @@ paths:
 
 ## 세션에서 배운 것
 
-- **부분 실패에 커서를 전진시키지 않는다.** GitHub Releases 는 `since` 를 일부러 무시하고 매번 최근 릴리즈를 다시 본다. 저장소 하나가 실패해도 `last_polled_at` 이 전진해 그 사이 릴리즈를 영구히 놓친 전례 때문이다. 중복은 `url_hash` 유니크가 막으니 이 동작을 "최적화" 하지 않는다.
-- **재시도는 네트워크·429·5xx 만**(`base.retryable`). 401·403·404 를 반복하면 차단을 부르고, 옛 토큰 같은 진짜 원인도 가린다.
-- **소스 하나의 실패는 그 소스 안에서 끝낸다.** `fetch` 뿐 아니라 적재(`store_items`)까지 실패 경로에 넣는다. 적재 예외가 새어 `fail_count` 가 오르지 않고 뒤 소스가 전부 멈춘 전례가 있다.
-- **외부 문자열 길이를 가정하지 않는다.** arXiv 저자 목록이 `varchar(300)` 을 넘겨 적재가 죽었다. 새 필드는 `text` 로 둔다.
-- **새 소스를 붙이기 전에** curl 로 피드가 실제로 있는지와 형식을 본다. Anthropic 은 공식 RSS 가 없어 미러를 `allowed_hosts` 로 묶어 쓴다. 새 소스의 신호(metrics·mentions)가 적재 병합에서 새지 않는지 `pipeline/ingest.py` 를 먼저 읽는다.
-- **첫 폴링 백로그를 계산한다.** 새 RSS 첫 폴링은 72h 창만 받는다. 새 소스 여러 개가 동시에 첫 폴링하면 Voyage 429 가 한 번 몰린다.
-- **Neon dev 에서 확인한다.** `uv run python scripts/run_job.py sync collect pipeline` 로 소스별 fetched/inserted, 병합 수, 같은 family 의 교차 멘션 0 을 본다.
+> 독립 사건 둘 이상으로 관찰된 것만 둔다(괄호는 사건 날짜). 한 번 관찰은 `lessons/BANK.md` 에 있다.
+
+- **부분 실패를 성공처럼 처리하지 않는다**(08-30, 09-02). 저장소 하나가 실패해도 `last_polled_at` 이 전진해 그 사이 릴리즈를 영구히 놓쳤고, 적재(`store_items`) 예외가 `fetch` 전용 try 밖으로 새어 `fail_count` 가 오르지 않고 뒤 소스가 멈췄다. 커서·카운터는 소스 전체가 성공했을 때만 움직이고, 적재까지 실패 경로에 넣는다.
+- **재시도는 네트워크·429·5xx 만**(`base.retryable`, 09-03, 09-10). 401·403·404 를 반복하면 차단을 부르고, 옛 토큰 같은 진짜 원인도 가린다.
+- **새 소스를 붙이기 전에 curl 로 피드가 실제로 있는지와 형식을 본다**(09-02, 09-15). Anthropic 은 공식 RSS 가 없어 미러를 `allowed_hosts` 로 묶어 쓴다.
+- **첫 폴링 백로그를 계산한다**(09-02, 09-15). 새 RSS 첫 폴링은 72h 창만 받는다. 새 소스 여러 개가 동시에 첫 폴링하면 Voyage 429 가 한 번 몰린다.
+- **Neon dev 에서 확인한다**(09-02, 09-15). `uv run python scripts/run_job.py sync collect pipeline` 로 소스별 fetched/inserted, 병합 수, 같은 family 의 교차 멘션 0 을 본다.

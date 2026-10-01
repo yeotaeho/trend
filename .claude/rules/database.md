@@ -19,10 +19,9 @@ paths:
 
 ## 세션에서 배운 것
 
-- **savepoint 롤백은 그 안에서 수정된 객체를 만료시킨다.** 롤백 뒤 `except`·로그에서 `item.id` 를 읽으면 async 세션이 동기 로드를 시도해 `MissingGreenlet` 으로 배치가 멈춘다. id 는 savepoint 에 들어가기 전에 변수로 빼 둔다. deferred 벡터 컬럼을 파이썬에서 읽어도 같은 오류가 난다.
-- **여러 행을 잠근 뒤 루프에서 커밋하지 않는다.** 첫 커밋에 나머지 잠금이 풀린다. 발송은 `_claim_one` 으로 한 건씩 잠그고 커밋한다. 파이프라인이 잠근 행을 수집 잡이 기다리지 않도록 적재 병합은 `SKIP LOCKED` 로 다음 폴링에 미룬다.
-- **처음엔 없는 행을 잠그지 않는다.** 첫 저장 전의 `user_prefs` 행을 잠그면 동시 첫 저장이 유실된다. 항상 있는 `users` 행을 `FOR NO KEY UPDATE` 로 잠근다(FK 삽입의 KEY SHARE 와 부딪치지 않는다, `db/prefs.py`).
-- **문자열 컬럼 폭을 새 값으로 확인한다.** 외부 문자열은 `text` 다. 짧은 코드값 컬럼도 새 값 길이를 본다. `notifications.level` 에 `cluster_dup`(11자)이 안 들어간 전례가 있다.
-- **아직 main 에 나가지 않은 리비전은** 새 리비전을 쌓지 말고 그 리비전을 고친다. 병렬 작업 중에는 리비전을 한 작업에만 둔다.
-- **테스트가 운영 DB 를 보지 않게 하는 가드를 지우지 않는다.** `tests/conftest.py` 는 셸의 `DATABASE_URL` 보다 `TEST_DATABASE_URL` 을 우선한다. 통합 테스트 전에 `TEST_DATABASE_URL` 이 운영 엔드포인트와 다른지 대조한다.
-- 상관 서브쿼리가 자동 상관으로 FROM 을 잃으면 `aliased(...)` 와 `correlate(Item)` 을 쓴다.
+> 독립 사건 둘 이상으로 관찰된 것만 둔다(괄호는 사건 날짜). 한 번 관찰은 `lessons/BANK.md` 에, 한 곳의 이유는 코드 주석에 있다(`db/prefs.py` 의 잠금 대상 등).
+
+- **savepoint 롤백 뒤 ORM 속성을 읽지 않는다**(09-02, 09-06). 롤백은 그 안에서 수정된 객체를 만료시켜, `except`·로그에서 `item.id` 를 읽으면 async 세션이 동기 로드를 시도해 `MissingGreenlet` 으로 배치가 멈춘다. id 는 savepoint 에 들어가기 전에 변수로 빼 둔다. deferred 벡터 컬럼을 파이썬에서 읽어도 같은 오류가 난다.
+- **잠금 범위를 커밋 위치와 함께 본다**(08-30, 09-14). 여러 행을 잠근 뒤 루프에서 커밋하면 첫 커밋에 나머지 잠금이 풀린다. 발송은 `_claim_one` 으로 한 건씩 잠그고 커밋한다. 파이프라인이 잠근 행을 수집 잡이 기다리지 않도록 적재 병합은 `SKIP LOCKED` 로 다음 폴링에 미룬다.
+- **문자열 컬럼 폭을 새 값으로 확인한다**(09-02, 09-24). 외부 문자열은 `text` 다. 짧은 코드값 컬럼도 새 값 길이를 본다. arXiv 저자 목록이 `varchar(300)` 을, `cluster_dup`(11자)이 `notifications.level varchar(10)` 을 넘었다.
+- **테스트가 운영 DB 를 보지 않게 하는 가드를 지우지 않는다**(09-06, 09-18). `tests/conftest.py` 는 셸의 `DATABASE_URL` 보다 `TEST_DATABASE_URL` 을 우선한다. 통합 테스트 전에 `TEST_DATABASE_URL` 이 운영 엔드포인트와 다른지 대조한다.
