@@ -88,8 +88,8 @@ python3 .claude/scripts/github_tasks.py board                                   
 |---|---|
 | SessionStart `session_context.py` | 브랜치·upstream 대비 뒤처짐·미커밋 파일을 알리고, 첫 업무 전 보드 현황(`board`) 확인을 안내한다. 압축·재개 뒤엔 인수인계를 되돌려 넣는다 |
 | UserPromptSubmit `prompt_router.py` | 규칙·스킬 머리말의 "언제 쓰는가" 를 모아 넣고, Claude 가 요청 의도로 골라 `[적용: ...]` 로 밝힌다. 첫 요청·10번째마다 전체, 그 사이엔 이름만 |
-| PreToolUse `guard.py` | 비밀 파일 커밋·origin main 직접 push 를 막고, 배포 파일 수정 전 확인을 요청한다(Serena 편집 도구 포함) |
-| PostToolUse `edit_check.py` | 편집 도구가 성공을 알려도 파일이 커밋본의 절반 미만으로 줄었으면 멈춰 확인시킨다 |
+| PreToolUse `guard.py` | 비밀 파일 커밋·origin main 직접 push 를 막고, 배포 파일·다른 worktree 파일 수정 전 확인을 요청한다(Serena 편집 도구 포함) |
+| PostToolUse `edit_check.py` | 편집 도구가 성공을 알려도 파일이 커밋본(파일이 든 worktree 기준)의 절반 미만으로 줄었으면 멈춰 확인시킨다 |
 | Stop `lesson_gate.py` | 커밋이 있던 턴 끝에 마무리 순서와 교훈 기록 여부를 한 번 확인시킨다 |
 | Stop `route_gate.py` | 답변 첫 줄 `[적용: ...]` 의 규칙·스킬을 이 세션에서 실제로 Read·Skill 했는지 기록과 대조해, 안 읽었으면 한 번 되돌린다 |
 | PreCompact `pre_compact.py` | 압축 직전 요청·고친 파일·실패·커밋을 `.claude/handoff/<세션>.md` 로 저장한다 |
