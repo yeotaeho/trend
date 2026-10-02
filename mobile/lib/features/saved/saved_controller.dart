@@ -93,6 +93,9 @@ class SavedController extends AsyncNotifier<SavedState> {
   /// 조건을 빨리 바꿀 때 늦게 온 이전 응답을 버린다.
   int _generation = 0;
 
+  /// 피드·07 에서 끝난 찜 쓰기 수. 첫 로딩 중에 온 쓰기를 놓치지 않으려고 센다.
+  int _savedWrites = 0;
+
   SavedRepository get _repo => ref.read(savedRepositoryProvider);
 
   SavedState get _current => state.requireValue;
@@ -105,20 +108,28 @@ class SavedController extends AsyncNotifier<SavedState> {
   Future<SavedState> build() async {
     // 피드·07 에서 찜이 바뀌면 보기 조건은 그대로 두고 목록을 다시 읽는다.
     ref.listen(savedWritesProvider, (_, _) {
+      _savedWrites++;
       if (state.hasValue) refresh();
     });
     final repo = ref.watch(savedRepositoryProvider);
-    final meta = ref.watch(metaRepositoryProvider).meta();
-    final folders = repo.folders();
-    final page = repo.saved();
-    await Future.wait([meta, folders, page]);
-    return SavedState(
-      meta: await meta,
-      folders: await folders,
-      query: const SavedQuery(),
-      items: (await page).items,
-      nextCursor: (await page).nextCursor,
-    );
+    final metaRepository = ref.watch(metaRepositoryProvider);
+    // 첫 로딩 중엔 위 listen 이 refresh 할 수 없다. 읽는 사이 쓰기가 끝났으면
+    // 그 전 목록을 받았을 수 있으니 다시 읽는다.
+    while (true) {
+      final writes = _savedWrites;
+      final meta = metaRepository.meta();
+      final folders = repo.folders();
+      final page = repo.saved();
+      await Future.wait([meta, folders, page]);
+      if (_savedWrites != writes) continue;
+      return SavedState(
+        meta: await meta,
+        folders: await folders,
+        query: const SavedQuery(),
+        items: (await page).items,
+        nextCursor: (await page).nextCursor,
+      );
+    }
   }
 
   // ── 조회 ──
