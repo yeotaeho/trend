@@ -57,7 +57,7 @@ void main() {
       'release_patch · 패치 릴리즈': '클러스터 하루 1건 1',
       'tutorial · 튜토리얼': '감점 −0.05',
       'promo · 홍보·구인': '감점 −0.30 · exclude 키워드 2',
-      '미분류 (exclude·중복)': '선별 전 탈락 — kind 없음',
+      '미분류 (exclude·중복·오래됨)': '선별 전 탈락 — kind 없음',
     });
   });
 
@@ -148,7 +148,7 @@ void main() {
     );
     expect(
       summaryNote(summary, FilteredView.kind),
-      'kind는 선별 단계 출력이라 exclude·중복 탈락 67건은 "미분류"로 묶입니다.',
+      'kind는 선별 단계 출력이라 exclude·중복·오래됨 탈락 67건은 "미분류"로 묶입니다.',
     );
   });
 

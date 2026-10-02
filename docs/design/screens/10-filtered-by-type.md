@@ -12,7 +12,7 @@
 ### 1. Segmented — `종류별` 선택
 
 ### 2. Summary 카드
-헤더·GateBar·범례는 09 와 같다. 안내 문구는 `kind는 선별 단계 출력이라 exclude·중복 탈락 67건은 "미분류"로 묶입니다.`
+헤더·GateBar·범례는 09 와 같다. 안내 문구는 `kind는 선별 단계 출력이라 exclude·중복·오래됨 탈락 67건은 "미분류"로 묶입니다.`
 
 ### 3. SectionLabel `종류별 · 많은 순`
 
@@ -27,7 +27,7 @@
 | `release_patch · 패치 릴리즈` | `중복 8 (버전 형제) · 클러스터 하루 1건` | 31 | 접힘 |
 | `tutorial · 튜토리얼` | `감점 −0.05` | 9 | 접힘 |
 | `promo · 홍보·구인` | `감점 −0.30 · exclude 키워드 2` | 5 | 접힘 |
-| `미분류 (exclude·중복)` | `선별 전 탈락 — kind 없음` | 67 | 접힘 (항상 마지막) |
+| `미분류 (exclude·중복·오래됨)` | `선별 전 탈락 — kind 없음` | 67 | 접힘 (항상 마지막) |
 
 펼친 항목 (사유 줄에 소스명이 들어간다).
 
@@ -43,7 +43,7 @@
 
 | 필드 | 타입 | 예시 | 비고 |
 |---|---|---|---|
-| group.`kind` | enum? | `survey` … / null | null 은 `미분류 (exclude·중복)` |
+| group.`kind` | enum? | `survey` … / null | null 은 `미분류 (exclude·중복·오래됨)` |
 | group.`kind_weight` | float | −0.15 | 화면 04 값 |
 | group.`kind_feedback` / `penalty_active` | {not_useful, total} / bool | 4/4 / true | |
 | group.`borderline_count` | int | 154 | |

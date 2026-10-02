@@ -152,12 +152,12 @@ void main() {
 
     expect(find.text('종류별 · 많은 순'), findsOneWidget);
     expect(
-      find.text('kind는 선별 단계 출력이라 exclude·중복 탈락 67건은 "미분류"로 묶입니다.'),
+      find.text('kind는 선별 단계 출력이라 exclude·중복·오래됨 탈락 67건은 "미분류"로 묶입니다.'),
       findsOneWidget,
     );
     final titles = _titles(tester);
     expect(titles.first, 'survey · 서베이·전망');
-    expect(titles.last, '미분류 (exclude·중복)');
+    expect(titles.last, '미분류 (exclude·중복·오래됨)');
     expect(titles, hasLength(7));
     expect(_cards(tester).fold<int>(0, (sum, c) => sum + c.count), 571);
     expect(_cards(tester).every((c) => c.icon == null), isTrue);
