@@ -216,6 +216,39 @@ void main() {
     });
   });
 
+  group('AppTabBar', () {
+    Future<void> pumpWithBottomInset(WidgetTester tester, double inset) =>
+        pumpInApp(
+          tester,
+          MediaQuery(
+            data: MediaQueryData(
+              padding: EdgeInsets.only(bottom: inset),
+              viewPadding: EdgeInsets.only(bottom: inset),
+            ),
+            child: AppTabBar(currentIndex: 0, onTap: (_) {}),
+          ),
+        );
+
+    testWidgets('3버튼 내비게이션처럼 하단 여백이 크면 탭 글자를 그 위에 둔다', (tester) async {
+      await pumpWithBottomInset(tester, 48);
+
+      final barBottom = tester.getBottomLeft(find.byType(AppTabBar)).dy;
+      for (final (_, label) in appTabs) {
+        expect(
+          tester.getBottomLeft(find.text(label)).dy,
+          lessThanOrEqualTo(barBottom - 48),
+          reason: label,
+        );
+      }
+    });
+
+    testWidgets('하단 여백이 작으면 디자인 높이 80 을 지킨다', (tester) async {
+      await pumpWithBottomInset(tester, 24);
+
+      expect(tester.getSize(find.byType(AppTabBar)).height, 80);
+    });
+  });
+
   group('GateBar', () {
     testWidgets('구간 폭은 건수 ÷ 합계에 비례한다', (tester) async {
       await pumpInApp(
