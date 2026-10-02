@@ -5,6 +5,7 @@ import '../../core/labels.dart';
 import '../../data/models/models.dart';
 import '../../data/repositories/repositories.dart';
 import '../../data/repositories/repository_providers.dart';
+import '../alert/alert_providers.dart';
 
 /// 목록 조회 조건 — 폴더 칩·`안 읽음` 토글·정렬.
 class SavedQuery {
@@ -102,6 +103,10 @@ class SavedController extends AsyncNotifier<SavedState> {
 
   @override
   Future<SavedState> build() async {
+    // 피드·07 에서 찜이 바뀌면 보기 조건은 그대로 두고 목록을 다시 읽는다.
+    ref.listen(savedWritesProvider, (_, _) {
+      if (state.hasValue) refresh();
+    });
     final repo = ref.watch(savedRepositoryProvider);
     final meta = ref.watch(metaRepositoryProvider).meta();
     final folders = repo.folders();
@@ -265,6 +270,9 @@ class SavedController extends AsyncNotifier<SavedState> {
       _insert(item, index);
       rethrow;
     }
+    ref
+        .read(alertUserStatesProvider.notifier)
+        .markSaved(item.alertId, saved: false);
     await _refreshFolders();
     return index;
   }
@@ -273,6 +281,9 @@ class SavedController extends AsyncNotifier<SavedState> {
   /// 다시 찜한 즉시 넣는다. 뒤 PATCH 가 실패해도 서버에 다시 생긴 찜은 목록에 남는다.
   Future<void> undoUnsave(SavedItem item, int index) async {
     _insert(await _repo.save(item.alertId, folderId: item.folder?.id), index);
+    ref
+        .read(alertUserStatesProvider.notifier)
+        .markSaved(item.alertId, saved: true);
     try {
       if (item.memo != null) {
         _replace(
