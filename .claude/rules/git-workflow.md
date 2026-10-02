@@ -5,6 +5,7 @@
 - 새 브랜치는 `origin/main` 에서 딴다. 이름은 `feat/*` `fix/*` `refactor/*` (또는 `feat-*`) 이고, 에픽 이슈가 있으면 번호를 넣는다(`feat/123-...`).
 - **main 머지 = 운영 배포다.** main 에 직접 push 하지 않는다(가드 훅이 origin main push 를 막는다). 작업 단위마다 브랜치 → PR 로 들어가고, **머지는 사용자가 결정한다.**
 - **로컬 main 을 믿지 않는다.** PR 머지와 Gas Town 병합은 origin 에서 일어난다. 작업 전에 `git fetch` 하고 `origin/main` 을 기준으로 삼는다. 뒤처짐은 SessionStart 훅이 알려 준다.
+- **PR 브랜치에 커밋을 더하기 전에 `gh pr view <번호> --json state` 로 아직 열려 있는지 본다.** 세션 앞부분에 본 상태를 믿지 않는다. 머지된 브랜치에 이어 커밋하면 main 에 들어가지 않으니 origin/main 에서 새로 딴다(10-01 커밋 3개가 머지된 브랜치에만 남음, 10-02 trend-mobile 이 머지된 브랜치에 머물러 있었음).
 - 이 폴더에 다른 작업 브랜치가 체크아웃돼 있으면 `git worktree add ../trend-<작업> -b <브랜치> origin/main` 으로 분리한다.
 - **worktree 파일은 그 폴더에서 새 세션을 열어 고친다.** 원본 세션에서 고치면 경로별 규칙이 붙지 않는다(Claude Code 는 세션 폴더 기준으로만 맞춘다). 가드 훅이 다른 worktree 파일 편집 전에 확인을 묻는다.
 - worktree 의 `.claude/` 는 그 브랜치 커밋 판이다. main 에서 하네스가 바뀌면 그 브랜치에 origin/main 을 합쳐야 따라오고, 이미 열린 세션은 재시작해야 새 훅을 읽는다. 인수인계(`.claude/handoff/`)와 graphify 는 git 밖이라 폴더마다 따로다.
@@ -13,7 +14,7 @@
 ## 커밋
 
 - 접두사는 `feat:` `fix:` `hotfix:` `refactor:` `docs:` `test:` `chore:` `perf:` 다. 본문은 한국어로 `<접두사> <무엇> — <왜>` 형태로 쓴다. 리뷰를 반영한 커밋은 끝에 `(Codex 리뷰 반영)` 을 붙이고, 기각한 지적은 본문에 이유를 적는다.
-- `git add <파일>` 로 명시하고, 도구 산출물(`.ua/`, `.serena/`, `graphify-out/`)이 딸려 가지 않았는지 `git status` 로 본다.
+- `git add <파일>` 로 명시하고, 도구 산출물(`.ua/`, `.serena/`, `graphify-out/`)이 딸려 가지 않았는지 `git status` 로 본다. `.gitignore` 를 고칠 때는 끝 바이트(`tail -c 20 .gitignore | od -c`)부터 본다. 마지막 줄에 개행이 없으면 새 항목이 그 줄에 붙어 둘 다 무시되지 않는다(09-10 `.serena/`·`.ua/` 가 붙어 `.ua/` 가 커밋됨, 10-02 확인 뒤 추가).
 - amend·force push 하지 않는다. 고칠 것은 새 커밋으로 남긴다.
 - CLAUDE.md 와 `.claude/`(규칙·스킬·훅·BANK·업무 계획)는 커밋한다. 커밋하지 않는 것은 `.env`·`secrets/`·`caddy_data/`·`.claude/handoff/`·`.claude/settings.local.json` 이다. 앞의 넷은 가드 훅이 막는다. 로컬 절대 경로가 든 훅(graphify 등)은 `settings.local.json` 에 둔다.
 
