@@ -115,19 +115,25 @@ class SavedController extends AsyncNotifier<SavedState> {
     final metaRepository = ref.watch(metaRepositoryProvider);
     // 첫 로딩 중엔 위 listen 이 refresh 할 수 없다. 읽는 사이 쓰기가 끝났으면
     // 그 전 목록을 받았을 수 있으니 다시 읽는다.
+    // 결과를 받은 뒤 확인·반환 사이에 await 를 두지 않는다. 그 틈에 끝난 쓰기도 놓친다.
     while (true) {
       final writes = _savedWrites;
-      final meta = metaRepository.meta();
-      final folders = repo.folders();
-      final page = repo.saved();
-      await Future.wait([meta, folders, page]);
+      final [
+        meta as Meta,
+        folders as FolderList,
+        page as CursorPage<SavedItem>,
+      ] = await Future.wait<Object>([
+        metaRepository.meta(),
+        repo.folders(),
+        repo.saved(),
+      ]);
       if (_savedWrites != writes) continue;
       return SavedState(
-        meta: await meta,
-        folders: await folders,
+        meta: meta,
+        folders: folders,
         query: const SavedQuery(),
-        items: (await page).items,
-        nextCursor: (await page).nextCursor,
+        items: page.items,
+        nextCursor: page.nextCursor,
       );
     }
   }
