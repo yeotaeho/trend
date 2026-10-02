@@ -241,6 +241,26 @@ void main() {
       );
     });
 
+    testWidgets('구간은 막대 높이를 채운다', (tester) async {
+      await pumpInApp(
+        tester,
+        const SizedBox(
+          width: 300,
+          child: GateBar(counts: {Gate.exclude: 1, Gate.score: 3}),
+        ),
+      );
+
+      for (final gate in [Gate.exclude, Gate.score]) {
+        expect(
+          tester
+              .getSize(find.byKey(ValueKey('gate-segment-${gate.value}')))
+              .height,
+          10,
+          reason: gate.value,
+        );
+      }
+    });
+
     testWidgets('범례는 다섯 관문을 늘 보여 주고 stale·cluster_dup 은 건수가 있을 때만', (
       tester,
     ) async {
