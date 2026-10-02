@@ -70,17 +70,42 @@
         "mobile/lib/features/filtered/filtered_text.dart"
       ],
       "depends_on": []
+    },
+    {
+      "key": "b4",
+      "title": "하단 탭바가 안드로이드 3버튼 내비게이션 바에 가린다",
+      "kind": "버그",
+      "area": "앱",
+      "priority": "높음",
+      "body": [
+        "`core/widgets/app_tab_bar.dart` 의 `AppTabBar` 가 높이를 디자인 값 80 으로 고정하고 시스템 하단 여백(`MediaQuery.padding.bottom`)을 반영하지 않는다.",
+        "10-03 폰(Galaxy S26, 3버튼 내비게이션, 여백 48)에 사이드로드하자 시스템 바가 탭 글자(피드·찜·설정·내 프로필)를 덮었다. 제스처 내비게이션 에뮬레이터(여백 약 24)에서는 80 안에 들어가 드러나지 않았다.",
+        "탭 내용 높이 위에 하단 여백을 더하되 디자인 80 보다 낮아지지 않게 한다."
+      ],
+      "done_when": [
+        "하단 여백 48 에서 탭 글자가 여백 위에 놓인다는 위젯 테스트가 수정 전 실패·수정 후 통과",
+        "`flutter test` 통과"
+      ],
+      "verify": [
+        "폰(3버튼)에서 탭 글자가 시스템 바 위에 보인다"
+      ],
+      "files": [
+        "mobile/lib/core/widgets/app_tab_bar.dart"
+      ],
+      "depends_on": []
     }
   ],
   "created": {
     "epic": 44,
     "b1": 45,
     "b2": 46,
-    "b3": 47
+    "b3": 47,
+    "b4": 49
   },
   "linked": [
     "sub:epic>b1",
     "sub:epic>b2",
-    "sub:epic>b3"
+    "sub:epic>b3",
+    "sub:epic>b4"
   ]
 }
