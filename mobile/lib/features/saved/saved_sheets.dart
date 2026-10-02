@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/api_exception.dart';
+import '../../core/error_log.dart';
 import '../../core/icons.dart';
 import '../../core/labels.dart';
 import '../../core/theme/app_colors.dart';
@@ -287,7 +288,8 @@ class _FolderNameDialogState<T> extends State<_FolderNameDialog<T>> {
     try {
       final result = await widget.submit(_name);
       if (mounted) Navigator.pop(context, result);
-    } catch (e) {
+    } catch (e, stack) {
+      logError('saved.folderName', e, stack);
       if (mounted) {
         setState(() {
           _busy = false;
@@ -391,7 +393,8 @@ class _FolderManager extends ConsumerWidget {
       if (ok != true) return;
       try {
         await controller.deleteFolder(folder.id);
-      } catch (e) {
+      } catch (e, stack) {
+        logError('saved.deleteFolder', e, stack);
         if (context.mounted) fail(e);
       }
     }
@@ -418,7 +421,8 @@ class _FolderManager extends ConsumerWidget {
                   onReorderItem: (from, to) async {
                     try {
                       await controller.moveFolder(folders[from].id, to);
-                    } catch (e) {
+                    } catch (e, stack) {
+                      logError('saved.moveFolder', e, stack);
                       if (context.mounted) fail(e);
                     }
                   },

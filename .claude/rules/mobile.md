@@ -12,10 +12,10 @@ paths:
 cd mobile
 flutter analyze                  # 이슈 0건이어야 한다
 flutter test                     # 전체 위젯·단위 테스트
-flutter run -d chrome --dart-define=USE_FIXTURES=false --dart-define=APP_API_TOKEN=<토큰>
+flutter run --dart-define-from-file=env/prod.json   # 운영 서버. 토큰은 git 제외 파일에만 둔다
 ```
 
-- 빌드 주입값은 `lib/core/config.dart` 의 `API_BASE_URL`(기본 `http://localhost:8000/api/v1`)·`APP_API_TOKEN`·`USE_FIXTURES`(기본 true) 셋이다.
+- 빌드 주입값은 `lib/core/config.dart` 의 `API_BASE_URL`(기본 `http://localhost:8000/api/v1`)·`APP_API_TOKEN`·`USE_FIXTURES`(기본은 `API_BASE_URL` 을 줬으면 false, 아니면 true) 셋이다. 실행·토큰 절차는 `mobile/README.md`.
 - **TEMP 경로에 한글이 있으면 flutter_tester 가 로드에 실패한다**(한글 경로가 도구를 깨뜨린 사건 09-02 asyncpg · 09-18 ssh · 09-28 flutter). `TEMP=C:\tmp\fltemp` 처럼 ASCII 경로로 바꿔 돌린다.
 - flutter 가 없는 PC 도 있다. `flutter --version` 이 안 되면 사용자에게 알리고 백엔드 쪽만 검증한다.
 - 화면 확인은 웹 빌드를 폭 390 으로 띄워 `docs/design/screens/*.png` 와 대조한다.

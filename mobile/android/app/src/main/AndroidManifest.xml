@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 앱 API 통신. debug·profile 매니페스트에만 있고 릴리스는 Firebase 전이 의존성에 기대고 있었다. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="tech_radar"
         android:name="${applicationName}"

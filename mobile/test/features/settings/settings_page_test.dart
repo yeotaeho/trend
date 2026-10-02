@@ -18,7 +18,8 @@ void main() {
     expect(find.text('하루 push 상한 15건'), findsOneWidget);
     expect(find.text('활성 소스 9/10'), findsOneWidget);
     expect(find.widgetWithText(ValueRow, '여태호'), findsOneWidget);
-    expect(find.text('0.1.0'), findsOneWidget);
+    // 버전 뒤에 연결 대상을 붙인다. 테스트는 fixture 모드다.
+    expect(find.text('0.1.0 · fixture'), findsOneWidget);
   });
 
   testWidgets('행을 누르면 하위 화면으로 간다', (tester) async {
