@@ -1,4 +1,4 @@
-# PreToolUse 훅 — 비밀 파일 커밋·origin main 직접 push 를 막고 배포 설정 수정은 확인한다
+# PreToolUse 훅 — 비밀 파일 커밋·origin main push 를 막고 배포 설정·다른 worktree 수정은 확인한다
 import json
 import os
 import re
@@ -128,15 +128,34 @@ if tool in ("Bash", "PowerShell"):
                 "머지한다. cd 가 섞인 명령에서 대상을 생략하면 폴더를 확정할 수 없어 막는다.",
             )
 
+
+def worktree_of(path: str, root: str) -> str:
+    """path 가 들어 있는 이 레포 worktree 의 루트. 중첩(.claude/worktrees/x)이면 가장 깊은 것."""
+    listed = git("worktree", "list", "--porcelain", at=root).splitlines()
+    trees = [line[9:].rstrip("/") for line in listed if line.startswith("worktree ")]
+    inside = [t for t in trees if path.lower().startswith(t.lower() + "/")]
+    return max(inside, key=len, default=root)
+
+
 if tool in ("Edit", "Write", "MultiEdit", "NotebookEdit") or tool.startswith("mcp__serena__"):
     # Serena 편집 도구는 relative_path 로 받는다. 기본 도구만 보면 Serena 편집이 확인을 건너뛴다
     raw = inp.get("file_path") or inp.get("notebook_path") or inp.get("relative_path") or ""
     path = raw.replace("\\", "/")
     root = (os.environ.get("CLAUDE_PROJECT_DIR") or cwd).replace("\\", "/").rstrip("/")
-    rel = path[len(root) + 1 :] if path.lower().startswith(root.lower() + "/") else path
-    if DEPLOY_FILE.fullmatch(rel):
-        decide(
-            "ask",
-            f"{rel} 은 배포 동작을 바꾸는 파일이다(main 머지 = 운영 배포). "
-            "이번 작업 범위에 들어 있는지 사용자에게 확인한다(CLAUDE.md 원칙 9).",
+    # 상대 경로(Serena)는 세션 프로젝트 기준이다. 절대 경로만 다른 worktree 일 수 있다
+    tree = worktree_of(path, root) if os.path.isabs(raw) else root
+    rel = path[len(tree) + 1 :] if path.lower().startswith(tree.lower() + "/") else path
+    reasons = []
+    if tree.lower() != root.lower():
+        reasons.append(
+            f"{rel} 은 다른 worktree({tree})의 파일이다. 이 세션({root})에서 고치면 "
+            "경로별 규칙이 붙지 않는다. 그 폴더에서 새 세션을 열어 고치는 것이 원칙이다"
+            "(git-workflow). 이번만 여기서 고칠지 사용자에게 확인한다."
         )
+    if DEPLOY_FILE.fullmatch(rel):
+        reasons.append(
+            f"{rel} 은 배포 동작을 바꾸는 파일이다(main 머지 = 운영 배포). "
+            "이번 작업 범위에 들어 있는지 사용자에게 확인한다(CLAUDE.md 원칙 9)."
+        )
+    if reasons:
+        decide("ask", " ".join(reasons))
