@@ -216,6 +216,53 @@ void main() {
     });
   });
 
+  group('AppTabBar', () {
+    Future<void> pumpWithBottomInset(
+      WidgetTester tester,
+      double inset, {
+      double textScale = 1,
+    }) => pumpInApp(
+      tester,
+      MediaQuery(
+        data: MediaQueryData(
+          padding: EdgeInsets.only(bottom: inset),
+          viewPadding: EdgeInsets.only(bottom: inset),
+          textScaler: TextScaler.linear(textScale),
+        ),
+        child: AppTabBar(currentIndex: 0, onTap: (_) {}),
+      ),
+    );
+
+    void expectLabelsAboveInset(WidgetTester tester, double inset) {
+      final barBottom = tester.getBottomLeft(find.byType(AppTabBar)).dy;
+      for (final (_, label) in appTabs) {
+        expect(
+          tester.getBottomLeft(find.text(label)).dy,
+          lessThanOrEqualTo(barBottom - inset),
+          reason: label,
+        );
+      }
+    }
+
+    testWidgets('3버튼 내비게이션처럼 하단 여백이 크면 탭 글자를 그 위에 둔다', (tester) async {
+      await pumpWithBottomInset(tester, 48);
+
+      expectLabelsAboveInset(tester, 48);
+    });
+
+    testWidgets('글자를 키워도 탭 글자가 하단 여백에 들어가지 않는다', (tester) async {
+      await pumpWithBottomInset(tester, 48, textScale: 1.5);
+
+      expectLabelsAboveInset(tester, 48);
+    });
+
+    testWidgets('하단 여백이 작으면 디자인 높이 80 을 지킨다', (tester) async {
+      await pumpWithBottomInset(tester, 24);
+
+      expect(tester.getSize(find.byType(AppTabBar)).height, 80);
+    });
+  });
+
   group('GateBar', () {
     testWidgets('구간 폭은 건수 ÷ 합계에 비례한다', (tester) async {
       await pumpInApp(
@@ -239,6 +286,26 @@ void main() {
         find.byKey(ValueKey('gate-segment-${Gate.judgment.value}')),
         findsNothing,
       );
+    });
+
+    testWidgets('구간은 막대 높이를 채운다', (tester) async {
+      await pumpInApp(
+        tester,
+        const SizedBox(
+          width: 300,
+          child: GateBar(counts: {Gate.exclude: 1, Gate.score: 3}),
+        ),
+      );
+
+      for (final gate in [Gate.exclude, Gate.score]) {
+        expect(
+          tester
+              .getSize(find.byKey(ValueKey('gate-segment-${gate.value}')))
+              .height,
+          10,
+          reason: gate.value,
+        );
+      }
     });
 
     testWidgets('범례는 다섯 관문을 늘 보여 주고 stale·cluster_dup 은 건수가 있을 때만', (

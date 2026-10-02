@@ -1,4 +1,4 @@
-// 하단 탭바 — 높이 80, 4탭(피드·찜·설정·내 프로필), 활성 #2D5BE3 / 비활성 #8A877F.
+// 하단 탭바 — 높이 80(시스템 하단 여백이 크면 늘어남), 4탭(피드·찜·설정·내 프로필), 활성 #2D5BE3 / 비활성 #8A877F.
 import 'package:flutter/widgets.dart';
 
 import '../icons.dart';
@@ -22,8 +22,11 @@ class AppTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 디자인 80 은 iOS 홈 인디케이터를 품은 높이라 최소 높이로만 둔다. 시스템 하단 여백
+    // (안드로이드 3버튼 바 48 등)은 탭 내용 아래 패딩으로 비워 두고, 내용은 글자 크기에 맞춰 늘어난다.
     return Container(
-      height: AppSpacing.tabBarHeight,
+      constraints: const BoxConstraints(minHeight: AppSpacing.tabBarHeight),
+      padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.borderCard)),
