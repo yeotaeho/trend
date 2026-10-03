@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import Annotated
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from app.api.v1.schemas.common import StrictIn
 from app.api.v1.schemas.reports import ReportRef
@@ -54,10 +54,13 @@ class KindPenalty(BaseModel):
 
 
 class SourceTrustChange(BaseModel):
+    # 서버 코드는 from_= 로 만들고, 계약 JSON(앱 fixture 포함)은 "from" 키로 읽고 쓴다.
+    model_config = ConfigDict(validate_by_name=True)
+
     source_id: str
     source_name: str
     # from 은 파이썬 예약어라 필드 이름만 바꾸고 JSON 키는 계약대로 둔다.
-    from_: float = Field(serialization_alias="from")
+    from_: float = Field(alias="from")
     to: float
 
 
