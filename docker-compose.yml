@@ -6,6 +6,11 @@ services:
     image: ghcr.io/${GHCR_OWNER:-local}/tech-radar:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env
+    # Caddy 뒤라 uvicorn 이 X-Forwarded-* 를 믿어야 끝 슬래시 리다이렉트가 https 로, 로그 IP 가
+    # 실제 클라이언트로 나온다. app 포트는 expose 만 해 Caddy 밖에서 닿지 않으므로 전부 믿어도 된다.
+    # Dockerfile CMD(sh -c 문자열)에 옵션으로 넣지 않는다. 따옴표를 빠뜨리면 * 가 글롭으로 풀린다.
+    environment:
+      FORWARDED_ALLOW_IPS: "*"
     expose:
       - "8000"
     # 배포 잡이 `up -d --wait` 로 이 판정을 기다린다. 컨테이너가 죽어도 배포가 초록색이면 안 된다.
