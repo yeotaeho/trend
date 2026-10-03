@@ -12,6 +12,8 @@ from app.config import get_settings
 def configure_logging() -> None:
     level = getattr(logging, get_settings().log_level.upper(), logging.INFO)
     logging.basicConfig(format="%(message)s", level=level)
+    # httpx 는 요청 URL 을 INFO 로 찍는다. 텔레그램은 봇 토큰이 URL 경로에 들어간다.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,

@@ -23,7 +23,7 @@ from app.api.v1.errors import API_PREFIX
 from app.api.v1.schemas.common import ErrorEnvelope
 
 _ERRORS: dict[int | str, dict[str, Any]] = {
-    status: {"model": ErrorEnvelope} for status in (401, 422, 503)
+    status: {"model": ErrorEnvelope} for status in (401, 422, 500, 503)
 }
 
 router = APIRouter(prefix=API_PREFIX, dependencies=[Depends(require_token)], responses=_ERRORS)

@@ -64,7 +64,8 @@
 | 409 | `conflict` | 폴더 이름 중복 |
 | 409 | `channel_not_connected` | 연결 정보(.env)가 없는 채널을 켜려 함 (텔레그램 토큰 없음, FCM 서비스 계정 없음) |
 | 422 | `validation_error` | 본문·쿼리 검증 실패. FastAPI 기본 422 를 이 형식으로 바꿔 준다. `details.errors` 에 pydantic 오류 목록 |
-| 503 | `unavailable` | DB 연결 실패 |
+| 500 | `internal` | 처리하지 못한 서버 오류. 서버 로그 `api.internal_error` 에 스택이 남는다 |
+| 503 | `unavailable` | DB 연결 실패, 커넥션 풀 대기 초과 |
 
 `message` 는 사람이 읽는 한국어 문장이다. 클라이언트는 `code` 로 분기하고 `message` 는 스낵바에 그대로 보여 줘도 된다.
 

@@ -61,3 +61,9 @@ def test_health_needs_no_token(monkeypatch: pytest.MonkeyPatch):
     res = TestClient(app).get("/health")
     assert res.status_code == 200
     assert res.json() == {"status": "ok"}
+
+
+def test_health_answers_head_for_uptime_monitors(monkeypatch: pytest.MonkeyPatch):
+    # 무료 가동 감시는 HEAD 가 기본이다. 405 면 계속 '다운' 으로 뜬다.
+    monkeypatch.setattr(health, "session_scope", fake_session_scope)
+    assert TestClient(app).head("/health").status_code == 200
