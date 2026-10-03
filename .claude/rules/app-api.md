@@ -10,7 +10,7 @@ paths:
 
 계약서는 `docs/api/app-api-v1.md` 다. 코드보다 계약서가 먼저 바뀌고, 둘이 어긋나면 `v2-다중사용자-1차-구현서.md` 가 이긴다(계약서 10절).
 
-- **세 곳을 같은 PR 에서 맞춘다.** 계약서, 백엔드 응답 모델(`app/api/v1/schemas/<영역>.py`), 앱 fixture(`mobile/assets/fixtures/*.json`). 계약서의 컬럼 표기("컬럼 변경 없음" 등)도 실제 마이그레이션과 대조한다. `notifications.level varchar(10)` 에 `cluster_dup`(11자)이 안 들어간 것을 계약서가 놓친 전례가 있다.
+- **세 곳을 같은 PR 에서 맞춘다.** 계약서, 백엔드 응답 모델(`app/api/v1/schemas/<영역>.py`), 앱 fixture(`mobile/assets/fixtures/*.json`). 계약서의 컬럼 표기("컬럼 변경 없음" 등)도 실제 마이그레이션과 대조한다. `notifications.level varchar(10)` 에 `cluster_dup`(11자)이 안 들어간 것을 계약서가 놓친 전례가 있다. 오류 코드를 더하면 계약서 1.4 표와 `app/api/v1/__init__.py` 의 `_ERRORS`(OpenAPI 공통 응답)도 같이 고친다(10-04, 500 `internal` 이 문서에서 빠짐).
 - **인증은 fail-closed 다.** 라우터 전체가 `deps.require_token` 을 거친다. `APP_API_TOKEN` 이 비면 전부 401 이다. 새 라우터도 `app/api/v1/__init__.py` 의 공용 라우터에 붙인다.
 - **사용자는 `deps.current_user_id()` 로만 얻는다.** 모든 조회·쓰기를 그 `user_id` 로 거른다.
 - **시각은 ISO-8601 UTC `Z`, ID 는 문자열이다.** "오늘" 은 두 뜻이다. 달력일(Asia/Seoul 자정, push·예산)과 최근 24시간(수집·걸러짐, 응답에 `window_hours`)을 섞지 않는다.
