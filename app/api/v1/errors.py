@@ -10,8 +10,9 @@ from fastapi.exception_handlers import (
     request_validation_exception_handler,
 )
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, PlainTextResponse, Response
 from sqlalchemy.exc import InterfaceError, OperationalError
+from sqlalchemy.exc import TimeoutError as PoolTimeoutError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.log import get_logger
@@ -80,10 +81,19 @@ async def _validation_error(request: Request, exc: Exception) -> Response:
 async def _db_unavailable(request: Request, exc: Exception) -> Response:
     if not _is_api(request):
         raise exc
-    log.warning("api.db_unavailable", path=request.url.path, error=str(exc))
+    log.warning("api.db_unavailable", path=request.url.path, error=str(exc), exc_info=exc)
     return error_response(
         503, "unavailable", "DB 에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."
     )
+
+
+async def _internal_error(request: Request, exc: Exception) -> Response:
+    # Exception 핸들러는 가장 바깥(ServerErrorMiddleware)에서 돈다. 응답을 보낸 뒤 예외를
+    # 다시 던지므로 서버 로그에도 남는다. /api/v1 밖은 Starlette 기본 응답 그대로다.
+    if not _is_api(request):
+        return PlainTextResponse("Internal Server Error", status_code=500)
+    log.error("api.internal_error", path=request.url.path, exc_info=exc)
+    return error_response(500, "internal", "서버에서 오류가 났습니다. 잠시 후 다시 시도해 주세요.")
 
 
 def install_error_handlers(app: FastAPI) -> None:
@@ -91,5 +101,7 @@ def install_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(StarletteHTTPException, _http_error)
     app.add_exception_handler(RequestValidationError, _validation_error)
     # asyncpg 연결 실패는 OSError(ConnectionRefusedError·TimeoutError)로 그대로 올라온다.
-    for exc_type in (OperationalError, InterfaceError, OSError):
+    # 커넥션 풀 대기 초과는 SQLAlchemy 의 TimeoutError 라 따로 넣는다.
+    for exc_type in (OperationalError, InterfaceError, OSError, PoolTimeoutError):
         app.add_exception_handler(exc_type, _db_unavailable)
+    app.add_exception_handler(Exception, _internal_error)
