@@ -1146,8 +1146,11 @@ main 에는 `Kind`, `TriageItem.kind`, 프롬프트 2) kind 절, `ScoringConfig.
 
 ## 7. 버전 · 변경 관리
 
-- 호환이 깨지는 변경은 `/api/v2` 로 간다. v1 안에서는 필드 추가만 한다. 클라이언트는 모르는 필드를 무시하고, 모르는 열거형 값은 라벨 대신 값을 그대로 보여 준다.
-- 이 문서의 JSON 예시는 프론트 fixture 의 원본이다. 예시를 바꾸면 fixture 도 같이 바꾼다.
+- 호환이 깨지는 변경은 `/api/v2` 로 간다. v1 안에서는 필드 추가만 한다. 클라이언트는 모르는 필드를 무시한다.
+- 모르는 열거형 값은 앱이 `unknown` 으로 받아 '알 수 없음' 으로 보인다(json_serializable `unknownEnumValue`). 새 값을 보이려면 앱을 먼저 고친다.
+- 응답 필드를 null 허용으로 바꾸는 것은 호환이 깨지는 변경이다. 앱 모델을 먼저 nullable 로 바꾸고 서버를 바꾼다. 서버 모델이 `X | None` 이면 앱 모델도 nullable 이어야 한다(`Screening.relevance` 가 어긋났던 전례).
+- 요청 본문에는 새 필수 필드를 더하지 않는다. 새 입력은 기본값이 있는 선택 필드로만 더한다.
+- 이 문서의 JSON 예시는 프론트 fixture 의 원본이다. 예시를 바꾸면 fixture 도 같이 바꾼다. fixture 는 `tests/api/test_mobile_fixtures.py` 가 서버 응답 모델로 왕복 검증한다.
 
 ## 8. 열린 질문
 
