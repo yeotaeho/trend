@@ -202,11 +202,20 @@ class _RationaleCard extends StatelessWidget {
   static List<InlineSpan> _reasonSpans(Rationale rationale) {
     final lines = <List<InlineSpan>>[];
     if (rationale.screening case final s?) {
+      final parts = [
+        if (s.relevance case final relevance?)
+          [TextSpan(text: 'relevance ${formatScore(relevance)}')],
+        if (s.kind case final kind?)
+          [
+            const TextSpan(text: 'kind '),
+            TextSpan(text: kind.value, style: AppText.mono(_reasonStyle)),
+          ],
+      ];
       lines.add([
-        TextSpan(text: '선별: relevance ${formatScore(s.relevance)}'),
-        if (s.kind case final kind?) ...[
-          const TextSpan(text: ' · kind '),
-          TextSpan(text: kind.value, style: AppText.mono(_reasonStyle)),
+        const TextSpan(text: '선별:'),
+        for (final (i, part) in parts.indexed) ...[
+          TextSpan(text: i == 0 ? ' ' : ' · '),
+          ...part,
         ],
         if (s.reason case final reason? when reason.isNotEmpty)
           TextSpan(text: ' — "$reason"'),
