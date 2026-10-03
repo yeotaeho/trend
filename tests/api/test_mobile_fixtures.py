@@ -1,4 +1,4 @@
-# 앱 fixture 계약 테스트 — mobile/assets/fixtures 의 JSON 을 서버 응답 모델로 검증하고 받은 필드만 되살려 원본과 같은지 본다
+# 앱 fixture 계약 테스트 — 서버 응답 모델로 검증한 뒤 받은 필드만 되살려 원본과 같은지 본다
 
 from __future__ import annotations
 
@@ -54,5 +54,6 @@ def test_fixture_round_trips_through_server_model(name: str):
     raw = json.loads((FIXTURES / name).read_text(encoding="utf-8"))
     adapter = TypeAdapter(MODELS[name])
     parsed = adapter.validate_python(raw)
-    # 받은 필드만 되살린다. 서버가 모르는 필드는 빠지고, 이름·형식이 다르면 값이 달라져 여기서 걸린다.
+    # 받은 필드만 되살린다. 서버가 모르는 필드는 빠지고,
+    # 이름·형식이 다르면 값이 달라져 여기서 걸린다.
     assert adapter.dump_python(parsed, mode="json", by_alias=True, exclude_unset=True) == raw
