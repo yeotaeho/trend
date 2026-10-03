@@ -11,7 +11,7 @@ paths:
 
 # 배포·CI 규칙
 
-**main 머지가 곧 운영 배포다.** `.github/workflows/ci.yml` 은 PR·main push 에 `check`(ruff check·format·mypy·pytest)를 돌리고, main 이면 `deploy` 로 GHCR 이미지(`:latest` + `:<SHA>`)를 올린 뒤 VM 에서 같은 SHA 의 compose·Caddyfile 을 받아 `up -d --wait` 와 caddy reload 를 한다. 컨테이너가 뜰 때 `alembic upgrade head` 가 돈다. 배포 뒤 확인 절차는 스킬 `deploy-verify` 다.
+**main 머지가 곧 운영 배포다.** `.github/workflows/ci.yml` 은 PR·main push 에 `check`(ruff check·format·mypy·pytest·caddy validate)를 돌리고, main 이면 `deploy` 로 GHCR 이미지(`:latest` + `:<SHA>`)를 올린 뒤 VM 에서 같은 SHA 의 compose·Caddyfile 을 받아 `up -d --wait` 와 caddy reload 를 한다. 이어서 스모크 두 줄(컨테이너 안 토큰 `/api/v1/meta`, 러너의 바깥 `HEAD /health`)이 돈다. 컨테이너가 뜰 때 `alembic upgrade head` 가 돈다. 배포 뒤 확인 절차는 스킬 `deploy-verify` 다. `.github/workflows/mobile.yml` 은 `mobile/**` 이 바뀔 때만 flutter analyze·test 를 돌리고 배포와 잇지 않는다.
 
 ## 바꿀 때 지킬 것
 

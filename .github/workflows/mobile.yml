@@ -1,0 +1,39 @@
+name: mobile
+
+# 플러터 앱 검사. mobile/ 이 바뀔 때만 analyze·test 를 돈다.
+# APK 는 만들지 않는다(빌드에 앱 토큰이 박힌다). deploy 의 needs 에도 넣지 않는다 — 앱은 사이드로드라 배포와 무관하다.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile.yml"
+  pull_request:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile.yml"
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # 표시 시각은 기기 시간대(toLocal)를 따른다. 테스트는 KST 를 전제로 써서 러너(UTC)도 맞춘다.
+    env:
+      TZ: Asia/Seoul
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      # 로컬과 같은 버전으로 고정한다. 버전이 다르면 analyze 규칙이 달라 로컬 0건이 CI 에서 깨진다.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.5
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test

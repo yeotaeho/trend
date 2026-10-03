@@ -135,13 +135,14 @@ class Rationale {
 @JsonSerializable()
 class Screening {
   const Screening({
-    required this.relevance,
+    this.relevance,
     this.kind,
     required this.topics,
     this.reason,
   });
 
-  final double relevance;
+  /// 서버는 `float | None` 이다. 없으면 화면에서 relevance 조각만 뺀다.
+  final double? relevance;
   @JsonKey(unknownEnumValue: Kind.unknown)
   final Kind? kind;
 

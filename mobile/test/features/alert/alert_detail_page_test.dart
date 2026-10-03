@@ -1,5 +1,8 @@
 // 07 판정 근거 화면 테스트 — 03 과 판정 상태 공유, 점수 바 채움·음수 경고색, 근거·안내·최근 판정.
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tech_radar/app/routes.dart';
 import 'package:tech_radar/core/icons.dart';
@@ -81,7 +84,60 @@ class _ScoreAlertRepository implements AlertRepository {
   Future<void> clearFeedback(String alertId) => _inner.clearFeedback(alertId);
 }
 
+/// BeaconKV 상세 JSON 의 선별 relevance 를 null 로 바꿔 다시 읽는다. 서버 계약은 `float | None` 이다.
+class _NullRelevanceAlertRepository implements AlertRepository {
+  _NullRelevanceAlertRepository(this._inner);
+
+  final AlertRepository _inner;
+
+  @override
+  Future<AlertDetail> alert(String alertId) async {
+    final page = jsonDecode(
+      await rootBundle.loadString('assets/fixtures/alerts.json', cache: false),
+    ) as Map<String, dynamic>;
+    final json = (page['items'] as List)
+        .cast<Map<String, dynamic>>()
+        .firstWhere((d) => d['id'] == alertId);
+    ((json['rationale'] as Map)['screening'] as Map)['relevance'] = null;
+    return AlertDetail.fromJson(json);
+  }
+
+  @override
+  Future<RecentFeedback> recentFeedback({int? limit}) =>
+      _inner.recentFeedback(limit: limit);
+
+  @override
+  Future<FeedbackResult> setFeedback(String alertId, FeedbackVerdict verdict) =>
+      _inner.setFeedback(alertId, verdict);
+
+  @override
+  Future<void> clearFeedback(String alertId) => _inner.clearFeedback(alertId);
+}
+
 void main() {
+  testWidgets('선별 relevance 가 null 이면 그 조각만 빼고 근거를 그린다', (tester) async {
+    await pumpRouterApp(
+      tester,
+      at: AppRoutes.alert('18301'),
+      extra: [
+        alertRepositoryProvider.overrideWith(
+          (ref) => _NullRelevanceAlertRepository(
+            FixtureAlertRepository(ref.watch(fixtureStoreProvider)),
+          ),
+        ),
+      ],
+    );
+
+    expect(
+      find.text(
+        '선별: kind technique — "KV 캐시 압축의 구체 기법과 수치, 코드 공개"\n'
+        '판정: importance 4 · 유사 피드백 👍 "PagedAttention v2 — 페이지 단위 KV 캐시 재사용"',
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('03 에서 유용 → 07 에서도 선택, 07 에서 해제 → 뒤로 가면 03 도 해제', (tester) async {
     await pumpRouterApp(tester);
 

@@ -120,7 +120,7 @@ const _$RoutingEnumMap = {
 };
 
 Screening _$ScreeningFromJson(Map<String, dynamic> json) => Screening(
-  relevance: (json['relevance'] as num).toDouble(),
+  relevance: (json['relevance'] as num?)?.toDouble(),
   kind: $enumDecodeNullable(
     _$KindEnumMap,
     json['kind'],
