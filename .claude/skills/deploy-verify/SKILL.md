@@ -17,8 +17,9 @@ description: main 머지·PR 머지 뒤 운영 배포가 됐는지 확인하거�
    curl -s -o /dev/null -w "%{http_code}\n" -X POST https://trend.yeotaeho.kr/webhook/github   # 401
    curl -s -o /dev/null -w "%{http_code}\n" https://trend.yeotaeho.kr/api/v1/meta              # 401 (토큰 없음)
    curl -s -o /dev/null -w "%{http_code}\n" http://trend.yeotaeho.kr/health                    # 308
-   curl -svI https://trend.yeotaeho.kr/health 2>&1 | grep -i "issuer"                          # STAGING 이 없어야 한다
+   echo | openssl s_client -connect trend.yeotaeho.kr:443 -servername trend.yeotaeho.kr 2>/dev/null | openssl x509 -noout -issuer -enddate   # Let's Encrypt 운영 발급자(STAGING 아님)
    ```
+   인증서는 openssl 로 본다. 이 PC 의 curl 은 Schannel 이라 `-v` 에 issuer 를 찍지 않아, `curl -svI | grep issuer` 는 스테이징 인증서여도 빈 출력으로 통과처럼 보인다(10-04 확인). 발급자 줄이 안 나오면 실패로 본다.
 3. **VM 안** — SSH 가 되면 직접, 안 되면 아래를 사용자에게 준다. 첫 줄은 항상 `cd ~/tech-radar` 다.
    ```bash
    cd ~/tech-radar && docker compose ps                                   # app·caddy 모두 healthy
