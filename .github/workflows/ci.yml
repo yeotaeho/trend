@@ -30,6 +30,12 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy app
       - run: uv run pytest
+      # Caddyfile 은 배포 때 caddy reload 가 처음 검증한다. 머지 전에 같은 이미지로 미리 본다.
+      # 공식 caddy 이미지는 ENTRYPOINT 가 없고 CMD 만 있어(레지스트리 설정 확인) 명령에 caddy 를 쓴다.
+      - run: >-
+          docker run --rm -e DOMAIN=localhost
+          -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro"
+          caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
   deploy:
     if: github.ref == 'refs/heads/main'
@@ -72,7 +78,7 @@ jobs:
             mv compose.new docker-compose.yml
             # Caddyfile 은 컨테이너에 "파일"로 바인드돼 inode 가 고정이다. mv 로 갈아치우면 실행 중인
             # caddy 는 옛 inode 를 계속 보고 뒤의 reload 가 헛돈다. 같은 inode 에 내용만 덮어쓴다.
-            # truncate 먼저라 원자적이지 않지만, 40바이트 한 번 쓰기이고 아래 reload 가 곧 검증한다.
+            # truncate 먼저라 원자적이지 않지만, 수백 바이트 한 번 쓰기이고 아래 reload 가 곧 검증한다.
             # 반토막이면 배포가 실패하고 caddy 는 메모리에 올린 옛 설정으로 계속 서비스한다.
             cat caddy.new > Caddyfile && rm caddy.new
             docker compose pull
@@ -84,4 +90,10 @@ jobs:
             # Caddyfile 은 바인드 마운트라 내용이 바뀌어도 compose 가 caddy 를 재생성하지 않는다.
             # 무중단 reload 를 건다. Caddyfile 이 잘못됐으면 여기서 배포가 실패한다.
             docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile
+            # 배포 스모크 ① 컨테이너 안에서 토큰으로 /api/v1/meta 를 부른다(인증·DB·라우터).
+            # 토큰은 VM .env 에서 컨테이너 환경으로만 들어간다. GitHub 시크릿으로 복제하지 않는다.
+            docker compose exec -T app python -c "import os, urllib.request as u; u.urlopen(u.Request('http://localhost:8000/api/v1/meta', headers={'Authorization': 'Bearer ' + os.environ['APP_API_TOKEN']}), timeout=10)"
             docker image prune -f
+      # 배포 스모크 ② 러너에서 바깥 /health 를 HEAD 로 부른다(DNS·인증서·Caddy). 가동 감시와 같은 방식이다.
+      - name: Smoke from outside
+        run: curl -fsSI --retry 3 --retry-delay 5 https://trend.yeotaeho.kr/health

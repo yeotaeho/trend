@@ -1,3 +1,9 @@
 {$DOMAIN} {
+	# 응답 압축. JSON 이 크다(openapi 64,570B 가 gzip 8,662B).
+	encode zstd gzip
+	# 앱 API·웹훅 본문은 작다. 큰 요청은 앱에 닿기 전에 413 으로 끊는다.
+	request_body {
+		max_size 5MB
+	}
 	reverse_proxy app:8000
 }
