@@ -90,7 +90,7 @@
 | `consecutive_failures` / `error_hint` | 06 | 부분 | `fail_count`, `last_error` (`models.py:47-48`) — 조치 문구 없음 | `config.error_hint` (YAML) | B2 |
 | `repo_count` | 06 | 있음 | `config.repos` (`config/sources.yaml:95-109`) | 길이 | B2 |
 | `planned_sources` | 06 | 없음 | – (디자인의 Hacker News 는 이미 구현됨, `config/sources.yaml:114-119`) | **정적** `config/app.yaml` | B1, B2 |
-| 소스 추가 (`+`) | 06 | 없음 | – | v1 제외 (사용자 결정, `준비 중` 토스트) | – |
+| 소스 추가 (`+`) | 06 | 없음 | – | v1 제외 (사용자 결정). `+` 는 GitHub `config/sources.yaml` 편집 링크 | – |
 
 ### 1.7 화면 08 내 프로필
 

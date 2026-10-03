@@ -13,7 +13,11 @@ bool isWebUrl(String url) {
       uri.host.isNotEmpty;
 }
 
-Future<void> openExternal(BuildContext context, String url) async {
+Future<void> openExternal(
+  BuildContext context,
+  String url, {
+  String failMessage = '원문을 열 수 없습니다.',
+}) async {
   var opened = false;
   if (isWebUrl(url)) {
     try {
@@ -25,5 +29,5 @@ Future<void> openExternal(BuildContext context, String url) async {
       opened = false;
     }
   }
-  if (!opened && context.mounted) showSnack(context, '원문을 열 수 없습니다.');
+  if (!opened && context.mounted) showSnack(context, failMessage);
 }

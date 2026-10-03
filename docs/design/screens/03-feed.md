@@ -14,7 +14,7 @@
 |---|---|---|---|
 | 제목 | `오늘` | 22 / 700 / primary | – |
 | `search` | 22 | primary, 아이콘 간 gap 14 | 알림 검색 (디자인 없음) |
-| `bell` | 22 | primary | 알림 센터 (디자인 없음) |
+| `bell` | 22 | primary | `즉시` 칩 선택 (알림 센터는 디자인 없음) |
 
 ### 2. 필터 칩 행 — `padding 4px 16px 12px`, gap 8, `overflow: hidden` (앱은 가로 스크롤)
 단일 선택 Chip 5개 ([tokens Chip](../tokens.md#chip-chip)).

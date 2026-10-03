@@ -1,7 +1,9 @@
-// 06 수집 소스 테스트 — Stat·상태 줄 규칙·오류색, 토글 시 활성 소스 갱신·실패 되돌림, `+` 준비 중.
+// 06 수집 소스 테스트 — Stat·상태 줄 규칙·오류색, 토글 시 활성 소스 갱신·실패 되돌림, `+` 편집 링크.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:url_launcher_platform_interface/link.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:tech_radar/core/api/api_exception.dart';
 import 'package:tech_radar/core/icons.dart';
 import 'package:tech_radar/core/labels.dart';
@@ -26,6 +28,20 @@ class _FailingSources implements SourceRepository {
   @override
   Future<Source> setEnabled(String sourceId, {required bool enabled}) async =>
       throw const ApiException('unavailable', 'DB 에 연결할 수 없습니다.', status: 503);
+}
+
+/// 연 주소와 방식만 기록한다. 플랫폼 인터페이스를 상속해야 instance 교체 검증을 통과한다.
+class _FakeLauncher extends UrlLauncherPlatform {
+  final launched = <(String, PreferredLaunchMode)>[];
+
+  @override
+  LinkDelegate? get linkDelegate => null;
+
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    launched.add((url, options.mode));
+    return true;
+  }
 }
 
 Future<SourceRepository> _pump(
@@ -159,13 +175,23 @@ void main() {
     expect(find.text('DB 에 연결할 수 없습니다.'), findsOneWidget);
   });
 
-  testWidgets('헤더 + 는 준비 중 토스트를 띄운다', (tester) async {
+  testWidgets('헤더 + 는 GitHub 의 sources.yaml 편집 화면을 외부 앱으로 연다', (tester) async {
+    final launcher = _FakeLauncher();
+    final original = UrlLauncherPlatform.instance;
+    UrlLauncherPlatform.instance = launcher;
+    addTearDown(() => UrlLauncherPlatform.instance = original);
     await _pump(tester);
 
     await tester.tap(find.bySemanticsLabel('소스 추가'));
     await tester.pump();
 
-    expect(find.text('준비 중'), findsOneWidget);
+    expect(launcher.launched, [
+      (
+        'https://github.com/yeotaeho/trend/edit/main/config/sources.yaml',
+        PreferredLaunchMode.externalApplication,
+      ),
+    ]);
+    expect(find.text('준비 중'), findsNothing);
   });
 
   group('sourceStatusLine', () {

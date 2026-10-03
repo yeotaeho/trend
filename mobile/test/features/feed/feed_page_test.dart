@@ -1,4 +1,4 @@
-// 03 피드 화면 테스트 — fixture 카드 3장 문구, 실험 헤더, 필터 칩, 낙관적 갱신 실패 롤백·스낵바.
+// 03 피드 화면 테스트 — fixture 카드 3장 문구, 실험 헤더, 필터 칩·벨, 낙관적 갱신 실패 롤백·스낵바.
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -239,7 +239,22 @@ void main() {
     expect(find.text('서버에 연결할 수 없습니다.'), findsOneWidget);
   });
 
-  testWidgets('검색·벨은 준비 중 안내, 걸러짐 링크는 09 로 간다', (tester) async {
+  testWidgets('벨은 즉시 칩을 골라 즉시 발송분만 보인다', (tester) async {
+    await pumpRouterApp(tester);
+
+    await tester.tap(find.bySemanticsLabel('즉시 알림만 보기'));
+    await tester.pumpAndSettle();
+
+    final chip = tester.widget<AppChip>(
+      find.ancestor(of: find.text('즉시'), matching: find.byType(AppChip)),
+    );
+    expect(chip.selected, isTrue);
+    expect(find.byType(FeedCard), findsNWidgets(2));
+    expect(find.text(_beacon), findsNothing);
+    expect(find.text('준비 중'), findsNothing);
+  });
+
+  testWidgets('검색은 준비 중 안내, 걸러짐 링크는 09 로 간다', (tester) async {
     final router = await pumpRouterApp(tester);
 
     await tester.tap(

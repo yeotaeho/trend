@@ -72,12 +72,29 @@ class _FeedPageState extends ConsumerState<FeedPage> {
       appBar: RootTopBar(
         title: '오늘',
         actions: [
-          for (final icon in const ['search', 'bell'])
-            GestureDetector(
-              onTap: () => showSnack(context, '준비 중'),
-              behavior: HitTestBehavior.opaque,
-              child: AppIcon(icon, size: 22, color: AppColors.textPrimary),
+          GestureDetector(
+            onTap: () => showSnack(context, '준비 중'),
+            behavior: HitTestBehavior.opaque,
+            child: const AppIcon(
+              'search',
+              size: 22,
+              color: AppColors.textPrimary,
             ),
+          ),
+          // 알림 센터는 디자인이 없다. 받은 알림 중 즉시 발송분을 보는 `즉시` 칩으로 바로 간다.
+          Semantics(
+            button: true,
+            label: '즉시 알림만 보기',
+            child: GestureDetector(
+              onTap: () => _select(FeedFilter.instant),
+              behavior: HitTestBehavior.opaque,
+              child: const AppIcon(
+                'bell',
+                size: 22,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
         ],
       ),
       body: Column(

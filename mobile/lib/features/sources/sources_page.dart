@@ -1,10 +1,11 @@
-// 06 수집 소스 화면 — Stat 3열, 그룹별 SourceRow(상태 줄·trust·토글), 미착수 칩. `+` 는 준비 중.
+// 06 수집 소스 화면 — Stat 3열, 그룹별 SourceRow(상태 줄·trust·토글), 미착수 칩. `+` 는 GitHub 편집 링크.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/api_exception.dart';
 import '../../core/icons.dart';
 import '../../core/labels.dart';
+import '../../core/launch.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text.dart';
@@ -14,6 +15,11 @@ import 'sources_controller.dart';
 
 /// `last_error` 로 조치 문구를 대신할 때 앞에서 자르는 길이 (계약 3.4).
 const int _lastErrorLength = 30;
+
+/// 소스 추가 화면은 v1 범위 밖이다. 원본인 `config/sources.yaml` 을 GitHub 에서 고치고
+/// main 에 머지하면 배포되며 수집 대상에 오른다.
+const String _sourcesEditUrl =
+    'https://github.com/yeotaeho/trend/edit/main/config/sources.yaml';
 
 class SourcesPage extends ConsumerWidget {
   const SourcesPage({super.key});
@@ -29,9 +35,11 @@ class SourcesPage extends ConsumerWidget {
             button: true,
             label: '소스 추가',
             child: GestureDetector(
-              onTap: () =>
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(const SnackBar(content: Text('준비 중'))),
+              onTap: () => openExternal(
+                context,
+                _sourcesEditUrl,
+                failMessage: '편집 화면을 열 수 없습니다.',
+              ),
               behavior: HitTestBehavior.opaque,
               child: const AppIcon(
                 'plus',
