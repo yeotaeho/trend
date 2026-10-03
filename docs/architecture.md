@@ -96,5 +96,5 @@ app/api/v1/*                       앱 API (require_token → queries/ → schem
 ## 배포·시크릿
 
 - **CI/CD** — PR·main push 시 `ruff check → ruff format --check → mypy → pytest`. `main` 이면 이미지 빌드(`:latest` + `:<SHA>`) → GHCR 푸시 → VM 에 SSH 로 같은 SHA 의 compose·Caddyfile 을 받아 `docker compose pull && up -d --wait` → caddy reload. 롤백은 `IMAGE_TAG=<SHA>`. Alembic 마이그레이션은 컨테이너 시작 시 자동.
-- **시크릿** — `.env` 로컬 관리 (`ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`, `DISCORD_*`, `TELEGRAM_*`, `GITHUB_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `APP_API_TOKEN`, `FCM_*`, `DATABASE_URL`). `.env.example` 이 참조본. 운영 값은 VM 의 `~/tech-radar/.env` 에만 있고, CI 시크릿은 `VM_HOST`·`VM_USER`·`VM_SSH_KEY` 셋이다.
+- **시크릿** — `.env` 로컬 관리 (`ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`, `DISCORD_*`, `TELEGRAM_*`, `GITHUB_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `APP_API_TOKEN`, `FCM_*`, `DATABASE_URL`). `.env.example` 이 참조본. 운영 값은 VM 의 `~/tech-radar/.env` 에만 있고(FCM 서비스 계정 JSON 은 `~/tech-radar/secrets/`, 컨테이너 `/run/secrets` 에 읽기 전용 마운트), CI 시크릿은 `VM_HOST`·`VM_USER`·`VM_SSH_KEY` 셋이다.
 - **Neon** — pooled 엔드포인트, 브랜치 `main`(운영) / `dev`(로컬 실험·통합 테스트). CI 는 통합 테스트를 돌리지 않는다. 상세는 `docs/database.md`.

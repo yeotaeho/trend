@@ -18,7 +18,7 @@ paths:
 > 구성 사실과 결정만 둔다. Caddyfile 을 `mv` 대신 같은 inode 에 덮어쓰는 이유는 `ci.yml` 주석에, 한 번 관찰된 운영 함정은 `lessons/BANK.md` 와 스킬 `deploy-verify` 의 "막혔을 때" 표에 있다.
 
 - **롤백 대상은 SHA 태그다.** `IMAGE_TAG=<SHA>` 로 pull·up 한다(`docker-compose.yml` 머리 주석). `:latest` 만 있으면 되돌릴 이미지가 없다.
-- **시크릿은 `VM_HOST`·`VM_USER`·`VM_SSH_KEY` 셋이다.** `GITHUB_` 접두사는 저장소 시크릿 이름으로 쓸 수 없고, GHCR 푸시는 자동 `GITHUB_TOKEN` 이 한다. 앱 키는 VM 의 `~/tech-radar/.env` 에만 있다. `.env.example` 에 키를 더하면 VM `.env` 에도 넣어야 한다고 사용자에게 알린다.
+- **시크릿은 `VM_HOST`·`VM_USER`·`VM_SSH_KEY` 셋이다.** `GITHUB_` 접두사는 저장소 시크릿 이름으로 쓸 수 없고, GHCR 푸시는 자동 `GITHUB_TOKEN` 이 한다. 앱 키는 VM 의 `~/tech-radar/.env` 에만, 파일로 된 비밀(FCM 서비스 계정 JSON)은 `~/tech-radar/secrets/` 에만 있다. 이 폴더는 컨테이너 `/run/secrets` 에 읽기 전용으로 붙는다. `.env.example` 에 키를 더하면 VM `.env` 에도 넣어야 한다고 사용자에게 알린다.
 - **이미지에 비밀값을 굽지 않는다.** GHCR 패키지는 public 이다.
 - alembic 실패 시 재시작 루프는 의도다(일시적 Neon 장애에서 스스로 복구). 영구 실패는 `IMAGE_TAG` 롤백으로 되돌린다.
 

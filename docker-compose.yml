@@ -11,6 +11,11 @@ services:
     # Dockerfile CMD(sh -c 문자열)에 옵션으로 넣지 않는다. 따옴표를 빠뜨리면 * 가 글롭으로 풀린다.
     environment:
       FORWARDED_ALLOW_IPS: "*"
+    # 커밋하지 않는 파일(FCM 서비스 계정 JSON)은 VM 의 ~/tech-radar/secrets 에 두고 읽기 전용으로 붙인다.
+    # 파일이 아니라 폴더를 붙인다. 없는 파일을 바인드하면 docker 가 그 이름의 빈 폴더를 만들고,
+    # 파일을 갈아 끼우면(inode 가 바뀌면) 컨테이너는 옛 파일을 계속 본다.
+    volumes:
+      - ./secrets:/run/secrets:ro
     expose:
       - "8000"
     # 배포 잡이 `up -d --wait` 로 이 판정을 기다린다. 컨테이너가 죽어도 배포가 초록색이면 안 된다.
