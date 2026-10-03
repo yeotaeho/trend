@@ -10,7 +10,7 @@
 ## 레이아웃 (위 → 아래)
 
 ### 1. 하위 TopBar
-`back` 20 + `수집 소스` (18/600). 우측 `plus` 22 → 소스 추가 (v1 범위 밖, `준비 중` 토스트).
+`back` 20 + `수집 소스` (18/600). 우측 `plus` 22 → GitHub 의 `config/sources.yaml` 편집 화면을 외부 앱으로 연다 (앱 안 소스 추가는 v1 범위 밖).
 
 ### 2. Stat 3열 — 컨테이너 `padding 8px 16px 4px`, gap 12
 StatCard(06) — Card `padding 12px 14px`, gap 2, margin 0, flex-grow. 라벨 11 tertiary, 값 22/700 + 접미 13/500 tertiary. **캡션 없음**.
