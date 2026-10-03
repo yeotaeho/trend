@@ -5,6 +5,7 @@
 
 | 날짜 | 트랙 | 증상 | 교훈 | 안 된 방법 | 확인 방법 | 목적지 | 폐기 조건 |
 |---|---|---|---|---|---|---|---|
+| 10-02 | 버그 | 훅 모의 실행에서 가드가 거짓으로 통과 | Bash 도구로 넘긴 셸 문자열(작은따옴표 JSON, 따옴표 친 heredoc 안 파이썬 문자열 모두) 속 백슬래시 두 개가 하나로 줄어 입력이 깨졌다. 훅은 JSON 을 못 읽으면 exit 0 으로 끝나서 "통과" 와 구별되지 않는다. 훅 입력은 파이썬 `json.dumps` 로 만들어 넘긴다(`tests/test_claude_harness.py` 의 `run_hook` 과 같은 방식) | Windows 경로를 셸 문자열 JSON 에 직접 적기 | 모의 입력을 먼저 `json.load` 로 파싱해 본다 | testing (재관찰 시) | — |
 | 10-02 | 버그 | 피드에서 찜해도 찜 탭이 새로고침 전까지 비어 있고, 찜 탭에서 해제해도 피드 카드는 찜으로 남음 | 같은 서버 상태(찜)를 두 컨트롤러(`AlertUserStates`·`SavedController`)가 따로 들면 서로 갱신하지 않는다. 쓰기가 끝나면 신호(`savedWritesProvider`)로 다른 쪽이 다시 읽게 하고, 상대가 모르는 필드를 덮지 않게 앱의 덮어쓰기를 필드별(`AlertOverride`)로 둔다. fixture 위젯 테스트는 화면 하나씩만 봐서 못 잡았고 운영 스모크에서 드러났다 | 쓰기 뒤 `invalidate` 는 찜 탭 보기 조건(폴더·정렬)을 초기화해 기각. 피드만 다시 읽기는 앱에서 덮은 값이 서버 값을 이겨 그대로 남아 기각 | `test/features/saved_sync_test.dart`, 에뮬레이터 피드↔찜 탭 왕복 | mobile (재관찰 시) | — |
 | 10-01 | 버그 | 커밋이 main 에 들어가지 않은 채 남음 | 열려 있던 PR 의 브랜치(`feat/work-board`)에 이어서 커밋했는데, 그 사이 사용자가 PR 을 머지해 새 커밋 3개가 머지된 브랜치에만 남았다. 기존 PR 브랜치에 커밋을 더하기 전에 `gh pr view <번호> --json state` 로 아직 열려 있는지 본다. 머지됐으면 origin/main 에서 새 브랜치를 딴다 | 세션 앞부분에 본 PR 상태를 믿음 | `gh pr view <번호> --json state,mergedAt` | git-workflow (재관찰 시) | — |
 | 09-30 | 버그 | 파일 여러 개가 첫 줄만 남음 | Serena `replace_content` 의 regex 모드는 MULTILINE·DOTALL 이라 `^# 헤더 .*$` 의 `.*` 가 줄 끝이 아니라 파일 끝까지 먹는다. 한 줄만 바꿀 때는 `[^\n]*` 을 쓰거나 literal 모드로 한다. 결과는 이제 `edit_check` 훅이 잡는다 | 헤더 한 줄 치환에 `.*$` | 치환 뒤 `wc -l`·`file` 로 줄 수 확인 | lessons.md (재관찰 시) | Serena 가 regex 플래그 기본값을 바꾸면. 두 줄짜리 임시 파일에 같은 치환으로 확인 |

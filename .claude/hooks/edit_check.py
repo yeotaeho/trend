@@ -27,16 +27,12 @@ raw = inp.get("file_path") or inp.get("relative_path") or ""
 if not raw:
     sys.exit(0)
 path = Path(raw) if Path(raw).is_absolute() else root / raw
-try:
-    rel = path.resolve().relative_to(root.resolve()).as_posix()
-except (ValueError, OSError):
-    sys.exit(0)
 
 
-def git(*args: str) -> str | None:
+def git(*args: str, at: Path) -> str | None:
     try:
         r = subprocess.run(
-            ["git", *args], cwd=root, capture_output=True, text=True,
+            ["git", *args], cwd=at, capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=5,
         )  # fmt: skip
     except Exception:
@@ -44,9 +40,20 @@ def git(*args: str) -> str | None:
     return r.stdout if r.returncode == 0 else None
 
 
-before = git("show", f"HEAD:{rel}")
+# 세션 프로젝트가 아니라 파일이 든 worktree 의 커밋본과 비교한다
+# (원본 세션에서 다른 worktree 파일을 고칠 때도 멈추게)
+top = git("rev-parse", "--show-toplevel", at=path.parent) if path.parent.is_dir() else None
+if not top:
+    sys.exit(0)  # git 밖 파일이거나 폴더째 지웠다
+tree = Path(top.strip())
+try:
+    rel = path.resolve().relative_to(tree.resolve()).as_posix()
+except (ValueError, OSError):
+    sys.exit(0)
+
+before = git("show", f"HEAD:{rel}", at=tree)
 if before is None:
-    before = git("show", f":{rel}")  # 아직 커밋 전이면 스테이징본과 비교한다
+    before = git("show", f":{rel}", at=tree)  # 아직 커밋 전이면 스테이징본과 비교한다
 if before is None:
     sys.exit(0)  # 새 파일
 try:
@@ -63,13 +70,14 @@ if sid:
     STATE_DIR.mkdir(exist_ok=True)
     seen_file = STATE_DIR / f"{sid}.txt"
     seen = set(seen_file.read_text(encoding="utf-8").splitlines()) if seen_file.exists() else set()
-    if rel in seen:
+    key = path.resolve().as_posix()  # worktree 마다 같은 rel 이 있다
+    if key in seen:
         sys.exit(0)
-    seen_file.write_text("\n".join(sorted(seen | {rel})), encoding="utf-8")
+    seen_file.write_text("\n".join(sorted(seen | {key})), encoding="utf-8")
 
 reason = (
     f"{rel} 이 커밋본 {old_n}줄에서 {new_n}줄로 줄었다. 도구가 성공을 알려도 결과를 확인한다. "
-    f"의도한 삭제가 아니면 `git diff -- {rel}` 로 보고 원문으로 되돌린다. "
+    f'의도한 삭제가 아니면 `git -C "{tree.as_posix()}" diff -- {rel}` 로 보고 원문으로 되돌린다. '
     "의도한 삭제면 그대로 진행한다."
 )
 print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))

@@ -14,3 +14,4 @@ caddy_data/
 graphify-out/
 .claude/handoff/
 .claude/settings.local.json
+.claude/worktrees/

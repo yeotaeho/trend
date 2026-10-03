@@ -175,6 +175,53 @@ def test_edit_check_ignores_new_files_and_repeats(committed: Path, tmp_path: Pat
     assert json.loads(first)["decision"] == "block" and again == ""
 
 
+def add_worktree(repo: Path, path: Path, branch: str) -> Path:
+    git = ["git", "-C", str(repo), "worktree", "add", "-q", "-b", branch, str(path)]
+    subprocess.run(git, check=True)
+    return path
+
+
+@pytest.mark.parametrize(
+    ("where", "rel", "fragments"),
+    [
+        # 10-02 trend 세션에서 trend-mobile 파일을 고치면 경로 규칙·배포 확인이 빠졌다
+        ("sibling", "mod.py", ["worktree"]),
+        ("sibling", "Caddyfile", ["worktree", "배포"]),  # 배포 판정도 그 worktree 기준 경로로
+        ("nested", "Caddyfile", ["worktree", "배포"]),  # 앱이 만드는 .claude/worktrees/<이름>
+        ("project", "mod.py", None),
+        ("outside", "mod.py", None),  # 레포 밖 파일은 묻지 않는다
+    ],
+)
+def test_guard_asks_before_editing_another_worktree(
+    committed: Path, tmp_path: Path, where: str, rel: str, fragments: list[str] | None
+) -> None:
+    base = {
+        "sibling": lambda: add_worktree(committed, tmp_path / "sibling", "feat/sibling"),
+        "nested": lambda: add_worktree(committed, committed / ".claude/worktrees/x", "feat/x"),
+        "project": lambda: committed,
+        "outside": lambda: tmp_path / "outside",
+    }[where]()
+    payload = {"tool_name": "Edit", "tool_input": {"file_path": str(base / rel)}}
+    out = run_hook("guard.py", payload, cwd=committed, project=committed)
+    if fragments is None:
+        assert out == ""
+    else:
+        hook = json.loads(out)["hookSpecificOutput"]
+        assert hook["permissionDecision"] == "ask"
+        assert all(f in hook["permissionDecisionReason"] for f in fragments)
+
+
+def test_edit_check_compares_with_the_worktree_the_file_is_in(
+    committed: Path, tmp_path: Path
+) -> None:
+    # 원본 세션에서 다른 worktree 파일을 줄여도 멈춘다. 전에는 프로젝트 밖이라 건너뛰었다
+    target = add_worktree(committed, tmp_path / "sibling", "feat/sibling") / "mod.py"
+    target.write_text("x = 0\n", encoding="utf-8")
+    payload = {"tool_name": "Edit", "tool_input": {"file_path": str(target)}}
+    out = run_hook("edit_check.py", payload, cwd=committed, project=committed)
+    assert json.loads(out)["decision"] == "block"
+
+
 def test_router_full_list_then_one_line(tmp_path: Path) -> None:
     first = run_hook("prompt_router.py", {"session_id": "t1"}, tmp=tmp_path)
     assert "[작업 라우터]" in first
