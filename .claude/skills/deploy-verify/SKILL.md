@@ -5,7 +5,7 @@ description: main 머지·PR 머지 뒤 운영 배포가 됐는지 확인하거�
 
 # 운영 배포 확인
 
-> 도메인은 `trend.yeotaeho.kr`, VM 의 배포 폴더는 `~/tech-radar`(코드 없음, `.env` 와 배포 SHA 의 compose·Caddyfile 만)다. VM 접속 정보는 GitHub 시크릿 `VM_HOST`·`VM_USER` 와 같다. 레포가 public 이라 IP 를 파일에 적지 않는다.
+> 도메인은 `trend.yeotaeho.kr`, VM 의 배포 폴더는 `~/tech-radar`(코드 없음, `.env`·`secrets/`(FCM 서비스 계정) 와 배포 SHA 의 compose·Caddyfile 만)다. VM 접속 정보는 GitHub 시크릿 `VM_HOST`·`VM_USER` 와 같다. 레포가 public 이라 IP 를 파일에 적지 않는다.
 
 ## 절차
 
