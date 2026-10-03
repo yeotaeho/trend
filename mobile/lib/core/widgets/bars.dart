@@ -179,7 +179,9 @@ class GateBar extends StatelessWidget {
           child: Container(
             height: 10,
             color: AppColors.track,
+            // 자식 없는 ColoredBox 는 느슨한 높이에서 0 이 된다. stretch 로 막대 높이를 채운다.
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (final gate in segments)
                   Expanded(

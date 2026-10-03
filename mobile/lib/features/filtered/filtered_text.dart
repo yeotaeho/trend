@@ -29,7 +29,7 @@ String groupTitle(FilteredGroup group, FilteredView view) => switch (view) {
   FilteredView.source => group.source?.id ?? group.key,
   FilteredView.kind =>
     group.key == FilteredGroup.unclassifiedKey
-        ? '미분류 (exclude·중복)'
+        ? '미분류 (exclude·중복·오래됨)'
         : '${group.key} · ${(group.kind ?? Kind.unknown).label}',
   FilteredView.gate => (group.gate ?? Gate.unknown).label,
 };
@@ -122,10 +122,11 @@ String _scoreLine(DroppedItem item, FilteredView view) {
 }
 
 /// 요약 카드 하단 안내. 관문별은 디자인이 없어 소스별 문구를 쓴다.
+/// `unclassifiedCount` 는 선별 전 탈락(exclude·dedup·stale) 합이다(계약 4.6). 디자인 문구에 오래됨을 더했다.
 String summaryNote(FilteredSummary summary, FilteredView view) =>
     switch (view) {
       FilteredView.kind =>
-        'kind는 선별 단계 출력이라 exclude·중복 탈락 '
+        'kind는 선별 단계 출력이라 exclude·중복·오래됨 탈락 '
             '${summary.unclassifiedCount}건은 "미분류"로 묶입니다.',
       FilteredView.source || FilteredView.gate =>
         '점수 탈락 중 경계(${formatRange(summary.borderline.range)}) '
