@@ -5,6 +5,7 @@ import '../../core/labels.dart';
 import '../../data/models/models.dart';
 import '../../data/repositories/repositories.dart';
 import '../../data/repositories/repository_providers.dart';
+import '../alert/alert_providers.dart';
 
 /// 목록 조회 조건 — 폴더 칩·`안 읽음` 토글·정렬.
 class SavedQuery {
@@ -92,6 +93,9 @@ class SavedController extends AsyncNotifier<SavedState> {
   /// 조건을 빨리 바꿀 때 늦게 온 이전 응답을 버린다.
   int _generation = 0;
 
+  /// 피드·07 에서 끝난 찜 쓰기 수. 첫 로딩 중에 온 쓰기를 놓치지 않으려고 센다.
+  int _savedWrites = 0;
+
   SavedRepository get _repo => ref.read(savedRepositoryProvider);
 
   SavedState get _current => state.requireValue;
@@ -102,18 +106,36 @@ class SavedController extends AsyncNotifier<SavedState> {
 
   @override
   Future<SavedState> build() async {
+    // 피드·07 에서 찜이 바뀌면 보기 조건은 그대로 두고 목록을 다시 읽는다.
+    ref.listen(savedWritesProvider, (_, _) {
+      _savedWrites++;
+      if (state.hasValue) refresh();
+    });
     final repo = ref.watch(savedRepositoryProvider);
-    final meta = ref.watch(metaRepositoryProvider).meta();
-    final folders = repo.folders();
-    final page = repo.saved();
-    await Future.wait([meta, folders, page]);
-    return SavedState(
-      meta: await meta,
-      folders: await folders,
-      query: const SavedQuery(),
-      items: (await page).items,
-      nextCursor: (await page).nextCursor,
-    );
+    final metaRepository = ref.watch(metaRepositoryProvider);
+    // 첫 로딩 중엔 위 listen 이 refresh 할 수 없다. 읽는 사이 쓰기가 끝났으면
+    // 그 전 목록을 받았을 수 있으니 다시 읽는다.
+    // 결과를 받은 뒤 확인·반환 사이에 await 를 두지 않는다. 그 틈에 끝난 쓰기도 놓친다.
+    while (true) {
+      final writes = _savedWrites;
+      final [
+        meta as Meta,
+        folders as FolderList,
+        page as CursorPage<SavedItem>,
+      ] = await Future.wait<Object>([
+        metaRepository.meta(),
+        repo.folders(),
+        repo.saved(),
+      ]);
+      if (_savedWrites != writes) continue;
+      return SavedState(
+        meta: meta,
+        folders: folders,
+        query: const SavedQuery(),
+        items: page.items,
+        nextCursor: page.nextCursor,
+      );
+    }
   }
 
   // ── 조회 ──
@@ -265,6 +287,9 @@ class SavedController extends AsyncNotifier<SavedState> {
       _insert(item, index);
       rethrow;
     }
+    ref
+        .read(alertUserStatesProvider.notifier)
+        .markSaved(item.alertId, saved: false);
     await _refreshFolders();
     return index;
   }
@@ -273,6 +298,9 @@ class SavedController extends AsyncNotifier<SavedState> {
   /// 다시 찜한 즉시 넣는다. 뒤 PATCH 가 실패해도 서버에 다시 생긴 찜은 목록에 남는다.
   Future<void> undoUnsave(SavedItem item, int index) async {
     _insert(await _repo.save(item.alertId, folderId: item.folder?.id), index);
+    ref
+        .read(alertUserStatesProvider.notifier)
+        .markSaved(item.alertId, saved: true);
     try {
       if (item.memo != null) {
         _replace(
