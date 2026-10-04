@@ -13,7 +13,9 @@ from app.jobs.notify import _explore_candidate
 
 async def test_explore_candidate_picks_highest_in_band_without_summary():
     rules = Rules()  # threshold 0.45 → 후보 구간 [0.35, 0.45)
-    now = datetime.now(UTC)
+    # dev 는 운영 복사본이라 지난 24시간에 실제 후보가 있다.
+    # 먼 미래를 now 로 써 그 항목들을 창 밖으로 뺀다.
+    now = datetime(2100, 1, 1, tzinfo=UTC)
     async with SessionLocal() as s, s.begin():
         src = Source(name="test:explore", type="rss", config={})
         s.add(src)
