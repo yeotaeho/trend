@@ -110,6 +110,6 @@ notify:
     telegram: false
 
 # LLM 하루 예산(Asia/Seoul 달력일). 선별은 triage.daily_cap_calls, 탐색 판정은 notify.explore_judge_cap 이다.
-# 판정 상한은 10-04 까지 .env 의 LLM_DAILY_CAP 이었다. 탐색 판정도 이 판정 예산을 함께 쓴다.
+# 판정 상한은 #37 전까지 .env 의 LLM_DAILY_CAP 이었다. 탐색 판정도 이 판정 예산을 함께 쓴다.
 budget:
   judge_daily_cap: 300

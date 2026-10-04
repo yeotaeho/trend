@@ -37,7 +37,7 @@
 
 ## LLM 예산
 
-모든 호출 직전에 `db/budget.py` 의 `reserve_call` 로 `llm_calls` 행을 먼저 커밋한다. 독립 트랜잭션 + 단일 키 자문 잠금. 일일 상한은 **선별 60 · 판정 300 · 탐색 3**(`rules.yaml` 의 `triage.daily_cap_calls`·`budget.judge_daily_cap`·`notify.explore_judge_cap`, 판정은 10-04 까지 `.env` `LLM_DAILY_CAP` 이었다), 오늘은 Asia/Seoul 달력일. 예산이 바닥나면 항목은 `NEW` 로 남고 다음 실행에서 `decisions`·`summaries` 캐시를 재사용한다. 단일 프로세스 전제.
+모든 호출 직전에 `db/budget.py` 의 `reserve_call` 로 `llm_calls` 행을 먼저 커밋한다. 독립 트랜잭션 + 단일 키 자문 잠금. 일일 상한은 **선별 60 · 판정 300 · 탐색 3**(`rules.yaml` 의 `triage.daily_cap_calls`·`budget.judge_daily_cap`·`notify.explore_judge_cap`, 판정은 #37 전까지 `.env` `LLM_DAILY_CAP` 이었다), 오늘은 Asia/Seoul 달력일. 예산이 바닥나면 항목은 `NEW` 로 남고 다음 실행에서 `decisions`·`summaries` 캐시를 재사용한다. 단일 프로세스 전제.
 
 ## 상태 전이
 

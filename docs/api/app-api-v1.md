@@ -1238,7 +1238,7 @@ v2 계획서 Task 1 의 사용자 식별자와 앱 테이블을 **B1 의 `0004` 
 ```yaml
 onboarding: {done: 8, total: 8}
 personal_model_threshold: 50
-# resurface_unread_after_days 는 10-04 rules.yaml notify.resurface_after_days 로 옮겼다(#37).
+# resurface_unread_after_days 는 #37 에서 rules.yaml notify.resurface_after_days 로 옮겼다.
 screening_relevance_floor: 0.5
 planned_sources: [Reddit, GitHub Trending, X, 요즘IT]
 # policy.taxonomy slug → 앱 표시 라벨. 선별 어휘는 rules.yaml 이 소유하고 여기는 라벨만 둔다.

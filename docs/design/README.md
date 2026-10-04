@@ -153,7 +153,7 @@
 | saved.`alert_id`, `source_name`, `saved_at`, `folder`, `title`, `url` | 찜 | 11 | – | `GitHub Releases · 9월 14일`, `적용해보기` |
 | saved.`memo` | 사용자 입력 | 11 | string? | `trend 레포 python-sdk 올릴 때 OAuth 검증 부분 확인` |
 | saved.`is_read` | 사용자 상태 | 11 | bool | – |
-| `resurface_unread_after_days` | 정책(고정) | 11 | int | 7 |
+| `resurface_unread_after_days` | 설정 | 11 | int | 7 |
 
 ### 사용자 액션 (쓰기 API 후보)
 | 액션 | 화면 |

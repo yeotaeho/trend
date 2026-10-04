@@ -118,7 +118,7 @@
 | `gate_counts.screening` | 09, 10 | 부분 | 선별은 탈락시키지 않음 (triage 는 passed=true, 오류만 false: `app/jobs/pipeline.py:238-256`) | 표시용 분류 (relevance < 0.5 인 점수 탈락 + 선별 오류) | B8 |
 | `gate_counts.score/judgment` | 09, 10 | 있음 | `score`·`llm` 결정 (`app/jobs/pipeline.py:285-318`) | 분류 쿼리 (+ `stale` 구간 추가) | B8 |
 | `gate_counts.cluster_dup` (일곱째 관문) | 09, 10 | 없음 | 클러스터 억제 자체가 없음 | B4 의 `cluster_dup` 알림 행을 걸러짐에 합침, 그룹·목록·복원 포함 (사용자 결정) | B4, B8 |
-| `borderline_count` / `range` | 09, 10 | 있음 | `EXPLORE_BAND` (`app/jobs/notify.py:26`), 후보 조건 (`notify.py:150-184`) | 같은 조건으로 집계 | B8 |
+| `borderline_count` / `range` | 09, 10 | 있음 | `scoring.explore_band` (`config/rules.yaml`), 후보 조건 (`notify.py:150-184`) | 같은 조건으로 집계 | B8 |
 | 그룹 (소스별 / 종류별 / 관문별) | 09, 10 | 없음 | – | `GET /filtered/groups` | B8 |
 | dropped item 필드 | 09, 10 | 있음 | 결정 행들 | `DroppedItem` 조립 (`topics` 포함) | B8 |
 | `exploration_candidate` | 09, 10 | 있음 | 후보 조건 (`app/jobs/notify.py:171-179`) | 항목별 판정 | B8 |
