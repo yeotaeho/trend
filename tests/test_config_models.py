@@ -44,16 +44,19 @@ def test_out_of_range_values_are_rejected(path: tuple[str, str], value: Any):
     data = copy.deepcopy(_rules_yaml())
     section, key = path
     data[section][key] = value
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as exc:
         Rules.model_validate(data)
+    # 키 이름이 틀리면 extra=forbid 로도 실패한다. 범위 검사로 실패했는지 본다.
+    assert {e["type"] for e in exc.value.errors()}.isdisjoint({"extra_forbidden"})
 
 
 @pytest.mark.parametrize(
     "fields", [{"poll_interval_sec": 60}, {"trust_score": 1.5}, {"trust_score": -0.1}]
 )
 def test_source_out_of_range_is_rejected(fields: dict[str, Any]):
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError) as exc:
         SourceConfig.model_validate({"name": "rss:x", "type": "rss", **fields})
+    assert {e["type"] for e in exc.value.errors()}.isdisjoint({"extra_forbidden"})
 
 
 def _leaves(model: type[BaseModel], prefix: str = "") -> Iterator[tuple[str, FieldInfo]]:
