@@ -35,6 +35,9 @@ def test_real_config_files_pass_validation():
         (("scoring", "kind_weights"), {"promo": -0.9}),
         (("scoring", "kind_weights"), {"technique": 0.1}),  # 감점 전용(#32)
         (("policy", "focus_stack"), [f"k{i}" for i in range(51)]),
+        (("notify", "resurface_after_days"), 31),
+        (("scoring", "explore_band"), 0),
+        (("budget", "judge_daily_cap"), -1),
     ],
 )
 def test_out_of_range_values_are_rejected(path: tuple[str, str], value: Any):

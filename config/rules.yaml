@@ -70,6 +70,8 @@ scoring:
   w_fresh: 0.1
   threshold: 0.45
   max_age_hours: 72
+  # 통과선 바로 아래 이 폭(0.35~0.45)에서 떨어진 항목이 탐색 슬롯 후보다. 걸러짐 화면 경계 구간도 같다.
+  explore_band: 0.10
   # 선별이 매긴 kind 별 가점·감점. 곱이 아니라 그대로 더한다. 0 이면 영향 없음.
   # 감점만 둔다. 2026-09-09 실측: technique +0.10 은 arXiv 154건/2.5일을 판정으로 보낸다.
   # release_patch 감점은 신뢰도 1.0 소스에서 관련도 1.0 을 요구하게 되어 두지 않는다.
@@ -97,6 +99,8 @@ notify:
     mid: quiet
     low: feed_only
   explore_enabled: true
+  # 읽지 않은 찜을 이 날수가 지나면 한 번 다시 알린다(FCM 조용한 알림, 회차당 5건). 앱 05 가 덮어쓴다.
+  resurface_after_days: 7
   # 발송 채널 on/off. 연결 정보(.env)가 없는 채널은 앱에서 켤 수 없다.
   # 디스코드는 10-04 껐다. FCM 푸시와 앱 판정 버튼이 대신한다.
   # 운영 알림(send_ops_alert)은 이 스위치와 상관없이 디스코드로 간다.
@@ -104,3 +108,8 @@ notify:
     fcm: true
     discord: false
     telegram: false
+
+# LLM 하루 예산(Asia/Seoul 달력일). 선별은 triage.daily_cap_calls, 탐색 판정은 notify.explore_judge_cap 이다.
+# 판정 상한은 10-04 까지 .env 의 LLM_DAILY_CAP 이었다. 탐색 판정도 이 판정 예산을 함께 쓴다.
+budget:
+  judge_daily_cap: 300

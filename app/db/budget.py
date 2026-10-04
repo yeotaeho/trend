@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import get_rules, get_settings
+from app.config import get_rules
 from app.db.models import LlmCall
 from app.db.session import SessionLocal
 
@@ -38,7 +38,7 @@ def _caps() -> dict[str, int]:
     rules = get_rules()
     return {
         "triage": rules.triage.daily_cap_calls,
-        "judge": get_settings().llm_daily_cap,
+        "judge": rules.budget.judge_daily_cap,
         "explore": rules.notify.explore_judge_cap,
     }
 

@@ -49,5 +49,5 @@ async def get_meta() -> Meta:
             folder_name_max=common.FOLDER_NAME_MAX,
             memo_max=common.MEMO_MAX,
         ),
-        resurface_unread_after_days=app_cfg.resurface_unread_after_days,
+        resurface_unread_after_days=rules.notify.resurface_after_days,
     )

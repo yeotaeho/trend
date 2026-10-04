@@ -40,16 +40,16 @@
       "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/rules.yaml"
     },
     {
-      "key": "app.resurface_unread_after_days",
+      "key": "notify.resurface_after_days",
       "label": "찜 재알림 일수",
-      "category": "app",
+      "category": "notify",
       "value": 7,
       "default": 7,
       "source": "default",
-      "owner": "yaml",
-      "apply": "deploy",
+      "owner": "app",
+      "apply": "next_job",
       "default_changed": false,
-      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/app.yaml"
+      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/rules.yaml"
     },
     {
       "key": "sources.youtube:codingapple.enabled",

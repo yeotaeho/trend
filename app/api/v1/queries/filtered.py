@@ -30,9 +30,10 @@ from app.api.v1.schemas.filtered import (
     GroupSource,
     KindFeedback,
 )
+from app.config import get_rules
 from app.db.feedback import clear_feedback, set_app_feedback
 from app.db.models import Decision, Feedback, Item, Notification, Source
-from app.jobs.notify import EXPLORE_BAND, explore_candidate
+from app.jobs.notify import explore_candidate
 from app.notify.base import APP_CHANNEL
 from app.schemas import ItemStatus, Kind, Level, Stage
 
@@ -254,8 +255,9 @@ def gate_counts(items: Sequence[DroppedItem]) -> dict[Gate, int]:
 
 
 def borderline_range(threshold: float) -> tuple[float, float]:
-    """탐색 슬롯 후보 폭과 같다. 0.45 − 0.10 이 0.35000000000000003 이 되지 않게 자른다."""
-    return round(threshold - EXPLORE_BAND, 6), threshold
+    """탐색 슬롯 후보 폭(rules.scoring.explore_band)과 같다. 0.45 − 0.10 이 0.35000000000000003 이
+    되지 않게 자른다."""
+    return round(threshold - get_rules().scoring.explore_band, 6), threshold
 
 
 def summarize(

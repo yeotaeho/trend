@@ -199,7 +199,16 @@ class RestoreResult(BaseModel):
 
 # 키의 첫 마디. app 은 config/app.yaml, sources 는 config/sources.yaml, server 는 VM .env 다.
 SettingCategory = Literal[
-    "policy", "exclude", "dedupe", "triage", "scoring", "notify", "app", "sources", "server"
+    "policy",
+    "exclude",
+    "dedupe",
+    "triage",
+    "scoring",
+    "notify",
+    "budget",
+    "app",
+    "sources",
+    "server",
 ]
 
 

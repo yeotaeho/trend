@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.queries.alerts import alert_title, first_delivery
-from app.config import get_app_config, get_rules, get_settings
+from app.config import get_rules, get_settings
 from app.db.models import Bookmark, Item, Summary
 from app.db.session import session_scope
 from app.db.users import DEFAULT_USER_ID
@@ -18,6 +18,10 @@ from app.notify.fcm import FcmNotifier
 from app.notify.policy import in_quiet_hours
 
 log = get_logger(__name__)
+
+# 한 회차(1시간)에 보내는 최대 건수. 재알림은 push 상한을 거치지 않아 일수를 줄였을 때
+# 밀린 찜이 한꺼번에 나가지 않게 끊는다.
+RESURFACE_PER_ROUND = 5
 
 
 async def _claim(
@@ -69,10 +73,10 @@ async def run_resurface(notifier: FcmNotifier | None = None) -> int:
     now = datetime.now(UTC)
     if in_quiet_hours(cfg, now):
         return 0
-    saved_before = now - timedelta(days=get_app_config().resurface_unread_after_days)
+    saved_before = now - timedelta(days=cfg.resurface_after_days)
     notifier = notifier or FcmNotifier()
     sent = 0
-    while True:
+    while sent < RESURFACE_PER_ROUND:
         async with session_scope() as session:
             claimed = await _claim(session, DEFAULT_USER_ID, saved_before)
             if claimed is None:

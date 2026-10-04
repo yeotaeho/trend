@@ -1,4 +1,4 @@
-# 재알림 잡 테스트 — FCM 꺼짐·미연결·무음 시간 건너뜀, 한 번만 보내고 기록, 실패 시 멈춤
+# 재알림 잡 테스트 — FCM 꺼짐·미연결·무음 건너뜀, 한 번만 보내고 기록, 실패 시 멈춤, 회차당 상한
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from app.config import AppConfig, ChannelsConfig, NotifyConfig
+from app.config import ChannelsConfig, NotifyConfig
 from app.jobs import resurface
 
 NEVER_QUIET = {"quiet_start_hour": 0, "quiet_end_hour": 0}
@@ -67,7 +67,7 @@ def setup(monkeypatch: pytest.MonkeyPatch):
         quiet: bool = False,
         **notify: Any,
     ) -> Bookmarks:
-        cfg = NotifyConfig(channels=ChannelsConfig(fcm=fcm_on), **(notify or NEVER_QUIET))
+        cfg = NotifyConfig(channels=ChannelsConfig(fcm=fcm_on), **(NEVER_QUIET | notify))
         # 잡이 실제 시각을 쓰고 무음 시간은 0~23시라 '항상 무음' 을 값으로 만들 수 없다.
         # 그래서 무음 판정 자체를 고정한다.
         if quiet:
@@ -76,7 +76,6 @@ def setup(monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setattr(resurface, "get_rules", lambda: SimpleNamespace(notify=cfg))
         monkeypatch.setattr(resurface, "get_settings", lambda: None)
         monkeypatch.setattr(resurface, "channel_connected", lambda _s: {"fcm": connected})
-        monkeypatch.setattr(resurface, "get_app_config", lambda: AppConfig())
         monkeypatch.setattr(resurface, "session_scope", _scope)
         monkeypatch.setattr(resurface, "_claim", table.claim)
         monkeypatch.setattr(resurface, "_title", _title)
@@ -132,3 +131,23 @@ async def test_failure_stops_run_without_recording(setup):
     # 기기가 붙으면 다음 회차에 보낸다.
     fcm.fail = False
     assert await resurface.run_resurface(fcm) == 3
+
+
+async def test_cutoff_follows_rules_days(setup):
+    # 재알림 일수는 앱 소유 rules.notify.resurface_after_days 다(#37, 예전 app.yaml).
+    table = setup(0, resurface_after_days=3)
+    before = datetime.now(UTC)
+    await resurface.run_resurface(FakeFcm())
+    after = datetime.now(UTC)
+    assert before - timedelta(days=3) <= table.cutoffs[0] <= after - timedelta(days=3)
+
+
+async def test_one_run_sends_at_most_the_per_round_cap(setup):
+    # 재알림은 push 상한을 거치지 않는다. 밀린 찜이 한꺼번에 나가지 않게 회차마다 끊는다.
+    table = setup(12)
+    fcm = FakeFcm()
+
+    assert await resurface.run_resurface(fcm) == resurface.RESURFACE_PER_ROUND == 5
+    assert await resurface.run_resurface(fcm) == 5
+    assert await resurface.run_resurface(fcm) == 2
+    assert all(row.resurfaced_at is not None for row in table.rows)
