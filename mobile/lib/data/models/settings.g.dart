@@ -25,6 +25,11 @@ InterestsSettings _$InterestsSettingsFromJson(Map<String, dynamic> json) =>
       updatedAt: json['updated_at'] == null
           ? null
           : DateTime.parse(json['updated_at'] as String),
+      overridden:
+          (json['overridden'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
     );
 
 Map<String, dynamic> _$InterestsSettingsToJson(InterestsSettings instance) =>
@@ -63,6 +68,12 @@ NotificationSettings _$NotificationSettingsFromJson(
   updatedAt: json['updated_at'] == null
       ? null
       : DateTime.parse(json['updated_at'] as String),
+  clusterDailyCap: (json['cluster_daily_cap'] as num?)?.toInt() ?? 1,
+  overridden:
+      (json['overridden'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      [],
 );
 
 Map<String, dynamic> _$NotificationSettingsToJson(
@@ -72,9 +83,11 @@ Map<String, dynamic> _$NotificationSettingsToJson(
   'daily_push_cap': instance.dailyPushCap,
   'quiet_hours': instance.quietHours.toJson(),
   'dedupe_same_issue_daily': instance.dedupeSameIssueDaily,
+  'cluster_daily_cap': instance.clusterDailyCap,
   'delivery_by_importance': instance.deliveryByImportance.toJson(),
   'exploration_slot': instance.explorationSlot.toJson(),
   'updated_at': instance.updatedAt?.toIso8601String(),
+  'overridden': instance.overridden,
 };
 
 NotifyChannels _$NotifyChannelsFromJson(Map<String, dynamic> json) =>
@@ -239,4 +252,53 @@ Map<String, dynamic> _$SettingItemToJson(SettingItem instance) =>
       'apply': instance.apply,
       'default_changed': instance.defaultChanged,
       'edit_url': instance.editUrl,
+    };
+
+SettingChange _$SettingChangeFromJson(Map<String, dynamic> json) =>
+    SettingChange(
+      key: json['key'] as String,
+      old: json['old'],
+      newValue: json['new'],
+      defaultValue: json['default'],
+    );
+
+Map<String, dynamic> _$SettingChangeToJson(SettingChange instance) =>
+    <String, dynamic>{
+      'key': instance.key,
+      'old': instance.old,
+      'new': instance.newValue,
+      'default': instance.defaultValue,
+    };
+
+SettingsRevision _$SettingsRevisionFromJson(Map<String, dynamic> json) =>
+    SettingsRevision(
+      id: json['id'] as String,
+      origin: json['origin'] as String,
+      note: json['note'] as String?,
+      changes: (json['changes'] as List<dynamic>)
+          .map((e) => SettingChange.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      createdAt: DateTime.parse(json['created_at'] as String),
+    );
+
+Map<String, dynamic> _$SettingsRevisionToJson(SettingsRevision instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'origin': instance.origin,
+      'note': instance.note,
+      'changes': instance.changes.map((e) => e.toJson()).toList(),
+      'created_at': instance.createdAt.toIso8601String(),
+    };
+
+RevisionRestore _$RevisionRestoreFromJson(
+  Map<String, dynamic> json,
+) => RevisionRestore(
+  revision: SettingsRevision.fromJson(json['revision'] as Map<String, dynamic>),
+  dropped: (json['dropped'] as List<dynamic>).map((e) => e as String).toList(),
+);
+
+Map<String, dynamic> _$RevisionRestoreToJson(RevisionRestore instance) =>
+    <String, dynamic>{
+      'revision': instance.revision.toJson(),
+      'dropped': instance.dropped,
     };

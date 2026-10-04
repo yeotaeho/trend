@@ -1,0 +1,32 @@
+{
+  "items": [
+    {
+      "id": "12",
+      "origin": "app",
+      "note": null,
+      "changes": [
+        {"key": "notify.daily_push_cap", "old": 15, "new": 20, "default": 15}
+      ],
+      "created_at": "2026-10-04T12:20:00Z"
+    },
+    {
+      "id": "11",
+      "origin": "app",
+      "note": null,
+      "changes": [
+        {"key": "sources.youtube:codingapple.enabled", "old": true, "new": false, "default": true}
+      ],
+      "created_at": "2026-10-03T09:05:00Z"
+    },
+    {
+      "id": "10",
+      "origin": "reset",
+      "note": null,
+      "changes": [
+        {"key": "scoring.kind_weights.survey", "old": -0.2, "new": -0.15, "default": -0.15}
+      ],
+      "created_at": "2026-10-02T21:40:00Z"
+    }
+  ],
+  "next_cursor": null
+}

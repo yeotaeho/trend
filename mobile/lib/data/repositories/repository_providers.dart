@@ -30,6 +30,14 @@ final settingsRepositoryProvider = Provider<SettingsRepository>(
   (ref) => _pick(ref, FixtureSettingsRepository.new, ApiSettingsRepository.new),
 );
 
+final settingsHistoryRepositoryProvider = Provider<SettingsHistoryRepository>(
+  (ref) => _pick(
+    ref,
+    FixtureSettingsHistoryRepository.new,
+    ApiSettingsHistoryRepository.new,
+  ),
+);
+
 final sourceRepositoryProvider = Provider<SourceRepository>(
   (ref) => _pick(ref, FixtureSourceRepository.new, ApiSourceRepository.new),
 );
