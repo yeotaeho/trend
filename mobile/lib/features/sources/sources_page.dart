@@ -1,4 +1,4 @@
-// 06 수집 소스 화면 — Stat 3열, 그룹별 SourceRow(상태 줄·trust·토글), 미착수 칩. `+` 는 GitHub 편집 링크.
+// 06 수집 소스 화면 — Stat 3열, 그룹별 SourceRow(상태 줄·trust·토글·되돌리기), 미착수 칩. `+` 는 GitHub 편집 링크.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -67,21 +67,55 @@ class _Body extends ConsumerWidget {
 
   final SourcesResponse response;
 
+  /// 저장하면 되돌리기 스낵바를 띄운다. 끌 때는 멈추는 일을 한 줄 덧붙인다. [undo] 는 되돌리기 저장이다.
   Future<void> _toggle(
     BuildContext context,
     WidgetRef ref,
     Source source,
-    bool enabled,
-  ) async {
+    bool enabled, {
+    bool undo = false,
+  }) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
       await ref
           .read(sourcesProvider.notifier)
           .setEnabled(source.id, enabled: enabled);
     } on ApiException catch (error) {
-      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error.message)));
+      return;
     }
+    final message = undo
+        ? '되돌렸습니다.'
+        : enabled
+        ? '${source.displayName} 을(를) 켰습니다.'
+        : '${source.displayName} 을(를) 껐습니다. ${_stops(source)}';
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          persist: false,
+          action: undo
+              ? null
+              : SnackBarAction(
+                  label: '되돌리기',
+                  textColor: AppColors.primaryMuted,
+                  onPressed: () {
+                    if (context.mounted) {
+                      _toggle(context, ref, source, !enabled, undo: true);
+                    }
+                  },
+                ),
+        ),
+      );
   }
+
+  /// 꺼진 소스는 파이프라인이 대기 항목을 집지 않고(jobs/pipeline.py), GitHub 웹훅도 적재하지 않는다(api/github.py).
+  static String _stops(Source source) => source.type == SourceType.githubRelease
+      ? '대기 중인 항목 처리와 GitHub 웹훅 적재도 멈춥니다.'
+      : '대기 중인 항목 처리도 멈춥니다.';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

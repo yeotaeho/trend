@@ -44,13 +44,18 @@ Future<_RecordingSettings> _pump(
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
 
-  final fixture = FixtureSettingsRepository(FixtureStore(delay: delay));
+  final store = FixtureStore(delay: delay);
+  final fixture = FixtureSettingsRepository(store);
   // rootBundle 은 fake async 밖에서만 끝나므로 fixture 를 먼저 읽어 둔다.
   await tester.runAsync(fixture.notifications);
   final settings = _RecordingSettings(fixture);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [settingsRepositoryProvider.overrideWithValue(settings)],
+      overrides: [
+        settingsRepositoryProvider.overrideWithValue(settings),
+        // push 상한 범위는 /meta 에서 읽는다. 같은 store 라 이미 읽혀 있다.
+        metaRepositoryProvider.overrideWithValue(FixtureMetaRepository(store)),
+      ],
       child: MaterialApp(
         theme: buildAppTheme(),
         home: const NotificationSettingsPage(),
@@ -170,7 +175,8 @@ void main() {
         'exploration_slot': {'enabled': false},
       },
     ]);
-    expect(_toggleOf(tester, '같은 이슈 하루 1건').value, isFalse);
+    // 끄면 상한이 0 이라 라벨에서 숫자가 빠진다.
+    expect(_toggleOf(tester, '같은 이슈 하루 상한').value, isFalse);
     expect(_toggleOf(tester, '탐색 슬롯').value, isFalse);
   });
 
@@ -271,7 +277,7 @@ void main() {
       );
     });
 
-    test('무음 시간은 시작과 끝이 같으면 없음', () {
+    test('무음 시간은 시작과 끝이 같으면 무음 끔', () {
       expect(
         quietHoursLabel(
           const QuietHours(start: '00:00', end: '07:00', timezone: 'UTC'),
@@ -282,8 +288,60 @@ void main() {
         quietHoursLabel(
           const QuietHours(start: '00:00', end: '00:00', timezone: 'UTC'),
         ),
-        '없음',
+        '무음 끔',
       );
     });
+  });
+
+  testWidgets('저장하면 되돌리기 스낵바가 뜨고 누르면 이전 값으로 PATCH 한다', (tester) async {
+    final settings = await _pump(tester);
+
+    await tester.tap(find.byWidget(_toggleOf(tester, '탐색 슬롯')));
+    await tester.pumpAndSettle();
+    expect(find.text('저장했습니다.'), findsOneWidget);
+
+    await tester.tap(find.text('되돌리기'));
+    await tester.pumpAndSettle();
+
+    expect(settings.patches, [
+      {
+        'exploration_slot': {'enabled': false},
+      },
+      {
+        'exploration_slot': {'enabled': true},
+      },
+    ]);
+    expect(_toggleOf(tester, '탐색 슬롯').value, isTrue);
+    expect(find.text('되돌렸습니다.'), findsOneWidget);
+  });
+
+  testWidgets('보낼 채널이 모두 꺼지면 저장 전에 묻고, 취소하면 보내지 않는다', (tester) async {
+    final settings = await _pump(tester);
+
+    // FCM 을 꺼도 디스코드가 남아 묻지 않는다. 찜 재알림 멈춤은 상태 줄에만 뜬다.
+    await tester.tap(find.byWidget(_toggleOf(tester, '앱 푸시 (FCM)')));
+    await tester.pumpAndSettle();
+    expect(find.text('이대로 저장할까요?'), findsNothing);
+    expect(find.byKey(const ValueKey('blocked-resurface_off')), findsOneWidget);
+
+    await tester.tap(find.byWidget(_toggleOf(tester, 'Discord 채널')));
+    await tester.pumpAndSettle();
+    expect(find.text('이대로 저장할까요?'), findsOneWidget);
+    expect(find.text(DeliveryBlocked.noChannel.label), findsOneWidget);
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+    expect(settings.patches, hasLength(1));
+    expect(_toggleOf(tester, 'Discord 채널').value, isTrue);
+
+    await tester.tap(find.byWidget(_toggleOf(tester, 'Discord 채널')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('저장'));
+    await tester.pumpAndSettle();
+    expect(settings.patches.last, {
+      'channels': {
+        'discord': {'enabled': false},
+      },
+    });
+    expect(find.byKey(const ValueKey('blocked-no_channel')), findsOneWidget);
   });
 }

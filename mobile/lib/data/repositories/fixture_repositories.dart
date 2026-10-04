@@ -432,8 +432,13 @@ class FixtureSettingsRepository implements SettingsRepository {
         }
       }
     }
+    final merged = deepMerge(current, patch);
+    // 서버는 토글을 상한 숫자로 옮긴다(켜면 YAML 값). fixture 의 YAML 값은 1 이다.
+    if (patch['dedupe_same_issue_daily'] case final bool on) {
+      merged['cluster_daily_cap'] = on ? 1 : 0;
+    }
     return _s._notifications = NotificationSettings.fromJson({
-      ...deepMerge(current, patch),
+      ...merged,
       'updated_at': _now().toIso8601String(),
     });
   });

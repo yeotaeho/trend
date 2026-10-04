@@ -150,6 +150,19 @@ enum DeliveryChoice {
   final String label;
 }
 
+/// 설정 조합 때문에 알림이 막히는 사유 (계약 4.0 `delivery_blocked`). 라벨은 05 상태 줄 문장이다.
+@JsonEnum(valueField: 'value')
+enum DeliveryBlocked {
+  noChannel('no_channel', '보낼 수 있는 채널이 없어 알림이 피드에만 남거나 발송이 실패합니다.'),
+  noInstant('no_instant', '즉시 구간이 없어 push 가 오지 않습니다.'),
+  quietLong('quiet_long', '무음 시간이 20시간 이상입니다.'),
+  resurfaceOff('resurface_off', '앱 푸시를 쓸 수 없어 찜 재알림이 멈춥니다.');
+
+  const DeliveryBlocked(this.value, this.label);
+  final String value;
+  final String label;
+}
+
 @JsonEnum(valueField: 'value')
 enum NotifyChannel {
   fcm('fcm', '앱 푸시 (FCM)'),

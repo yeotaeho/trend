@@ -226,4 +226,20 @@ void main() {
       ));
     });
   });
+
+  testWidgets('끄면 멈추는 일을 알리고, 되돌리기로 다시 켠다', (tester) async {
+    final fixture = await _pump(tester);
+
+    await tester.tap(find.byWidget(_toggleOf(tester, 'rss:openai')));
+    await tester.pumpAndSettle();
+    expect(find.text('OpenAI 을(를) 껐습니다. 대기 중인 항목 처리도 멈춥니다.'), findsOneWidget);
+
+    await tester.tap(find.text('되돌리기'));
+    await tester.pumpAndSettle();
+
+    expect(_toggleOf(tester, 'rss:openai').value, isTrue);
+    expect(find.text('되돌렸습니다.'), findsOneWidget);
+    final saved = await fixture.sources();
+    expect(saved.sources.firstWhere((s) => s.id == 'rss:openai').enabled, true);
+  });
 }
