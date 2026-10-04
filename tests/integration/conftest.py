@@ -12,6 +12,9 @@ from app.config import get_settings  # noqa: E402  (환경 확인 뒤에 앱을 
 from app.db.session import engine  # noqa: E402
 
 # 테이블을 비우는 픽스처가 있다. 엔진이 다른 URL(운영 DB)을 보고 있으면 절대 돌리지 않는다.
+# tests/conftest.py 가 DATABASE_URL 을 TEST_DATABASE_URL 로 덮어쓰므로
+# 이 비교는 그 덮어쓰기가 살아 있는지만 본다. TEST_DATABASE_URL 자체가 운영이면 막지 못하니
+# 실행 전에 호스트를 대조한다(docs/database.md).
 if get_settings().database_url != _TEST_URL:
     pytest.skip(
         "DATABASE_URL 이 TEST_DATABASE_URL 과 다르다. 운영 DB 보호를 위해 건너뛴다",
