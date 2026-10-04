@@ -1,4 +1,4 @@
-# 사용자 설정 저장소 — user_prefs 행 읽기·upsert, 저장 후 유효 설정 교체, 기동 시 덮어쓰기 적재
+# 사용자 설정 저장소 — user_prefs 읽기·차이만 저장(소스 행·유효 설정 같이), 기동 시 적재
 
 from __future__ import annotations
 
@@ -9,8 +9,14 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import sanitize_overlay, set_prefs_overlay, validate_overlay
-from app.db.models import User, UserPrefs
+from app.config import (
+    get_source_configs,
+    prune_overlay,
+    sanitize_overlay,
+    set_prefs_overlay,
+    validate_overlay,
+)
+from app.db.models import Source, User, UserPrefs
 from app.db.session import session_scope
 from app.db.users import DEFAULT_USER_ID
 
@@ -64,16 +70,37 @@ async def upsert_prefs(session: AsyncSession, user_id: int, data: dict[str, Any]
 
 
 async def save_prefs(session: AsyncSession, user_id: int, data: dict[str, Any]) -> datetime:
-    """검증 → 저장 → 커밋 → 유효 설정 교체. 틀린 설정은 ValueError 로 저장 전에 막는다.
+    """검증 → YAML 과 같은 값 지우기 → 저장 → 소스 행 맞추기 → 커밋 → 유효 설정 교체.
 
-    커밋 뒤에 갈아끼운다. 먼저 바꾸면 커밋이 실패한 설정이 프로세스에 남는다.
+    data 는 prefs_for_update 로 잠그고 읽은 값에 바꿀 것을 합친 전체다. 앱 소유가 아닌 키나
+    틀린 값은 ValueError 로 저장 전에 막는다. 커밋 뒤에 갈아끼운다. 먼저 바꾸면 커밋이 실패한
+    설정이 프로세스에 남는다.
     """
     validate_overlay(data)
+    data = prune_overlay(data)
     updated_at = await upsert_prefs(session, user_id, data)
+    default_user = user_id == DEFAULT_USER_ID  # 유효 설정과 소스 행은 기본 사용자 것 하나뿐이다
+    if default_user:
+        await _sync_source_rows(session, data)
     await session.commit()
-    if user_id == DEFAULT_USER_ID:  # 프로세스 유효 설정은 기본 사용자 것 하나뿐이다
+    if default_user:
         set_prefs_overlay(data, updated_at)
     return updated_at
+
+
+async def source_rows(session: AsyncSession, names: list[str]) -> dict[str, Source]:
+    rows = await session.execute(select(Source).where(Source.name.in_(names)))
+    return {s.name: s for s in rows.scalars()}
+
+
+async def _sync_source_rows(session: AsyncSession, data: dict[str, Any]) -> None:
+    """06 토글을 sources 행에 맞춘다. 덮어쓰기가 없으면 YAML 값이다(sync_sources 와 같은 규칙)."""
+    configs = get_source_configs()
+    rows = await source_rows(session, [c.name for c in configs])
+    overrides = source_overrides(data)
+    for cfg in configs:
+        if row := rows.get(cfg.name):
+            row.enabled = overrides.get(cfg.name, cfg.enabled)
 
 
 def source_overrides(data: dict[str, Any]) -> dict[str, bool]:

@@ -1,4 +1,4 @@
-# 앱 API 테스트 공통 — 서버 토큰을 고정한 클라이언트, 인증 헤더, DB 없는 세션·user_prefs 가짜
+# 앱 API 테스트 공통 — 토큰 고정 클라이언트, 인증 헤더, DB 없는 세션·user_prefs·sources 행 가짜
 
 from __future__ import annotations
 
@@ -42,12 +42,14 @@ class FakeSession:
 
 
 class PrefsStore:
-    """user_prefs 한 행. fetch_prefs·upsert_prefs 자리에 끼운다 (save_prefs 는 진짜를 쓴다)."""
+    """user_prefs 한 행과 sources 행. fetch_prefs·upsert_prefs·source_rows 자리에 끼운다
+    (save_prefs 는 진짜를 쓴다)."""
 
     def __init__(self) -> None:
         self.data: dict[str, Any] | None = None
         self.updated_at: datetime | None = None
         self.saves = 0
+        self.rows: dict[str, Any] = {}
 
     async def fetch(self, _session: Any, _user_id: int, *, for_update: bool = False) -> Any:
         if self.data is None:
@@ -59,6 +61,9 @@ class PrefsStore:
         self.data = copy.deepcopy(data)
         self.updated_at = datetime(2026, 9, 24, 2, 18, self.saves, tzinfo=UTC)
         return self.updated_at
+
+    async def source_rows(self, _session: Any, names: list[str]) -> dict[str, Any]:
+        return {n: self.rows[n] for n in names if n in self.rows}
 
 
 @pytest.fixture
@@ -78,4 +83,5 @@ def store(monkeypatch: pytest.MonkeyPatch, session: FakeSession) -> PrefsStore:
     fake = PrefsStore()
     monkeypatch.setattr(prefs, "fetch_prefs", fake.fetch)
     monkeypatch.setattr(prefs, "upsert_prefs", fake.upsert)
+    monkeypatch.setattr(prefs, "source_rows", fake.source_rows)
     return fake

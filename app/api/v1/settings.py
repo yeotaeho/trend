@@ -1,4 +1,4 @@
-# 화면 04·05 설정 — 관심사·알림 설정 조회·저장. 저장은 user_prefs 덮어쓰기 + 유효 설정 즉시 교체
+# 화면 04·05 설정 — 관심사·알림 조회·저장, 키 되돌리기. 저장 즉시 유효 설정을 갈아끼운다
 
 from __future__ import annotations
 
@@ -31,10 +31,12 @@ from app.config import (
     ChannelsConfig,
     Rules,
     Settings,
+    app_key_path,
     effective_rules,
     get_rules,
     get_settings,
     merge_overlay,
+    without_key,
     yaml_rules,
 )
 from app.db import prefs
@@ -156,7 +158,7 @@ def _require_connected(channels: ChannelsIn, current: ChannelsConfig) -> None:
 
 
 def _notify_patch(body: NotificationSettingsIn) -> dict[str, Any]:
-    """요청 필드 → rules.notify 덮어쓰기 키. dedupe_same_issue_daily 는 따로 옮긴다."""
+    """요청 필드 → rules.notify 덮어쓰기 키."""
     patch: dict[str, Any] = {}
     if body.channels:
         patch["channels"] = {name: c.enabled for name, c in body.channels if c is not None}
@@ -171,19 +173,11 @@ def _notify_patch(body: NotificationSettingsIn) -> dict[str, Any]:
         patch["delivery_by_importance"] = body.delivery_by_importance.model_dump(exclude_none=True)
     if body.exploration_slot:
         patch["explore_enabled"] = body.exploration_slot.enabled
+    if body.dedupe_same_issue_daily is not None:
+        # 토글은 상한 숫자를 바꾸지 않는다. 끄면 0, 켜면 YAML 값(0 이면 1)이다.
+        on = yaml_rules().notify.cluster_daily_cap or 1
+        patch["cluster_daily_cap"] = on if body.dedupe_same_issue_daily else 0
     return patch
-
-
-def _with_cluster_cap(data: dict[str, Any], dedupe: bool) -> dict[str, Any]:
-    """토글은 상한 숫자를 바꾸지 않는다. 끄면 0, 켜면 YAML 값(0 이면 1)으로 돌아간다."""
-    notify = dict(data.get("notify", {}))
-    if not dedupe:
-        notify["cluster_daily_cap"] = 0
-    elif yaml_rules().notify.cluster_daily_cap >= 1:
-        notify.pop("cluster_daily_cap", None)
-    else:
-        notify["cluster_daily_cap"] = 1
-    return {**data, "notify": notify}
 
 
 @router.get("/notifications")
@@ -199,9 +193,16 @@ async def patch_notifications(
     data = await prefs.prefs_for_update(session, user_id)
     if body.channels:
         _require_connected(body.channels, effective_rules(data).notify.channels)
-    if patch := _notify_patch(body):
-        data = merge_overlay(data, {"notify": patch})
-    if body.dedupe_same_issue_daily is not None:
-        data = _with_cluster_cap(data, body.dedupe_same_issue_daily)
+    data = merge_overlay(data, {"notify": _notify_patch(body)})
     updated_at = await save_or_422(session, user_id, data)
     return await _notifications(session, user_id, updated_at)
+
+
+@router.delete("/overrides/{key}", status_code=204)
+async def delete_override(key: str, session: Session, user_id: UserId) -> None:
+    """앱이 덮어쓴 키 하나를 YAML 값으로 되돌린다. 덮어쓰지 않은 키여도 204 다."""
+    path = app_key_path(key)
+    if path is None:
+        raise ApiError(404, "not_found", "되돌릴 수 있는 설정 키가 아닙니다.", {"key": key})
+    data = await prefs.prefs_for_update(session, user_id)
+    await save_or_422(session, user_id, without_key(data, path))

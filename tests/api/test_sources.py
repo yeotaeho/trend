@@ -1,4 +1,4 @@
-# 수집 소스 API 테스트 — GET /sources 는 계약 4.5 예시 모양, PATCH 는 행과 user_prefs 를 같이 쓴다
+# 수집 소스 API 테스트 — GET 은 계약 4.5 예시 모양, PATCH·되돌리기는 행과 user_prefs 를 같이 쓴다
 
 from __future__ import annotations
 
@@ -91,6 +91,7 @@ def rows(monkeypatch: pytest.MonkeyPatch, store: PrefsStore) -> dict[str, Source
     monkeypatch.setattr(queries, "sources_by_name", by_name)
     monkeypatch.setattr(queries, "items_collected", collected)
     monkeypatch.setattr(budget, "usage_today", usage)
+    store.rows = table  # 설정 저장이 맞추는 행도 같은 객체다
     return table
 
 
@@ -134,6 +135,25 @@ def test_patch_source_writes_row_and_prefs(client: TestClient, rows, store: Pref
         "sources": {"rss:anthropic": {"enabled": False}},
     }
     assert session.commits == 1
+
+
+def test_delete_source_override_restores_yaml_row(client: TestClient, rows, store: PrefsStore):
+    client.patch("/api/v1/sources/rss:anthropic", headers=AUTH, json={"enabled": False})
+
+    res = client.delete("/api/v1/settings/overrides/sources.rss:anthropic.enabled", headers=AUTH)
+
+    assert res.status_code == 204, res.text
+    assert rows["rss:anthropic"].enabled is True  # sources.yaml 값
+    assert store.data == {}
+
+
+def test_patch_back_to_yaml_value_clears_override(client: TestClient, rows, store: PrefsStore):
+    client.patch("/api/v1/sources/rss:anthropic", headers=AUTH, json={"enabled": False})
+
+    res = client.patch("/api/v1/sources/rss:anthropic", headers=AUTH, json={"enabled": True})
+
+    assert res.json()["enabled"] is True
+    assert store.data == {}  # YAML 과 같아 덮어쓰기가 남지 않는다
 
 
 @pytest.mark.parametrize("source_id", ["rss:unknown", "rss:not-synced-yet"])

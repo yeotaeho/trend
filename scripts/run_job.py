@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 
+from app.db.prefs import load_prefs_overlay
 from app.db.session import engine
 from app.jobs.collect import run_all_sources
 from app.jobs.feedback import run_feedback
@@ -25,6 +26,8 @@ JOBS = {
 async def main(names: list[str]) -> None:
     configure_logging()
     try:
+        # 기동과 같은 순서다. 앱에서 저장한 설정(꺼 둔 채널 등)으로 잡을 돌린다.
+        await load_prefs_overlay()
         for name in names:
             result = await JOBS[name]()
             print(f"{name}: {len(result) if isinstance(result, list) else result}")

@@ -85,15 +85,13 @@ async def list_sources(session: Session) -> schemas.SourceList:
 async def patch_source(
     source_id: str, body: schemas.SourcePatch, session: Session, user_id: UserId
 ) -> schemas.Source:
-    """sources.enabled 와 user_prefs.data.sources 를 같이 쓴다. 재기동해도 유지된다."""
+    """user_prefs.data.sources 에 쓰고 같은 저장에서 sources 행을 맞춘다. 재기동해도 유지된다."""
     row = None
     if source_id in _yaml_names():
         row = (await queries.sources_by_name(session, [source_id])).get(source_id)
     if row is None:
         raise ApiError(404, "not_found", "소스를 찾을 수 없습니다.", {"source_id": source_id})
-    # 설정 잠금을 먼저 잡는다. 행을 먼저 고치면 자동 flush 로 소스 행을 잠근 채 기다린다.
     data = await prefs.prefs_for_update(session, user_id)
-    row.enabled = body.enabled
     data = merge_overlay(data, {"sources": {source_id: {"enabled": body.enabled}}})
     await save_or_422(session, user_id, data)
     return to_view(row)
