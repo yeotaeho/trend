@@ -7,7 +7,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Body, Query, Response
 
 from app.api.v1.alerts import existing_item_id
-from app.api.v1.deps import Session, UserId
+from app.api.v1.deps import Search, Session, UserId
 from app.api.v1.errors import ApiError
 from app.api.v1.pagination import Paging
 from app.api.v1.queries.saved import (
@@ -102,6 +102,7 @@ async def get_saved_list(
     session: Session,
     user_id: UserId,
     paging: Paging,
+    q: Search,
     folder_id: Annotated[str | None, Query()] = None,
     unread_only: Annotated[bool, Query()] = False,
     sort: Annotated[SavedSort, Query()] = SavedSort.SAVED_DESC,
@@ -113,7 +114,7 @@ async def get_saved_list(
     elif folder_id is not None:
         folder = await existing_folder_id(session, user_id, folder_id)
     items, next_cursor = await saved_page(
-        session, user_id, folder, unread_only=unread_only, sort=sort, page=paging
+        session, user_id, folder, unread_only=unread_only, sort=sort, page=paging, q=q
     )
     return Page[SavedItem](items=items, next_cursor=next_cursor)
 

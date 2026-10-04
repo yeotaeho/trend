@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Row, Select, Subquery, and_, func, select
+from sqlalchemy import ColumnElement, Row, Select, Subquery, and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.schemas.alerts import (
@@ -111,6 +111,21 @@ def source_display_name(name: str, config: dict[str, Any] | None) -> str:
 def alert_title(sent_title: str | None, title_ko: str | None, item_title: str) -> str:
     """발송한 제목(형제 버전 병기) → 요약 제목 → 원문 제목."""
     return sent_title or title_ko or item_title
+
+
+def matches_search(q: str, delivery: Subquery) -> ColumnElement[bool]:
+    """검색어를 카드 제목·요약의 원천 다섯 곳에서 대소문자 무시 부분 일치로 찾는다.
+
+    `%`·`_` 는 와일드카드가 아니라 글자다(autoescape). 피드와 찜이 같이 쓴다.
+    """
+    columns = (
+        delivery.c.title,
+        Summary.title_ko,
+        Item.title,
+        Summary.summary_ko,
+        Item.summary_raw,
+    )
+    return or_(*(column.icontains(q, autoescape=True) for column in columns))
 
 
 def topics_of(details: dict[str, Any] | None) -> list[str]:

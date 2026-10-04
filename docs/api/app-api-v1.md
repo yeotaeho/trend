@@ -351,9 +351,12 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 | 쿼리 | 값 | 기본 |
 |---|---|---|
 | `filter` | `feed_filter` | `all` |
+| `q` | 검색어, 최대 100자 | 없음(전체) |
 | `limit`, `cursor` | 1.3 참조 | |
 
 정렬은 `delivered_at` 내림차순. 기간 제한 없이 과거까지 커서로 내려간다 (화면 제목 `오늘` 은 문구일 뿐이다). `level=cluster_dup` 만 있는 항목은 나오지 않는다. 모든 조건에 `notifications.user_id = 현재 사용자` 가 붙는다.
+
+`q` 는 카드 제목·요약의 원천 다섯 곳(발송 제목, 요약 제목, 원문 제목, 요약, 원문 앞부분)에서 대소문자를 무시한 부분 일치로 찾는다. `%`·`_` 는 와일드카드가 아니라 글자다. `filter` 와 함께 걸리고, 앞뒤 공백을 뗀 뒤 비면 검색하지 않는다. 100자를 넘으면 422 `validation_error`. 커서는 같은 `q` 로만 이어 쓴다.
 
 ```json
 {
@@ -774,6 +777,7 @@ PATCH `{"name": "...", "position": 0}` (둘 다 선택). `position` 은 옮겨 �
 | `folder_id` | 폴더 ID, `unfiled`, 생략하면 전체 | 전체 |
 | `unread_only` | bool | false |
 | `sort` | `saved_sort` | `saved_desc` |
+| `q` | 검색어, 최대 100자. 규칙은 `GET /feed` 의 `q` 와 같다 | 없음(전체) |
 | `limit`, `cursor` | | |
 
 응답 `{"items": [SavedItem], "next_cursor": ...}`. 정렬 키가 같으면 `alert_id` 내림차순이고, `delivered_desc` 에서 전달 전 찜(`delivered_at=null`)은 맨 뒤다. 남의 폴더·없는 폴더 ID 는 404.

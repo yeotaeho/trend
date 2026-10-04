@@ -238,6 +238,14 @@ def test_list_bad_query_is_rejected(client: TestClient, store: Store):
     assert client.get(SAVED, params={"sort": "title"}, headers=AUTH).status_code == 422
 
 
+def test_list_passes_trimmed_search(client: TestClient, store: Store):
+    assert client.get(SAVED, headers=AUTH).status_code == 200
+    assert store.page_args["q"] is None
+    assert client.get(SAVED, params={"q": " 메모 "}, headers=AUTH).status_code == 200
+    assert store.page_args["q"] == "메모"
+    assert client.get(SAVED, params={"q": "x" * 101}, headers=AUTH).status_code == 422
+
+
 # ---------- 폴더 ----------
 
 
