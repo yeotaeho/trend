@@ -14,6 +14,8 @@ from app.config import INTERESTS_MAX_CHARS as INTERESTS_MAX_CHARS
 from app.config import KIND_WEIGHT_MAX as KIND_WEIGHT_MAX
 from app.config import KIND_WEIGHT_MIN as KIND_WEIGHT_MIN
 from app.config import NOT_INTERESTED_MAX_CHARS as NOT_INTERESTED_MAX_CHARS
+from app.config import RESURFACE_DAYS_MAX as RESURFACE_DAYS_MAX
+from app.config import RESURFACE_DAYS_MIN as RESURFACE_DAYS_MIN
 from app.config import WATCH_KEYWORDS_MAX as WATCH_KEYWORDS_MAX
 
 # 계약 1.2 — ISO-8601 UTC, 초 단위, Z 접미.

@@ -169,6 +169,7 @@ async def _notifications(
         exploration_slot=ExplorationSlot(
             enabled=notify.explore_enabled, daily_limit=EXPLORATION_DAILY_LIMIT
         ),
+        resurface_after_days=notify.resurface_after_days,
         updated_at=updated_at,
         overridden=_overridden(data, _NOTIFICATION_KEYS),
     )
@@ -208,6 +209,8 @@ def _notify_patch(body: NotificationSettingsIn) -> dict[str, Any]:
         patch["delivery_by_importance"] = body.delivery_by_importance.model_dump(exclude_none=True)
     if body.exploration_slot:
         patch["explore_enabled"] = body.exploration_slot.enabled
+    if body.resurface_after_days is not None:
+        patch["resurface_after_days"] = body.resurface_after_days
     if body.dedupe_same_issue_daily is not None:
         # 토글은 상한 숫자를 바꾸지 않는다. 끄면 0, 켜면 YAML 값(0 이면 1)이다.
         on = yaml_rules().notify.cluster_daily_cap or 1

@@ -73,6 +73,7 @@ class NotificationSettings {
     required this.explorationSlot,
     this.updatedAt,
     this.clusterDailyCap = 1,
+    this.resurfaceAfterDays = 7,
     this.overridden = const <String>[],
   });
 
@@ -89,6 +90,11 @@ class NotificationSettings {
 
   final DeliveryByImportance deliveryByImportance;
   final ExplorationSlot explorationSlot;
+
+  /// 읽지 않은 찜을 다시 알리는 날수. 한도는 `/meta` 의 `limits.resurface_after_days`.
+  @JsonKey(defaultValue: 7)
+  final int resurfaceAfterDays;
+
   final DateTime? updatedAt;
 
   /// 앱 값이 있는 `notify.*` 키. 읽기 전용.

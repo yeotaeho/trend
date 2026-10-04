@@ -1,4 +1,4 @@
-// 05 알림 설정 화면 — 막힘 상태 줄·채널·알림 피로·중요도별 강도·탐색 슬롯. 변경은 즉시 PATCH 하고 되돌린다.
+// 05 알림 설정 화면 — 막힘 상태 줄·채널·알림 피로·중요도별 강도·찜 재알림·탐색 슬롯. 변경은 즉시 PATCH 하고 되돌린다.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -83,6 +83,8 @@ class _Body extends ConsumerWidget {
         ..showSnackBar(SnackBar(content: Text(error.message)));
       return;
     }
+    // 11 찜 안내가 재알림 일수를 /meta 로 읽는다. 바꿨으면 캐시를 버려 다시 읽게 한다.
+    if (patch.containsKey('resurface_after_days')) ref.invalidate(metaProvider);
     final back = pickLike(before.toJson(), patch);
     // 같은 이슈 토글은 켜면 서버가 YAML 상한을 쓴다. 이전 상한이 YAML 과 달랐으면 되돌려도
     // 그 숫자로 돌아오지 않아 되돌리기를 주지 않는다.
@@ -232,6 +234,37 @@ class _Body extends ConsumerWidget {
                     }),
                   ),
               ],
+            ),
+          ],
+        ),
+        const SectionLabel('찜'),
+        AppCard(
+          padding: _rowCardPadding,
+          gap: 0,
+          children: [
+            ValueRow(
+              title: '찜 재알림',
+              subtitle: '읽지 않은 찜을 앱 푸시로 한 번 다시 알립니다',
+              value: '${settings.resurfaceAfterDays}일 뒤',
+              isLast: true,
+              onTap: () async {
+                final range = (await ref.read(metaProvider.future))
+                    .limits
+                    .resurfaceAfterDays;
+                if (range == null || !context.mounted) return;
+                final value = await showNumberPicker(
+                  context,
+                  title: '찜 재알림',
+                  initial: settings.resurfaceAfterDays,
+                  min: range.min,
+                  max: range.max,
+                  format: (value) => '$value일 뒤',
+                );
+                if (!context.mounted) return;
+                if (value != null && value != settings.resurfaceAfterDays) {
+                  save({'resurface_after_days': value});
+                }
+              },
             ),
           ],
         ),

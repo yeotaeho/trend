@@ -45,6 +45,9 @@ async def get_meta() -> Meta:
                 step=common.KIND_WEIGHT_STEP,
             ),
             daily_push_cap=IntRange(min=common.DAILY_PUSH_CAP_MIN, max=common.DAILY_PUSH_CAP_MAX),
+            resurface_after_days=IntRange(
+                min=common.RESURFACE_DAYS_MIN, max=common.RESURFACE_DAYS_MAX
+            ),
             watch_keywords_max=common.WATCH_KEYWORDS_MAX,
             folder_name_max=common.FOLDER_NAME_MAX,
             memo_max=common.MEMO_MAX,

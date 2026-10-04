@@ -5,7 +5,7 @@
 
 ## 목적
 
-전달 채널, 알림 피로 방지(하루 상한·무음 시간·같은 이슈 하루 1건), importance 별 전달 강도, 탐색 슬롯을 설정한다.
+전달 채널, 알림 피로 방지(하루 상한·무음 시간·같은 이슈 하루 1건), importance 별 전달 강도, 찜 재알림, 탐색 슬롯을 설정한다.
 
 ## 레이아웃 (위 → 아래)
 
@@ -41,13 +41,19 @@
 
 즉시 = 소리 있는 푸시, 조용히 = 무음 알림, 피드만 = 푸시 없이 피드에만.
 
-### 5. SectionLabel `실험` + 카드 (`padding 4px 16px`)
+### 5. SectionLabel `찜` + 카드 (`padding 4px 16px`)
+
+| 행 | 보조 줄 | 우측 | 인터랙션 |
+|---|---|---|---|
+| `찜 재알림` | `읽지 않은 찜을 앱 푸시로 한 번 다시 알립니다` | `7일 뒤` + chev | 숫자 피커 (디자인 없음, 1–30) |
+
+### 6. SectionLabel `실험` + 카드 (`padding 4px 16px`)
 
 | 행 | 보조 줄 | 우측 |
 |---|---|---|
 | `탐색 슬롯` | `점수 경계 항목을 하루 1건 🧪로 보내 라벨을 모읍니다` | Toggle ON |
 
-### 6. TabBar — **설정** 활성
+### 7. TabBar — **설정** 활성
 
 ## 설정값 (API 매핑)
 
@@ -64,12 +70,14 @@
 | `dedupe_same_issue_daily` | bool | true | `rules.notify.cluster_daily_cap > 0` 과 같다 (계약 4.4) |
 | `delivery_by_importance.high/mid/low` | enum | `instant` / `quiet` / `feed_only` | – |
 | `exploration_slot.enabled` | bool | true | 하루 1건 고정 |
+| `resurface_after_days` | int | 7 | 1–30 (`/meta` `limits.resurface_after_days`), 표시 `7일 뒤` |
 
 ## 엣지
 - 텔레그램 ON 인데 미연결이면 연결 안내 (디자인 없음).
 - 무음 시간 중 도착한 알림은 피드에만 쌓인다 (사용자 결정, 계약 4.4).
 
 ## Figma 와 다른 점 (HTML 우선)
+- `찜` 섹션(찜 재알림)은 디자인에 없다. #38 에서 `실험` 위에 더했다.
 - Discord 보조 줄은 `👍/👎 리액션 동기화`, 탐색 슬롯 보조 줄은 `🧪로 보내` 다 (Figma 는 `유용/불필요`, `실험으로`).
 - Figma 의 TopBar 높이 152 는 실수다. HTML 은 다른 하위 화면과 같은 44 + 56 이다.
 - 중요도 그룹 라벨은 14/500 이다 (추출본 SemiBold).

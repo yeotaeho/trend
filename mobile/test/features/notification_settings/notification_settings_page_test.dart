@@ -1,4 +1,4 @@
-// 05 알림 설정 테스트 — fixture 샘플 값, 텔레그램 409 되돌림, 세그먼트·피커 PATCH 본문, 채널 보조 줄 규칙.
+// 05 알림 설정 테스트 — fixture 샘플 값, 텔레그램 409 되돌림, 세그먼트·피커 PATCH 본문, 찜 재알림, 채널 보조 줄 규칙.
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,6 +36,23 @@ class _RecordingSettings implements SettingsRepository {
   }
 }
 
+/// `meta()` 를 몇 번 읽었는지 센다. 저장 뒤 /meta 캐시를 버렸는지 본다.
+class _CountingMeta implements MetaRepository {
+  _CountingMeta(this._inner);
+
+  final MetaRepository _inner;
+  int calls = 0;
+
+  @override
+  Future<Meta> meta() {
+    calls++;
+    return _inner.meta();
+  }
+}
+
+/// 마지막 [_pump] 가 붙인 /meta 저장소.
+late _CountingMeta _meta;
+
 Future<_RecordingSettings> _pump(
   WidgetTester tester, {
   Duration delay = Duration.zero,
@@ -54,7 +71,9 @@ Future<_RecordingSettings> _pump(
       overrides: [
         settingsRepositoryProvider.overrideWithValue(settings),
         // push 상한 범위는 /meta 에서 읽는다. 같은 store 라 이미 읽혀 있다.
-        metaRepositoryProvider.overrideWithValue(FixtureMetaRepository(store)),
+        metaRepositoryProvider.overrideWithValue(
+          _meta = _CountingMeta(FixtureMetaRepository(store)),
+        ),
       ],
       child: MaterialApp(
         theme: buildAppTheme(),
@@ -192,6 +211,27 @@ void main() {
 
     expect(settings.patches.single, {'daily_push_cap': 16});
     expect(find.text('16건'), findsOneWidget);
+  });
+
+  testWidgets('찜 재알림 피커에서 한 칸 올려 완료하면 8일을 저장하고 /meta 를 다시 읽는다', (tester) async {
+    final settings = await _pump(tester);
+    expect(find.text('읽지 않은 찜을 앱 푸시로 한 번 다시 알립니다'), findsOneWidget);
+
+    await tester.tap(find.text('7일 뒤'));
+    await tester.pumpAndSettle();
+    await tester.drag(_inPicker(find.text('7일 뒤')), const Offset(0, -36));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('완료'));
+    await tester.pumpAndSettle();
+
+    expect(settings.patches.single, {'resurface_after_days': 8});
+    expect(find.text('8일 뒤'), findsOneWidget);
+    expect(_meta.calls, 1);
+
+    // 11 찜 안내 문구가 이 값을 /meta 로 읽는다. 저장했으면 다음에 다시 읽는다.
+    await tester.tap(find.text('8일 뒤'));
+    await tester.pumpAndSettle();
+    expect(_meta.calls, 2);
   });
 
   testWidgets('무음 시간 피커에서 시작을 한 시간 당기면 start·end 를 함께 보낸다', (tester) async {

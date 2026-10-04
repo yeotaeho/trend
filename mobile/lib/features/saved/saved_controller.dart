@@ -6,6 +6,7 @@ import '../../data/models/models.dart';
 import '../../data/repositories/repositories.dart';
 import '../../data/repositories/repository_providers.dart';
 import '../alert/alert_providers.dart';
+import '../settings/settings_providers.dart';
 
 /// 목록 조회 조건 — 폴더 칩·`안 읽음` 토글·정렬·검색어.
 class SavedQuery {
@@ -73,6 +74,7 @@ class SavedState {
   List<SavedItem> get visible => items.where(query.matches).toList();
 
   SavedState copyWith({
+    Meta? meta,
     FolderList? folders,
     SavedQuery? query,
     List<SavedItem>? items,
@@ -81,7 +83,7 @@ class SavedState {
     bool? loadingMore,
     Object? Function()? listError,
   }) => SavedState(
-    meta: meta,
+    meta: meta ?? this.meta,
     folders: folders ?? this.folders,
     query: query ?? this.query,
     items: items ?? this.items,
@@ -117,8 +119,12 @@ class SavedController extends AsyncNotifier<SavedState> {
       _savedWrites++;
       if (state.hasValue) refresh();
     });
+    // 05 에서 재알림 일수를 바꾸면 /meta 캐시가 버려진다. 조건·목록은 두고 meta 만 바꾼다.
+    ref.listen(metaProvider, (_, next) {
+      final meta = next.value;
+      if (meta != null) _set((s) => s.copyWith(meta: meta));
+    });
     final repo = ref.watch(savedRepositoryProvider);
-    final metaRepository = ref.watch(metaRepositoryProvider);
     // 첫 로딩 중엔 위 listen 이 refresh 할 수 없다. 읽는 사이 쓰기가 끝났으면
     // 그 전 목록을 받았을 수 있으니 다시 읽는다.
     // 결과를 받은 뒤 확인·반환 사이에 await 를 두지 않는다. 그 틈에 끝난 쓰기도 놓친다.
@@ -129,7 +135,7 @@ class SavedController extends AsyncNotifier<SavedState> {
         folders as FolderList,
         page as CursorPage<SavedItem>,
       ] = await Future.wait<Object>([
-        metaRepository.meta(),
+        ref.read(metaProvider.future),
         repo.folders(),
         repo.saved(),
       ]);

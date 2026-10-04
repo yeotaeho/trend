@@ -68,6 +68,8 @@ KIND_WEIGHT_MIN = -0.5
 KIND_WEIGHT_MAX = 0.0
 DAILY_PUSH_CAP_MIN = 1
 DAILY_PUSH_CAP_MAX = 50
+RESURFACE_DAYS_MIN = 1
+RESURFACE_DAYS_MAX = 30
 INTERESTS_MAX_CHARS = 1000
 NOT_INTERESTED_MAX_CHARS = 500
 WATCH_KEYWORDS_MAX = 50
@@ -230,7 +232,9 @@ class NotifyConfig(_Strict):
     )
     explore_enabled: bool = app_field("탐색 슬롯", default=True)
     # 읽지 않은 찜을 이 날수가 지나면 한 번 다시 알린다(jobs/resurface.py, FCM 조용한 알림).
-    resurface_after_days: int = app_field("찜 재알림 일수", default=7, ge=1, le=30)
+    resurface_after_days: int = app_field(
+        "찜 재알림 일수", default=7, ge=RESURFACE_DAYS_MIN, le=RESURFACE_DAYS_MAX
+    )
     channels: ChannelsConfig = Field(default_factory=ChannelsConfig)
 
     @field_validator("timezone")

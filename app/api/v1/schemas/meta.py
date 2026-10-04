@@ -27,6 +27,7 @@ class IntRange(BaseModel):
 class Limits(BaseModel):
     kind_weight: StepRange
     daily_push_cap: IntRange
+    resurface_after_days: IntRange
     watch_keywords_max: int
     folder_name_max: int
     memo_max: int

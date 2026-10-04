@@ -11,6 +11,8 @@ from app.api.v1.schemas.common import (
     DAILY_PUSH_CAP_MIN,
     INTERESTS_MAX_CHARS,
     NOT_INTERESTED_MAX_CHARS,
+    RESURFACE_DAYS_MAX,
+    RESURFACE_DAYS_MIN,
     WATCH_KEYWORDS_MAX,
     StrictIn,
     UtcDateTime,
@@ -129,6 +131,8 @@ class NotificationSettings(BaseModel):
     cluster_daily_cap: int
     delivery_by_importance: DeliveryByImportance
     exploration_slot: ExplorationSlot
+    # 찜 재알림 일수(유효값). 한도는 /meta 의 limits.resurface_after_days 다(#38).
+    resurface_after_days: int
     updated_at: UtcDateTime | None
     # 이 화면 키 가운데 앱 값이 있는 것(점 경로). 없으면 빈 목록이다(#35).
     overridden: list[str] = Field(default_factory=list)
@@ -172,6 +176,9 @@ class NotificationSettingsIn(StrictIn):
     dedupe_same_issue_daily: bool | None = None
     delivery_by_importance: DeliveryByImportanceIn | None = None
     exploration_slot: ExplorationSlotIn | None = None
+    resurface_after_days: int | None = Field(
+        default=None, ge=RESURFACE_DAYS_MIN, le=RESURFACE_DAYS_MAX
+    )
 
 
 class SettingChange(BaseModel):

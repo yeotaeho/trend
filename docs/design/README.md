@@ -114,6 +114,7 @@
 | `delivery_by_importance.mid` (3) | 설정 | 05 | enum | `quiet` (조용히) |
 | `delivery_by_importance.low` (2·1) | 설정 | 05 | enum | `feed_only` (피드만) |
 | `exploration_slot.enabled` | 설정 | 05 | bool | true (하루 1건) |
+| `resurface_after_days` | 설정 | 05 | int (1–30) | 7 (`7일 뒤`) |
 | `sources_enabled_count` / `sources_total` | 통계 | 06 | int / int | 9 / 10 |
 | `llm_calls_used_today` / `llm_calls_budget` | 통계 / 설정(?) | 06 | int / int | 41 / 60 |
 | source.`id` | 소스 | 06, 09, 08 | string `{type}:{name}` | `rss:anthropic` |
