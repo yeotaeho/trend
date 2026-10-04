@@ -137,7 +137,7 @@ def test_get_notifications_defaults(client: TestClient, store: PrefsStore, env):
         "channels": {
             "fcm": {"enabled": True, "connected": False, "device_count": 2},
             "discord": {
-                "enabled": True,
+                "enabled": False,  # rules.yaml 10-04 부터 끔
                 "connected": True,
                 "channel_name": "#42",
                 "reaction_sync": True,
@@ -182,6 +182,7 @@ def test_patch_notifications_merges_partially(client: TestClient, store: PrefsSt
 
 def test_patch_enables_connected_channel(client: TestClient, store: PrefsStore, env):
     env.telegram_bot_token, env.telegram_chat_id = "tok", "1"
+    discord_before = get_rules().notify.channels.discord
 
     res = client.patch(
         NOTIFICATIONS, headers=AUTH, json={"channels": {"telegram": {"enabled": True}}}
@@ -189,7 +190,8 @@ def test_patch_enables_connected_channel(client: TestClient, store: PrefsStore, 
 
     assert res.json()["channels"]["telegram"] == {"enabled": True, "connected": True}
     assert get_rules().notify.channels.telegram is True
-    assert get_rules().notify.channels.discord is True
+    # 보낸 채널만 바뀐다. 디스코드는 YAML 값 그대로다.
+    assert get_rules().notify.channels.discord is discord_before
 
 
 def test_enabling_unconnected_channel_is_409(client: TestClient, store: PrefsStore, env):
