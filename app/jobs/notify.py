@@ -142,14 +142,16 @@ async def deliver(
 
 async def run_notify(notifiers: list[Notifier] | None = None) -> int:
     """실제로 발송한 건수를 돌려준다. notifiers 를 생략하면 켜지고 연결된 채널 전부다."""
-    rules = get_rules()
-    cfg = rules.notify
-    if notifiers is None:
-        notifiers = enabled_notifiers(rules)
     sent = 0
     rate_limited = False
 
     async with session_scope() as session:
+        # 탐색 판정의 판단 기준은 이 rules 와 같은 때의 것이다. 사이에 await 를 두지 않는다(#39).
+        criteria = await decision_criteria(session)
+        rules = get_rules()
+        cfg = rules.notify
+        if notifiers is None:
+            notifiers = enabled_notifiers(rules)
         for _ in range(BATCH_SIZE):
             claimed = await _claim_one(session)
             if claimed is None:
@@ -201,7 +203,7 @@ async def run_notify(notifiers: list[Notifier] | None = None) -> int:
         try:
             # 채널이 대기 중이면 탐색 판정(예산 3회/일)을 태우지 않는다. 발송에서 되돌려진다.
             if not rate_limited:
-                await _explore(session, rules, notifiers, now=datetime.now(UTC))
+                await _explore(session, rules, notifiers, now=datetime.now(UTC), criteria=criteria)
         except Exception as exc:
             await session.rollback()
             log.warning("notify.explore_failed", error=str(exc))
@@ -281,12 +283,18 @@ async def _explore_candidate(
 
 
 async def _explore(
-    session: AsyncSession, rules: Rules, notifiers: list[Notifier], *, now: datetime
+    session: AsyncSession,
+    rules: Rules,
+    notifiers: list[Notifier],
+    *,
+    now: datetime,
+    criteria: dict[str, object],
 ) -> bool:
     """하루 1건 경계 항목 실험. 판정 → 통과면 🧪 발송 → SENT. false 면 그날은 보내지 않는다.
 
     일반 발송 흐름을 타지 않는다. 후보는 DROPPED 이고 Summary 가 없어 일반 발송 쿼리에 안 잡힌다.
-    이게 없으면 파이프는 자기가 버린 것에 대해 영원히 배우지 못한다. now 는 호출 직전 시각이다.
+    이게 없으면 파이프는 자기가 버린 것에 대해 영원히 배우지 못한다. now 는 호출 직전 시각이고,
+    criteria 는 rules 와 같은 때 읽은 판단 기준이다(#39).
     토글이 꺼졌거나 켜진 채널이 없으면 판정(LLM 예약)도 하지 않는다.
     """
     cfg = rules.notify
@@ -319,7 +327,7 @@ async def _explore(
                 "tags": result.verdict.tags,
                 "examples": examples_details(examples),
                 "threshold": rules.scoring.threshold,
-                **(await decision_criteria(session)),
+                **criteria,
             },
         )
     )

@@ -123,12 +123,8 @@ async def test_explore_decision_keeps_examples_and_criteria(monkeypatch):
     async def candidate(*_args):
         return (_item(), Source(name="rss:x"))
 
-    async def criteria(_session):
-        return {"settings_rev": 7, "git_sha": "abc1234"}
-
     monkeypatch.setattr(notify, "_explore_sent_today", not_sent)
     monkeypatch.setattr(notify, "_explore_candidate", candidate)
-    monkeypatch.setattr(notify, "decision_criteria", criteria)
     session = _Session()
     rules = Rules()
     noon_kst = datetime(2026, 9, 24, 3, tzinfo=UTC)
@@ -137,6 +133,7 @@ async def test_explore_decision_keeps_examples_and_criteria(monkeypatch):
         rules,
         SimpleNamespace(channel="discord"),
         now=noon_kst,
+        criteria={"settings_rev": 7, "git_sha": "abc1234"},
     )
     decision = session.llm_decision()
     assert not sent and decision.details["explore"] is True

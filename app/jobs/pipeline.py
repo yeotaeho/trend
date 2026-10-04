@@ -45,7 +45,12 @@ _criteria: ContextVar[dict[str, object] | None] = ContextVar("decision_criteria"
 
 
 async def decision_criteria(session: AsyncSession) -> dict[str, object]:
-    """결정 행에 남길 판단 기준 — 지금 설정 이력 id 와 배포 커밋(로컬은 null). 탐색 판정도 쓴다."""
+    """결정 행에 남길 판단 기준 — 지금 설정 이력 id 와 배포 커밋(로컬은 null). 탐색 판정도 쓴다.
+
+    판단에 쓴 rules 와 맞아야 하므로 get_rules() 바로 앞에서 부르고 사이에 await 를 두지 않는다.
+    ponytail: 다른 요청의 설정 저장이 이 조회와 같은 순간(ms)에 커밋되면 한 칸 어긋날 수 있다.
+    정확히 하려면 덮어쓰기 캐시(set_prefs_overlay)가 이력 id 를 같이 든다.
+    """
     return {
         "settings_rev": await prefs.latest_revision_id(session, DEFAULT_USER_ID),
         "git_sha": get_settings().git_sha or None,
@@ -372,7 +377,6 @@ async def _judge(
 
 async def run_pipeline() -> int:
     """한 배치를 처리하고 SCORED 수를 돌려준다."""
-    rules = get_rules()
     passed = 0
     async with session_scope() as session:
         if await _reembedding_in_progress(session):
@@ -381,7 +385,9 @@ async def run_pipeline() -> int:
         batch = await _claim_batch(session)
         if not batch:
             return 0
+        # 판단 기준과 rules 는 같은 때의 것이어야 한다. 둘 사이에 await 를 두지 않는다(#39).
         _criteria.set(await decision_criteria(session))
+        rules = get_rules()
         try:
             await embed_pending(session, [item.id for item, _ in batch])
         except EmbeddingDimError as exc:
