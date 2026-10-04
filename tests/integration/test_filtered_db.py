@@ -238,7 +238,9 @@ async def test_restore_and_undo(world: World):
     async with _client(world.me) as c:
         res = await c.delete(f"/api/v1/filtered/items/{iid}/restore", headers=AUTH)
         assert res.status_code == 204
-        assert (await c.get("/api/v1/feed", headers=AUTH)).json()["items"] == []
+        # world 가 처음부터 보내 둔 "delivered" 만 남고, 복원했던 항목은 피드에서 빠진다.
+        feed = (await c.get("/api/v1/feed", headers=AUTH)).json()["items"]
+        assert [it["id"] for it in feed] == [str(world.items["delivered"])]
     async with SessionLocal() as s:
         stages = (await s.execute(select(Decision.stage).where(Decision.item_id == iid))).scalars()
         assert "user" not in list(stages)

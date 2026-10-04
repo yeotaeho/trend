@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import delete, select, update
 
-from app.db.models import Feedback, Item, Notification, Source, Summary
+from app.db.models import Feedback, Item, Notification, Source, Summary, User
 from app.db.session import SessionLocal
 from app.jobs.feedback import sync_feedback
 from app.pipeline.feedback import nearest_feedback
@@ -15,8 +15,10 @@ VEC_LIST = [0.03] * 1024
 async def test_nearest_feedback_finds_identical_vector():
     now = datetime.now(UTC)
     async with SessionLocal() as s, s.begin():
+        # dev 는 운영 복사본이라 사용자 1 에 실제 피드백이 있다. 전용 사용자로 사례를 격리한다.
+        user = User(name="test-fb")
         src = Source(name="test:fb", type="rss", config={})
-        s.add(src)
+        s.add_all([user, src])
         await s.flush()
         a = Item(
             source_id=src.id,
@@ -70,19 +72,19 @@ async def test_nearest_feedback_finds_identical_vector():
             )
         s.add_all(
             [
-                Feedback(user_id=1, item_id=b.id, verdict="useful"),
-                Feedback(user_id=1, item_id=c.id, verdict="useless"),
+                Feedback(user_id=user.id, item_id=b.id, verdict="useful"),
+                Feedback(user_id=user.id, item_id=c.id, verdict="useless"),
             ]
         )
         # a 자신에게도 피드백을 달아 자기 제외를 확인한다.
-        s.add(Feedback(user_id=1, item_id=a.id, verdict="useless"))
-        ids = (a.id, b.id, c.id, src.id)
+        s.add(Feedback(user_id=user.id, item_id=a.id, verdict="useless"))
+        ids = (a.id, b.id, c.id, src.id, user.id)
 
     try:
         async with SessionLocal() as s:
-            examples = await nearest_feedback(s, ids[0], k=3)
-            limited = await nearest_feedback(s, ids[0], k=3, min_sim=-1.0)
-            capped = await nearest_feedback(s, ids[0], k=1, min_sim=-1.0)
+            examples = await nearest_feedback(s, ids[0], k=3, user_id=ids[4])
+            limited = await nearest_feedback(s, ids[0], k=3, min_sim=-1.0, user_id=ids[4])
+            capped = await nearest_feedback(s, ids[0], k=1, min_sim=-1.0, user_id=ids[4])
         # 자기 자신(a) 제외, 먼 c 는 min_sim 에 걸려 제외
         assert [(e.item_id, e.verdict, e.title) for e in examples] == [
             (ids[1], "useful", "[릴리즈] B")
@@ -94,6 +96,7 @@ async def test_nearest_feedback_finds_identical_vector():
         async with SessionLocal() as s, s.begin():
             await s.execute(delete(Item).where(Item.id.in_(ids[:3])))
             await s.execute(delete(Source).where(Source.id == ids[3]))
+            await s.execute(delete(User).where(User.id == ids[4]))
 
 
 async def test_cleared_is_skipped_and_unsummarized_item_uses_original_title():
