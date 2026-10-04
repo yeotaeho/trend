@@ -109,6 +109,6 @@ def store(monkeypatch: pytest.MonkeyPatch, session: FakeSession) -> PrefsStore:
         return {}
 
     monkeypatch.setattr(settings_queries, "find_revision", find_revision)
-    monkeypatch.setattr(settings_queries, "latest_revision_id", latest_revision_id)
+    monkeypatch.setattr(prefs, "latest_revision_id", latest_revision_id)
     monkeypatch.setattr(prefs, "last_defaults", no_history)
     return fake

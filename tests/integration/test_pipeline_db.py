@@ -1,4 +1,4 @@
-# 파이프라인 2국면 통합 테스트 — 항목 실패 2회 DROPPED, 기반 실패는 행 없이 NEW, 재사용, topics
+# 파이프라인 통합 테스트 — 항목 실패 2회 DROPPED, 기반 실패는 행 없이 NEW, 재사용, topics·판단 기준
 
 from datetime import UTC, datetime
 
@@ -219,9 +219,14 @@ async def test_triage_decision_keeps_topics_and_prompt_version(items, monkeypatc
 
     monkeypatch.setattr(pipeline, "call_triage", fake_triage)
     s, survivors = await _load(ids)
-    async with s:
-        result = await pipeline._triage(s, rules, survivors)
-        await s.commit()
+    # run_pipeline 이 잡 시작 때 정하는 판단 기준(#39). 선별 결정 행마다 남는다.
+    token = pipeline._criteria.set({"settings_rev": 7, "git_sha": "abc1234"})
+    try:
+        async with s:
+            result = await pipeline._triage(s, rules, survivors)
+            await s.commit()
+    finally:
+        pipeline._criteria.reset(token)
 
     async with SessionLocal() as s:
         rows = (
@@ -238,6 +243,7 @@ async def test_triage_decision_keeps_topics_and_prompt_version(items, monkeypatc
         assert r.details["topics"] == ["inference-opt", "agent"]
         assert r.details["kind"] == "technique"
         assert r.details["prompt_version"] == TRIAGE_PROMPT_VERSION
+        assert (r.details["settings_rev"], r.details["git_sha"]) == (7, "abc1234")
     assert result[ids[0]].topics == ["inference-opt", "agent"]
 
     # 저장된 행에서 복원하면 topics 가 그대로 돌아오고 선별을 다시 부르지 않는다.

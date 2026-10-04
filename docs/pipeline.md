@@ -30,9 +30,10 @@
 | 중복·관련 | `pipeline/dedupe.py` | 72h 창, 코사인 **≥ 0.96 중복**(FILTERED_OUT) · **≥ 0.88 관련**(같은 `cluster_id`). 생존자 기준 비교 |
 | exclude | `pipeline/rules.py` | `rules.yaml` 의 exclude 키워드·도메인만. 통과 관문이 아니라 배제 관문 |
 | 선별 | `pipeline/triage.py` | 25건 배치. 대기 항목이 10건 모이거나 가장 오래된 항목이 60분을 기다려야 호출하고, 그 전에는 `NEW` 로 둔다. `policy` 문장(관심 카테고리 힌트 포함)과 분류표 `policy.taxonomy` 를 읽고 관련도 0~1·`kind`·`topics`·이유를 낸다. `topics` 는 분류표 slug 1~3개이며 표 밖 값은 버리고 앞 3개만 남긴다 (항목 실패 아님). `decisions(stage=triage).details` = `relevance`·`reason`·`kind`·`topics`·`batch_id`·`prompt_version`. 캐시 재사용 때 `kind`·`topics` 가 없는 옛 행은 `other`·`[]` 로 채우고 다시 부르지 않는다 |
-| 점수 | `pipeline/scoring.py` | trust·relevance·hotness·multi·freshness 가중합 + kind 감점. 임계값 **0.45** 미달 → DROPPED. `decisions(stage=score)` 에 breakdown |
+| 점수 | `pipeline/scoring.py` | trust·relevance·hotness·multi·freshness 가중합 + kind 감점. 임계값 **0.45** 미달 → DROPPED. `decisions(stage=score)` 에 breakdown 과 당시 `threshold`(#39) |
 | 본문 보강 | `pipeline/llm.py` `enrich_body` | trafilatura. 사설·루프백·링크로컬 주소와 그리로 가는 리다이렉트(최대 5홉)를 열지 않는다. DNS 리바인딩은 막지 않는다 |
 | 판정·요약 | `pipeline/llm.py` | 구조화 출력 → `summaries`(`title_ko`, `summary_ko`, `tags`, `importance` 1~5, `worth_notifying`). 최근접 피드백 사례(👍/👎 만, 해제 `cleared` 제외, 요약 없는 복원 항목은 원문 제목)를 프롬프트에 주입하고 `decisions(stage=llm).details.examples` = `[{item_id, verdict, title}]` 로 남긴다 (탐색 판정 포함, 0건이면 `[]`) |
+| 판단 기준 | `jobs/pipeline.py` `decision_criteria` | 파이프라인 결정 행 `details` 마다 잡 시작 때의 `settings_rev`(최신 `settings_revisions.id`, 없으면 null)와 `git_sha`(배포 커밋, 로컬은 null)를 남긴다. 탐색 판정 행은 판정 직전 값과 `threshold` 를 남긴다. 판정 프롬프트 버전은 `git_sha` 로 대신한다(#39) |
 | 소스 신뢰도 | `pipeline/trust.py` | 피드백으로 베이즈 보정. `scripts/weekly_report.py --apply` 로 기록 |
 
 ## LLM 예산

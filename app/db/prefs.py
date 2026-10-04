@@ -157,3 +157,10 @@ async def last_defaults(session: AsyncSession, user_id: int) -> dict[str, Any]:
         for change in changes:
             defaults.setdefault(change["key"], change["default"])
     return defaults
+
+
+async def latest_revision_id(session: AsyncSession, user_id: int) -> int | None:
+    """가장 최근 설정 이력 id. 전체 설정 조회와 결정 행의 settings_rev(#39)가 쓴다."""
+    stmt = select(func.max(SettingsRevision.id)).where(SettingsRevision.user_id == user_id)
+    latest: int | None = (await session.execute(stmt)).scalar_one()
+    return latest
