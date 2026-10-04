@@ -98,7 +98,9 @@ notify:
     low: feed_only
   explore_enabled: true
   # 발송 채널 on/off. 연결 정보(.env)가 없는 채널은 앱에서 켤 수 없다.
+  # 디스코드는 10-04 껐다. FCM 푸시와 앱 판정 버튼이 대신한다.
+  # 운영 알림(send_ops_alert)은 이 스위치와 상관없이 디스코드로 간다.
   channels:
     fcm: true
-    discord: true
+    discord: false
     telegram: false
