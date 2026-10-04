@@ -43,6 +43,22 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $T" https://t
 unset T
 ```
 
+### 로컬 서버 (백엔드를 고칠 때)
+
+매일 쓰기는 운영 서버에 붙인다. 백엔드를 고칠 때만 로컬 서버를 Neon `dev` 브랜치에 붙인다. 로컬 서버를 운영 Neon 에 붙이지 않는다. 앱에서 저장한 설정이 운영에 들어가고, 스케줄러를 켜면 운영 잡과 겹친다.
+
+1. Neon `dev` 를 production 기준으로 리셋한다(콘솔의 Reset from parent). `dev` 의 이전 데이터는 사라진다.
+2. 레포 루트 `.env` 에 `dev` 의 pooled 주소를 `DATABASE_URL` 로 두고 `SCHEDULER_ENABLED=false`, 운영과 다른 로컬 `APP_API_TOKEN` 을 넣는다. 디스코드·텔레그램·FCM 키는 비운다. `dev` 는 운영 복사본이라 실제 기기 토큰이 들어 있다.
+3. 레포 루트에서 `uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000` 으로 띄운다.
+4. `env/local.json` 의 `API_BASE_URL` 은 `http://10.0.2.2:8000/api/v1`, 토큰은 `.env` 와 같은 값이다. `10.0.2.2` 는 에뮬레이터에서 본 호스트 PC 의 127.0.0.1 이다. dart:io 는 안드로이드 cleartext 정책을 따르지 않아 http 도 매니페스트를 고치지 않고 된다.
+5. 디버그로 실행한다. 릴리스 빌드는 https 주소만 받는다.
+
+```bash
+flutter run --dart-define-from-file=env/local.json
+```
+
+DB 통합 테스트도 같은 `dev` 에서 돈다. 절차는 `docs/database.md` 의 브랜치 항목에 있다.
+
 ### Android Studio
 
 `mobile/` 폴더를 연다. 실행 설정(Run/Debug Configurations)의 Additional run args 에 `--dart-define-from-file=env/prod.json` 만 적는다. 'Store as project file' 로 저장하지 않는다. `.run/*.run.xml` 은 git 에서 제외되지 않는다.

@@ -36,6 +36,8 @@ Neon(Postgres, pgvector)이 모든 상태의 단일 진실 원천이다. 큐도 
 - SQLAlchemy 2.x async + asyncpg, `statement_cache_size=0` (pgbouncer 호환).
 - pooled 엔드포인트(`sslmode=require`). 잡 단위로 커넥션을 열고 닫는다.
 - 브랜치 `main`(운영) / `dev`(로컬 실험·통합 테스트). 통합 테스트는 `TEST_DATABASE_URL` 로 dev 를 가리키고, CI 에서는 돌지 않는다.
+  - 돌리기 전에 dev 를 production 기준으로 리셋한다(Reset from parent). `TEST_DATABASE_URL` 은 `.env` 의 `DATABASE_URL` 과 글자까지 같아야 하고, 다르면 운영 보호를 위해 전부 건너뛴다. 테이블을 비우는 테스트가 있어 끝나면 다시 리셋한다.
+  - dev 는 운영 복사본이라 실제 피드백·후보 항목이 들어 있다. 새 통합 테스트는 전용 사용자를 만들거나 시각 창을 비켜 실데이터와 섞이지 않게 쓴다.
 
 ## 마이그레이션
 
