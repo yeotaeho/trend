@@ -1,4 +1,4 @@
-# 앱 API 테스트 공통 — 토큰 고정 클라이언트, 인증 헤더, DB 없는 세션·user_prefs·sources 행 가짜
+# 앱 API 테스트 공통 — 토큰 고정 클라이언트, 인증 헤더, DB 없는 세션·설정·소스 행·이력 가짜
 
 from __future__ import annotations
 
@@ -12,7 +12,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api.v1 import deps
+from app.api.v1.queries import settings as settings_queries
 from app.db import prefs
+from app.db.models import SettingsRevision
 from app.main import app
 
 TOKEN = "test-app-token"
@@ -32,13 +34,24 @@ def client(server_token: str) -> TestClient:
 
 
 class FakeSession:
-    """라우터가 직접 부르는 세션 메서드는 commit 뿐이다. 조회는 쿼리 함수를 바꿔 끼운다."""
+    """라우터가 직접 부르는 세션 메서드는 add·commit 뿐이다. 조회는 쿼리 함수를 바꿔 끼운다."""
 
     def __init__(self) -> None:
         self.commits = 0
+        self.added: list[Any] = []
+
+    def add(self, row: Any) -> None:
+        self.added.append(row)
 
     async def commit(self) -> None:
+        """커밋 때 flush 가 일련번호를 채운다."""
         self.commits += 1
+        for number, row in enumerate(self.added, start=1):
+            if getattr(row, "id", None) is None:
+                row.id = number
+
+    def revisions(self) -> list[Any]:
+        return [r for r in self.added if isinstance(r, SettingsRevision)]
 
 
 class PrefsStore:
@@ -84,4 +97,10 @@ def store(monkeypatch: pytest.MonkeyPatch, session: FakeSession) -> PrefsStore:
     monkeypatch.setattr(prefs, "fetch_prefs", fake.fetch)
     monkeypatch.setattr(prefs, "upsert_prefs", fake.upsert)
     monkeypatch.setattr(prefs, "source_rows", fake.source_rows)
+
+    async def find_revision(_s: Any, user_id: int, revision_id: int) -> Any:
+        rows = session.revisions()
+        return next((r for r in rows if (r.id, r.user_id) == (revision_id, user_id)), None)
+
+    monkeypatch.setattr(settings_queries, "find_revision", find_revision)
     return fake

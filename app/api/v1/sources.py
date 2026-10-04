@@ -91,7 +91,7 @@ async def patch_source(
         row = (await queries.sources_by_name(session, [source_id])).get(source_id)
     if row is None:
         raise ApiError(404, "not_found", "소스를 찾을 수 없습니다.", {"source_id": source_id})
-    data = await prefs.prefs_for_update(session, user_id)
-    data = merge_overlay(data, {"sources": {source_id: {"enabled": body.enabled}}})
-    await save_or_422(session, user_id, data)
+    before = await prefs.prefs_for_update(session, user_id)
+    after = merge_overlay(before, {"sources": {source_id: {"enabled": body.enabled}}})
+    await save_or_422(session, user_id, before, after)
     return to_view(row)

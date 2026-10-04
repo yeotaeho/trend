@@ -1,16 +1,19 @@
-# 화면 04·05 설정 — 관심사·알림 조회·저장, 키 되돌리기. 저장 즉시 유효 설정을 갈아끼운다
+# 화면 04·05 설정 — 관심사·알림 조회·저장, 키 되돌리기, 저장 이력·버전 되돌리기
 
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import Session, UserId
 from app.api.v1.errors import ApiError
+from app.api.v1.pagination import Paging
 from app.api.v1.queries import settings as queries
+from app.api.v1.queries.saved import parse_id
+from app.api.v1.schemas.common import Page
 from app.api.v1.schemas.settings import (
     EXPLORATION_DAILY_LIMIT,
     Channels,
@@ -25,6 +28,9 @@ from app.api.v1.schemas.settings import (
     NotificationSettings,
     NotificationSettingsIn,
     QuietHours,
+    RestoreResult,
+    Revision,
+    SettingChange,
     TelegramChannel,
 )
 from app.config import (
@@ -36,10 +42,12 @@ from app.config import (
     get_rules,
     get_settings,
     merge_overlay,
+    restorable,
     without_key,
     yaml_rules,
 )
 from app.db import prefs
+from app.db.models import RevisionOrigin, SettingsRevision
 from app.notify.base import channel_connected
 from app.schemas import Kind
 
@@ -48,10 +56,18 @@ router = APIRouter(prefix="/settings")
 _CHANNEL_LABELS = {"fcm": "앱 푸시(FCM)", "discord": "Discord", "telegram": "Telegram"}
 
 
-async def save_or_422(session: AsyncSession, user_id: int, data: dict[str, Any]) -> datetime:
+async def save_or_422(
+    session: AsyncSession,
+    user_id: int,
+    before: dict[str, Any],
+    after: dict[str, Any],
+    *,
+    origin: RevisionOrigin = "app",
+    note: str | None = None,
+) -> SettingsRevision:
     """요청 모델을 통과해도 저장된 다른 값과 합쳐 검증에 실패할 수 있다. 그때는 저장하지 않는다."""
     try:
-        return await prefs.save_prefs(session, user_id, data)
+        return await prefs.save_prefs(session, user_id, before, after, origin=origin, note=note)
     except ValueError as exc:
         raise ApiError(
             422, "validation_error", "설정을 저장할 수 없습니다.", {"reason": str(exc)}
@@ -79,7 +95,7 @@ async def get_interests(session: Session, user_id: UserId) -> Interests:
 
 @router.put("/interests")
 async def put_interests(body: InterestsIn, session: Session, user_id: UserId) -> Interests:
-    data = await prefs.prefs_for_update(session, user_id)
+    before = await prefs.prefs_for_update(session, user_id)
     policy = {
         "interests": body.profile.self_description,
         "not_interested": body.profile.not_interested,
@@ -89,9 +105,9 @@ async def put_interests(body: InterestsIn, session: Session, user_id: UserId) ->
         "focus_repos": [k for k in body.watch_keywords if "/" in k],
     }
     weights = {kind.value: round(w, 2) for kind, w in body.kind_weights.items()}
-    data = merge_overlay(data, {"policy": policy, "scoring": {"kind_weights": weights}})
-    updated_at = await save_or_422(session, user_id, data)
-    return _interests(get_rules(), updated_at)
+    after = merge_overlay(before, {"policy": policy, "scoring": {"kind_weights": weights}})
+    saved = await save_or_422(session, user_id, before, after)
+    return _interests(get_rules(), saved.created_at)
 
 
 def _discord_channel_name(settings: Settings) -> str | None:
@@ -190,12 +206,12 @@ async def get_notifications(session: Session, user_id: UserId) -> NotificationSe
 async def patch_notifications(
     body: NotificationSettingsIn, session: Session, user_id: UserId
 ) -> NotificationSettings:
-    data = await prefs.prefs_for_update(session, user_id)
+    before = await prefs.prefs_for_update(session, user_id)
     if body.channels:
-        _require_connected(body.channels, effective_rules(data).notify.channels)
-    data = merge_overlay(data, {"notify": _notify_patch(body)})
-    updated_at = await save_or_422(session, user_id, data)
-    return await _notifications(session, user_id, updated_at)
+        _require_connected(body.channels, effective_rules(before).notify.channels)
+    after = merge_overlay(before, {"notify": _notify_patch(body)})
+    saved = await save_or_422(session, user_id, before, after)
+    return await _notifications(session, user_id, saved.created_at)
 
 
 @router.delete("/overrides/{key}", status_code=204)
@@ -204,5 +220,41 @@ async def delete_override(key: str, session: Session, user_id: UserId) -> None:
     path = app_key_path(key)
     if path is None:
         raise ApiError(404, "not_found", "되돌릴 수 있는 설정 키가 아닙니다.", {"key": key})
-    data = await prefs.prefs_for_update(session, user_id)
-    await save_or_422(session, user_id, without_key(data, path))
+    before = await prefs.prefs_for_update(session, user_id)
+    await save_or_422(session, user_id, before, without_key(before, path), origin="reset")
+
+
+def _revision(row: SettingsRevision) -> Revision:
+    return Revision(
+        id=str(row.id),
+        origin=cast(RevisionOrigin, row.origin),
+        note=row.note,
+        changes=[SettingChange(**change) for change in row.changes],
+        created_at=row.created_at,
+    )
+
+
+@router.get("/revisions")
+async def list_revisions(session: Session, user_id: UserId, paging: Paging) -> Page[Revision]:
+    rows, next_cursor = await queries.revision_page(session, user_id, paging)
+    return Page[Revision](items=[_revision(r) for r in rows], next_cursor=next_cursor)
+
+
+@router.post("/revisions/{revision_id}/restore")
+async def restore_revision(revision_id: str, session: Session, user_id: UserId) -> RestoreResult:
+    """그 저장 뒤의 덮어쓰기로 되돌린다. 지금 모델·주인에 맞지 않는 키는 버리고 dropped 로 알린다.
+
+    되돌리기도 저장 한 번이라 이력이 한 행 늘어난다.
+    """
+    rid = parse_id(revision_id)
+    row = await queries.find_revision(session, user_id, rid) if rid else None
+    if row is None:
+        raise ApiError(
+            404, "not_found", "설정 이력을 찾을 수 없습니다.", {"revision_id": revision_id}
+        )
+    data, dropped = restorable(row.data)
+    before = await prefs.prefs_for_update(session, user_id)
+    saved = await save_or_422(
+        session, user_id, before, data, origin="restore", note=f"#{rid} 저장으로 되돌림"
+    )
+    return RestoreResult(revision=_revision(saved), dropped=dropped)

@@ -13,6 +13,7 @@ import structlog
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.config import JsonDict
+from pydantic.fields import FieldInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.schemas import Kind
@@ -288,6 +289,16 @@ def merge_overlay(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, An
     return merged
 
 
+def _sub_model(info: FieldInfo | None) -> type[BaseModel] | None:
+    sub = info.annotation if info else None
+    return sub if isinstance(sub, type) and issubclass(sub, BaseModel) else None
+
+
+def _app_owned(info: FieldInfo | None) -> bool:
+    extra = info.json_schema_extra if info else None
+    return isinstance(extra, dict) and extra.get("owner") == "app"
+
+
 def _owned_part(
     value: dict[str, Any], model: type[BaseModel], path: list[str], dropped: list[str]
 ) -> dict[str, Any]:
@@ -299,12 +310,11 @@ def _owned_part(
     kept: dict[str, Any] = {}
     for key, item in value.items():
         info = model.model_fields.get(key)
-        sub = info.annotation if info else None
-        extra = info.json_schema_extra if info else None
-        if isinstance(sub, type) and issubclass(sub, BaseModel) and isinstance(item, dict):
+        sub = _sub_model(info)
+        if sub and isinstance(item, dict):
             if part := _owned_part(item, sub, [*path, key], dropped):
                 kept[key] = part
-        elif isinstance(extra, dict) and extra.get("owner") == "app":
+        elif _app_owned(info):
             kept[key] = item
         else:
             dropped.append(".".join([*path, key]))
@@ -430,9 +440,14 @@ def prune_overlay(overlay: dict[str, Any]) -> dict[str, Any]:
     dict 는 말단 단위(kind_weights 는 kind 마다), 목록은 통째로 비교한다. 생략된 categories 의
     YAML 값은 검증기가 채운 taxonomy 전체다.
     """
-    yaml = yaml_rules().model_dump(mode="json")
-    yaml["sources"] = {c.name: c.model_dump(mode="json") for c in get_source_configs()}
-    return _differences(overlay, yaml)
+    return _differences(overlay, _yaml_values())
+
+
+def _yaml_values() -> dict[str, Any]:
+    """YAML 값 전체(JSON 모양). sources 는 이름 → SourceConfig 다."""
+    values = yaml_rules().model_dump(mode="json")
+    values["sources"] = {c.name: c.model_dump(mode="json") for c in get_source_configs()}
+    return values
 
 
 def _differences(value: dict[str, Any], base: dict[str, Any]) -> dict[str, Any]:
@@ -444,6 +459,77 @@ def _differences(value: dict[str, Any], base: dict[str, Any]) -> dict[str, Any]:
         elif key not in base or item != base[key]:
             kept[key] = item
     return kept
+
+
+def _collect(model: type[BaseModel], value: Any, path: list[str], leaves: dict[str, Any]) -> None:
+    if not isinstance(value, dict):
+        return
+    for key, info in model.model_fields.items():
+        if key not in value:
+            continue
+        item, sub = value[key], _sub_model(info)
+        if sub:
+            _collect(sub, item, [*path, key], leaves)
+        elif _app_owned(info) and isinstance(item, dict):
+            leaves.update({".".join([*path, key, k]): v for k, v in item.items()})
+        elif _app_owned(info):
+            leaves[".".join([*path, key])] = item
+
+
+def _app_leaves(values: dict[str, Any]) -> dict[str, Any]:
+    """설정 모양 dict → {앱 소유 키 점 경로: 값}. kind_weights 는 kind 마다, sources 는 이름마다."""
+    leaves: dict[str, Any] = {}
+    _collect(Rules, values, [], leaves)
+    sources = values.get("sources")
+    if isinstance(sources, dict):
+        for name, source in sources.items():
+            _collect(SourceConfig, source, ["sources", name], leaves)
+    return leaves
+
+
+def overlay_changes(before: dict[str, Any], after: dict[str, Any]) -> list[dict[str, Any]]:
+    """두 덮어쓰기 사이에 유효값이 바뀐 앱 소유 키. [{key, old, new, default}]
+
+    default 는 지금 YAML 값이다. 기동 때 config.default_changed 가 이 값과 비교한다.
+    """
+    yaml = _yaml_values()
+    default = _app_leaves(yaml)
+    old = _app_leaves(merge_overlay(yaml, before))
+    return [
+        {"key": key, "old": old.get(key), "new": new, "default": default.get(key)}
+        for key, new in _app_leaves(merge_overlay(yaml, after)).items()
+        if old.get(key) != new
+    ]
+
+
+def restorable(overlay: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    """옛 저장값을 지금 모델·주인 기준으로 정리한다. (남길 덮어쓰기, 버린 키 경로)"""
+    kept = sanitize_overlay(overlay)
+    return kept, sorted(_leaf_paths(overlay) - _leaf_paths(kept))
+
+
+def _leaf_paths(value: dict[str, Any], path: tuple[str, ...] = ()) -> set[str]:
+    paths: set[str] = set()
+    for key, item in value.items():
+        if isinstance(item, dict) and item:
+            paths |= _leaf_paths(item, (*path, key))
+        else:
+            paths.add(".".join((*path, key)))
+    return paths
+
+
+def warn_changed_defaults(overlay: dict[str, Any], then: dict[str, Any]) -> None:
+    """앱 값이 있는 키 가운데 앱이 마지막으로 바꾼 뒤 YAML 값이 바뀐 키를 경고한다.
+
+    그 키는 앱 값이 이겨 YAML 변경이 반영되지 않는다. then 은 키마다 마지막 이력의 default 이고,
+    이력이 없는 키(#34 이전 저장)는 알 수 없어 넘어간다.
+    """
+    now = _app_leaves(_yaml_values())
+    for key, value in _app_leaves(overlay).items():
+        if key in then and then[key] != now.get(key):
+            log.warning(
+                "config.default_changed", key=key, value=value, then=then[key], now=now.get(key)
+            )
 
 
 def app_key_path(key: str) -> list[str] | None:

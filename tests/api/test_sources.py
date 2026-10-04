@@ -15,7 +15,7 @@ from app.config import SourceConfig
 from app.db import budget
 from app.db.budget import BudgetUsage
 from app.db.models import Source
-from tests.api.conftest import AUTH, PrefsStore
+from tests.api.conftest import AUTH, FakeSession, PrefsStore
 from tests.conftest import fixture
 
 REPOS = [f"org/repo{i}" for i in range(10)]
@@ -171,3 +171,21 @@ def test_patch_source_rejects_invalid_body(client: TestClient, rows, store: Pref
 
     assert res.status_code == 422
     assert store.saves == 0
+
+
+def test_restore_after_toggle_puts_row_and_list_back(
+    client: TestClient, rows, store: PrefsStore, session: FakeSession
+):
+    interests = client.get("/api/v1/settings/interests", headers=AUTH).json()
+    interests.pop("updated_at")
+    client.put("/api/v1/settings/interests", headers=AUTH, json=interests)  # 토글 전 저장
+    client.patch("/api/v1/sources/rss:anthropic", headers=AUTH, json={"enabled": False})
+    before_toggle = session.revisions()[0]
+
+    res = client.post(f"/api/v1/settings/revisions/{before_toggle.id}/restore", headers=AUTH)
+
+    assert res.status_code == 200, res.text
+    assert rows["rss:anthropic"].enabled is True
+    listed = client.get("/api/v1/sources", headers=AUTH).json()["sources"]
+    assert {s["id"]: s["enabled"] for s in listed}["rss:anthropic"] is True
+    assert store.data == {}
