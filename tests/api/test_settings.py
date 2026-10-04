@@ -589,7 +589,9 @@ def test_settings_overview_shows_value_default_and_source(
     )
     assert items["scoring.kind_weights.survey"]["owner"] == "app"
     assert items["sources.rss:openai.enabled"]["edit_url"] == f"{EDIT}/sources.yaml"
-    assert items["app.resurface_unread_after_days"]["edit_url"] == f"{EDIT}/app.yaml"
+    assert items["app.personal_model_threshold"]["edit_url"] == f"{EDIT}/app.yaml"
+    assert items["notify.resurface_after_days"]["owner"] == "app"
+    assert items["budget.judge_daily_cap"]["category"] == "budget"
     assert items["server.llm_model"] == {
         "key": "server.llm_model",
         "label": "LLM 모델",

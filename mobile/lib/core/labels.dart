@@ -226,6 +226,7 @@ enum SettingCategory {
   triage('triage', '선별'),
   scoring('scoring', '점수'),
   notify('notify', '알림'),
+  budget('budget', 'LLM 예산'),
   sources('sources', '수집 소스'),
   app('app', '앱 화면·찜 재알림'),
   server('server', '서버 (VM .env)');

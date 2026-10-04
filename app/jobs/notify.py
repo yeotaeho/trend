@@ -35,7 +35,6 @@ BATCH_SIZE = 20
 PENDING = (ItemStatus.SCORED.value, ItemStatus.QUEUED.value)
 # 제목 병기에 쓰는 형제 항목 상태. 탈락·실패 항목의 버전은 붙이지 않는다.
 SIBLING_STATUSES = (ItemStatus.SCORED.value, ItemStatus.QUEUED.value, ItemStatus.SENT.value)
-EXPLORE_BAND = 0.10  # 임계값 바로 아래 이 폭 안에서 떨어진 항목이 탐색 후보
 RATE_LIMITED = "rate_limited"
 log = get_logger(__name__)
 
@@ -251,7 +250,7 @@ def explore_candidate(threshold: float, now: datetime) -> ColumnElement[bool]:
     summarized = select(Summary.item_id).where(Summary.item_id == Item.id)
     return and_(
         Item.status == ItemStatus.DROPPED.value,
-        Item.score >= threshold - EXPLORE_BAND,
+        Item.score >= threshold - get_rules().scoring.explore_band,
         Item.score < threshold,
         Item.published_at >= now - timedelta(hours=24),
         score_drop.exists(),

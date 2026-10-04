@@ -1,7 +1,7 @@
-# 앱 화면(GET /meta·프로필·수집 소스)과 찜 재알림 잡이 읽는 정적값. 수집·선별·판정 파이프라인은 읽지 않는다.
+# 앱 화면(GET /meta·프로필·수집 소스)이 읽는 정적값. 수집·선별·판정 파이프라인은 읽지 않는다.
+# 찜 재알림 일수는 #37 에서 rules.yaml notify.resurface_after_days(앱 소유)로 옮겼다.
 onboarding: {done: 8, total: 8}
 personal_model_threshold: 50
-resurface_unread_after_days: 7
 screening_relevance_floor: 0.5
 planned_sources: [Reddit, GitHub Trending, X, 요즘IT]
 # policy.taxonomy slug → 앱 표시 라벨. 선별 어휘는 rules.yaml 이 소유하고 여기는 라벨만 둔다.

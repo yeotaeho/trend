@@ -60,7 +60,7 @@ SavedCard — Card (padding 16, **gap 10**, 1px `#E5E2DB`).
 | saved.`folder` | {id, name}? | `적용해보기` | null 이면 배지 숨김 |
 | saved.`memo` | string? | – | null 이면 박스 숨김 |
 | saved.`is_read` | bool | false | 안 읽음 점 |
-| `resurface_unread_after_days` | int | 7 | 정적 |
+| `resurface_unread_after_days` | int | 7 | 앱 소유 `notify.resurface_after_days` |
 
 ## 규칙 (안내문에서)
 - 찜은 하루 push 상한·무음 시간과 무관하다.

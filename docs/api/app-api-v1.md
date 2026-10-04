@@ -430,16 +430,16 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
       "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/rules.yaml"
     },
     {
-      "key": "app.resurface_unread_after_days",
+      "key": "notify.resurface_after_days",
       "label": "찜 재알림 일수",
-      "category": "app",
+      "category": "notify",
       "value": 7,
       "default": 7,
       "source": "default",
-      "owner": "yaml",
-      "apply": "deploy",
+      "owner": "app",
+      "apply": "next_job",
       "default_changed": false,
-      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/app.yaml"
+      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/rules.yaml"
     },
     {
       "key": "sources.youtube:codingapple.enabled",
@@ -474,7 +474,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 | `revision` | 마지막 저장 이력 id(`GET /settings/revisions`). 한 번도 저장하지 않았으면 `null` |
 | `git_sha` | 배포한 커밋. 이미지가 넣는다(Dockerfile `GIT_SHA`). 로컬은 `null` |
 | `delivery_blocked` | 설정 조합 때문에 알림이 막히는 사유(아래 표). 없으면 빈 목록 |
-| `items[].key` | 점 경로. 첫 마디가 `category` 다. `policy`·`exclude`·`dedupe`·`triage`·`scoring`·`notify` 는 rules.yaml, `app` 은 app.yaml, `sources` 는 sources.yaml(`sources.<이름>.<필드>`), `server` 는 VM `.env` |
+| `items[].key` | 점 경로. 첫 마디가 `category` 다. `policy`·`exclude`·`dedupe`·`triage`·`scoring`·`notify`·`budget` 은 rules.yaml, `app` 은 app.yaml, `sources` 는 sources.yaml(`sources.<이름>.<필드>`), `server` 는 VM `.env` |
 | `items[].label` | 한국어 라벨. kind 가중치는 `kind 가중치 · survey`, 소스는 `<표시 이름> · <필드>` |
 | `items[].value` · `default` | 유효값과 YAML 값(server 는 코드 기본값) |
 | `items[].source` | `app` 이면 앱이 덮어쓴 값이다. 되돌리기는 `DELETE /settings/overrides/{key}` |
@@ -817,7 +817,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 ```
 
 - `collected_total` 은 창 안에 적재(`items.fetched_at`)된 항목 수.
-- `borderline.range` = [통과선 − 0.10, 통과선]. 탐색 슬롯 후보 폭(`jobs/notify.py` `EXPLORE_BAND`)과 같다.
+- `borderline.range` = [통과선 − 탐색 폭, 통과선]. 탐색 폭은 `rules.scoring.explore_band`(0.10, YAML 소유)이고 탐색 슬롯 후보와 같은 값이다.
 - `unclassified_count` 는 kind 가 없는 항목(선별 전 탈락, `exclude`+`dedup`+`stale`).
 
 #### `GET /filtered/groups` — 그룹 목록
@@ -977,7 +977,7 @@ PATCH `{"name": "...", "position": 0}` (둘 다 선택). `position` 은 옮겨 �
 
 #### 읽지 않은 찜 재알림 (정책, 설정 UI 없음)
 
-`resurface_unread_after_days`(7, `config/app.yaml`, 정적) 가 지나도록 `is_read=false` 인 찜은 한 번 FCM **조용한 알림**(`quiet`)으로 다시 알린다 (사용자 설계 문서의 "발송 잡의 silent 레벨로" 와 같은 강도다. 다만 별도 잡이며 `notifications` 에 남기지 않는다). `bookmarks.resurfaced_at` 에 기록하고 피드·통계·push 상한에는 넣지 않는다. FCM 이 꺼져 있으면 보내지 않고 기록도 하지 않는다. 무음 시간에는 보내지 않는다.
+`resurface_unread_after_days`(7, `rules.notify.resurface_after_days`, 앱 소유. 앱에서 바꾸는 행은 #38) 가 지나도록 `is_read=false` 인 찜은 한 번 FCM **조용한 알림**(`quiet`)으로 다시 알린다 (사용자 설계 문서의 "발송 잡의 silent 레벨로" 와 같은 강도다. 다만 별도 잡이며 `notifications` 에 남기지 않는다). `bookmarks.resurfaced_at` 에 기록하고 피드·통계·push 상한에는 넣지 않는다. FCM 이 꺼져 있으면 보내지 않고 기록도 하지 않는다. 무음 시간에는 보내지 않는다. 한 회차(1시간)에 5건까지만 보낸다(`RESURFACE_PER_ROUND`). 재알림은 push 상한을 거치지 않아, 일수를 줄였을 때 밀린 찜이 한꺼번에 나가지 않게 끊는다.
 
 ### 4.8 화면 08 내 프로필
 
@@ -1238,7 +1238,7 @@ v2 계획서 Task 1 의 사용자 식별자와 앱 테이블을 **B1 의 `0004` 
 ```yaml
 onboarding: {done: 8, total: 8}
 personal_model_threshold: 50
-resurface_unread_after_days: 7
+# resurface_unread_after_days 는 #37 에서 rules.yaml notify.resurface_after_days 로 옮겼다.
 screening_relevance_floor: 0.5
 planned_sources: [Reddit, GitHub Trending, X, 요즘IT]
 # policy.taxonomy slug → 앱 표시 라벨. 선별 어휘는 rules.yaml 이 소유하고 여기는 라벨만 둔다.

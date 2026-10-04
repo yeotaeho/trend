@@ -56,3 +56,12 @@ def test_missing_label_falls_back_to_slug():
         ("agent", "에이전트 패턴"),
         ("new-slug", "new-slug"),
     ]
+
+
+def test_meta_resurface_days_follow_app_value(client: TestClient):
+    # 재알림 일수는 앱 소유라 저장한 값(덮어쓰기)을 따른다(#37).
+    from app.config import set_prefs_overlay
+
+    set_prefs_overlay({"notify": {"resurface_after_days": 3}})
+
+    assert client.get("/api/v1/meta", headers=AUTH).json()["resurface_unread_after_days"] == 3

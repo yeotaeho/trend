@@ -32,7 +32,6 @@ class Settings(BaseSettings):
     database_url: str
     anthropic_api_key: str = ""
     llm_model: str = "claude-haiku-4-5"
-    llm_daily_cap: int = 300
 
     # 임베딩. provider 는 voyage | openai. 모델을 바꾸면 backfill_embeddings.py 로 전량 재계산.
     embedding_provider: str = "voyage"
@@ -189,6 +188,8 @@ class ScoringConfig(_Strict):
     threshold: float = yaml_field("점수 관문", default=0.45, ge=0, le=1)
     # 모든 소스 공통. 이보다 오래된 항목은 선별 호출 없이 stale 로 버린다.
     max_age_hours: int = yaml_field("최대 나이(시간)", default=72, ge=1, le=168)
+    # 임계값 바로 아래 이 폭에서 떨어진 항목이 탐색 후보다. 걸러짐 API 경계 구간도 같은 값이다.
+    explore_band: float = yaml_field("탐색 폭", default=0.10, gt=0, le=0.5)
     # kind 별 감점(−0.5~0). 곱이 아니라 그대로 더한다. 없는 kind 는 0. 키가 Kind 밖이면 기동 실패.
     # 가점(technique +0.10)은 실측으로 arXiv 154건/2.5일을 판정에 보내 범위에서 뺐다.
     kind_weights: dict[Kind, KindWeight] = app_field(
@@ -228,6 +229,8 @@ class NotifyConfig(_Strict):
         default_factory=DeliveryByImportanceConfig
     )
     explore_enabled: bool = app_field("탐색 슬롯", default=True)
+    # 읽지 않은 찜을 이 날수가 지나면 한 번 다시 알린다(jobs/resurface.py, FCM 조용한 알림).
+    resurface_after_days: int = app_field("찜 재알림 일수", default=7, ge=1, le=30)
     channels: ChannelsConfig = Field(default_factory=ChannelsConfig)
 
     @field_validator("timezone")
@@ -240,8 +243,16 @@ class NotifyConfig(_Strict):
         return value
 
 
+class BudgetConfig(_Strict):
+    """LLM 하루 예산(Asia/Seoul 달력일). 선별은 triage.daily_cap_calls, 탐색 판정은
+    notify.explore_judge_cap 이고 판정은 여기다. 탐색 판정도 판정 예산을 함께 쓴다(db/budget.py).
+    """
+
+    judge_daily_cap: int = yaml_field("판정 하루 호출 상한", default=300, ge=0, le=1000)
+
+
 class Rules(_Strict):
-    """config/rules.yaml — 정책·제외 규칙·임계값·발송 정책."""
+    """config/rules.yaml — 정책·제외 규칙·임계값·발송 정책·LLM 예산."""
 
     policy: PolicyConfig = Field(default_factory=PolicyConfig)
     exclude: ExcludeConfig = Field(default_factory=ExcludeConfig)
@@ -249,6 +260,7 @@ class Rules(_Strict):
     triage: TriageConfig = Field(default_factory=TriageConfig)
     scoring: ScoringConfig = Field(default_factory=ScoringConfig)
     notify: NotifyConfig = Field(default_factory=NotifyConfig)
+    budget: BudgetConfig = Field(default_factory=BudgetConfig)
 
 
 class OnboardingConfig(_Strict):
@@ -257,13 +269,10 @@ class OnboardingConfig(_Strict):
 
 
 class AppConfig(_Strict):
-    """config/app.yaml — 앱 화면과 찜 재알림 잡이 읽는 정적값. 선별·판정은 읽지 않는다."""
+    """config/app.yaml — 앱 화면이 읽는 정적값. 선별·판정은 읽지 않는다."""
 
     onboarding: OnboardingConfig = Field(default_factory=OnboardingConfig)
     personal_model_threshold: int = yaml_field("개인 모델 기준 판정 수", default=50, ge=1)
-    resurface_unread_after_days: int = yaml_field(
-        "찜 재알림 일수", default=7, ge=1, le=30, scope="user"
-    )
     screening_relevance_floor: float = yaml_field("선별 관련도 하한", default=0.5, ge=0, le=1)
     planned_sources: list[str] = yaml_field("추가 예정 소스", default_factory=list)
     # policy.taxonomy slug → 표시 라벨. 없는 slug 는 slug 를 그대로 라벨로 쓴다.

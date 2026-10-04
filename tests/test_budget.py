@@ -56,3 +56,19 @@ async def test_usage_today_is_zero_without_calls(monkeypatch):
     usage = await usage_today(_UsageSession([]))
 
     assert {name: u.used for name, u in usage.items()} == {"triage": 0, "judge": 0, "explore": 0}
+
+
+def test_judge_cap_comes_from_rules_budget(monkeypatch):
+    # 판정 예산은 .env 의 LLM_DAILY_CAP 이 아니라 rules.yaml budget.judge_daily_cap 이다(#37).
+    from app.config import yaml_rules
+    from app.db.budget import _caps
+
+    rules = yaml_rules()
+    monkeypatch.setattr("app.db.budget.get_rules", lambda: rules)
+
+    assert _caps() == {
+        "triage": rules.triage.daily_cap_calls,
+        "judge": rules.budget.judge_daily_cap,
+        "explore": rules.notify.explore_judge_cap,
+    }
+    assert rules.budget.judge_daily_cap == 300
