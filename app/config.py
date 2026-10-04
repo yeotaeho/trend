@@ -394,7 +394,11 @@ def _apply_overlay(
     kept: dict[str, Any] = {}
     for name, value in owned.items():
         if name == "sources":
-            kept[name] = value
+            errors = _source_errors(value)
+            for source, error in errors.items():
+                log.warning("config.prefs_key_ignored", path=f"sources.{source}", error=error)
+            if valid := {k: v for k, v in value.items() if k not in errors}:
+                kept[name] = valid
             continue
         if _overlay_error(merged, {name: value}) is not None:
             value = _valid_part(merged, [name], value)
@@ -402,6 +406,22 @@ def _apply_overlay(
             merged = merge_overlay(merged, {name: value})
             kept[name] = value
     return merged, kept
+
+
+def _source_errors(sources: dict[str, Any]) -> dict[str, str]:
+    """소스 덮어쓰기 이름 → 검증 오류. sources.yaml 항목에 얹어 SourceConfig 로 본다.
+
+    엄격 검증이다. "yes" 같은 값이 통과하면 sync_sources 가 bool 이 아니라고 건너뛰어 조용히
+    YAML 값이 된다. 이름은 _split_owned 가 이미 sources.yaml 안으로 거른 뒤다.
+    """
+    configs = {c.name: c for c in get_source_configs()}
+    errors: dict[str, str] = {}
+    for name, override in sources.items():
+        try:
+            SourceConfig.model_validate(configs[name].model_dump() | override, strict=True)
+        except ValueError as exc:
+            errors[name] = str(exc)
+    return errors
 
 
 def rules_with_overlay(base: dict[str, Any], overlay: dict[str, Any]) -> Rules:
@@ -430,6 +450,8 @@ def validate_overlay(overlay: dict[str, Any]) -> Rules:
     _, dropped = _split_owned(overlay)
     if dropped:
         raise ValueError(f"앱에서 바꿀 수 없는 설정 키다: {', '.join(dropped)}")
+    if errors := _source_errors(overlay.get("sources", {})):
+        raise ValueError(f"소스 설정 값이 틀렸다: {errors}")
     sections = {k: v for k, v in overlay.items() if k != "sources"}
     return Rules.model_validate(merge_overlay(_read_yaml(CONFIG_DIR / "rules.yaml"), sections))
 

@@ -24,9 +24,9 @@ async def active_device_count(session: AsyncSession, user_id: int) -> int:
 
 
 def _after_id(key: dict[str, Any]) -> int:
-    """목록 커서 = 직전 페이지 마지막 행의 id."""
+    """목록 커서 = 직전 페이지 마지막 행의 id. bool 은 int 의 하위형이라 따로 막는다."""
     rid = key.get("id")
-    if not isinstance(rid, int) or not 0 < rid <= INT4_MAX:
+    if type(rid) is not int or not 0 < rid <= INT4_MAX:
         raise ApiError(400, "bad_request", "커서를 해석할 수 없습니다.")
     return rid
 

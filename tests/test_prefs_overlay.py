@@ -295,3 +295,15 @@ def test_warns_when_yaml_default_changed_after_the_app_set_a_key():
     assert [(e["key"], e["value"], e["then"], e["now"]) for e in warned] == [
         ("notify.daily_push_cap", 20, default + 5, default)
     ]
+
+
+def test_source_override_values_are_validated():
+    # 이름이 맞아도 값이 틀리면 저장은 422, 기동·되돌리기는 그 키만 버린다.
+    overlay = {"sources": {"rss:openai": {"enabled": "maybe"}, "rss:anthropic": {"enabled": False}}}
+
+    with pytest.raises(ValueError, match="rss:openai"):
+        validate_overlay(overlay)
+    with capture_logs():
+        kept, dropped = restorable(overlay)
+    assert kept == {"sources": {"rss:anthropic": {"enabled": False}}}
+    assert dropped == ["sources.rss:openai.enabled"]

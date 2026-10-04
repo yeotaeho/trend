@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from app import config
 from app.api.v1 import settings as settings_api
 from app.api.v1.errors import ApiError
+from app.api.v1.pagination import encode_cursor
 from app.api.v1.queries import settings as queries
 from app.config import get_rules, yaml_rules
 from app.db import prefs
@@ -533,3 +534,11 @@ def _revision(rid: int, user_id: int, data: dict[str, Any]) -> SettingsRevision:
         note=None,
         created_at=datetime(2026, 10, 1, tzinfo=UTC),
     )
+
+
+@pytest.mark.parametrize("key", [{"id": True}, {"id": "3"}, {"id": 0}, {}])
+def test_bad_revision_cursor_is_400(client: TestClient, store: PrefsStore, key: dict[str, Any]):
+    res = client.get(REVISIONS, headers=AUTH, params={"cursor": encode_cursor(key)})
+
+    assert res.status_code == 400
+    assert res.json()["error"]["code"] == "bad_request"
