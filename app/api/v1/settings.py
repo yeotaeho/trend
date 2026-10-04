@@ -332,7 +332,7 @@ async def settings_overview(session: Session, user_id: UserId) -> SettingsOvervi
         )
         for name, label in _SERVER_KEYS.items()
     ]
-    latest = await queries.latest_revision_id(session, user_id)
+    latest = await prefs.latest_revision_id(session, user_id)
     blocked = delivery_blocked(
         effective_rules(overlay).notify,
         channel_connected(settings),

@@ -74,6 +74,15 @@ def test_score_needs_breakdown():
     assert score.components == {"src": 0.1, "rel": 0.24, "kind": -0.15}
 
 
+def test_score_uses_recorded_threshold():
+    # 점수 결정에 당시 임계값이 있으면 그 값으로, 옛 행은 지금 값으로 읽는다(#39).
+    breakdown = {"src": 0.1, "rel": 0.24}
+    recorded = score_rationale({"breakdown": breakdown, "threshold": 0.5}, 0.45)
+    old = score_rationale({"breakdown": breakdown}, 0.45)
+    assert recorded is not None and recorded.threshold == 0.5
+    assert old is not None and old.threshold == 0.45
+
+
 def test_screening_tolerates_old_rows():
     assert screening_of(None) is None
     old = screening_of({"relevance": 0.3, "reason": "무관", "kind": "survey"})

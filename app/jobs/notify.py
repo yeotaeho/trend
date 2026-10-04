@@ -14,6 +14,7 @@ from app.db.budget import reserve_call, today_start
 from app.db.models import Decision, Item, Notification, Source, Summary
 from app.db.session import session_scope
 from app.db.users import DEFAULT_USER_ID
+from app.jobs.pipeline import decision_criteria
 from app.log import get_logger
 from app.notify.base import APP_CHANNEL, Notifier, RateLimited, channel_connected
 from app.notify.discord import DiscordNotifier
@@ -317,6 +318,8 @@ async def _explore(
                 "importance": result.verdict.importance,
                 "tags": result.verdict.tags,
                 "examples": examples_details(examples),
+                "threshold": rules.scoring.threshold,
+                **(await decision_criteria(session)),
             },
         )
     )

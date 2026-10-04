@@ -9,7 +9,7 @@ Neon(Postgres, pgvector)이 모든 상태의 단일 진실 원천이다. 큐도 
 | `users` | 사용자. 지금은 `id=1, name='owner'` 한 행 | `name`, `created_at`. 코드는 `DEFAULT_USER_ID = 1` (`app/db/users.py`) 로 돈다 |
 | `sources` | 수집 소스 정의 | `type`, `config` jsonb(family 등), `poll_interval_sec`, `trust_score`, `last_polled_at`, `last_error` |
 | `items` | 정규화된 항목 (핵심) | `url_hash` unique, `category`, `kind`, `cluster_id`, `status`, `raw`(metrics·mentions), `embedding vector(1024)`, `embedding_model` |
-| `decisions` | 항목별 판단 기록 — 튜닝 근거 | `stage` rule / triage / score / llm, `passed`, `score`, `details` jsonb, `created_at` (인덱스, 걸러짐 창 집계) |
+| `decisions` | 항목별 판단 기록 — 튜닝 근거 | `stage` rule / triage / score / llm, `passed`, `score`, `details` jsonb(파이프라인·탐색 행은 `settings_rev`·`git_sha`, 점수·탐색 행은 `threshold` 도, #39), `created_at` (인덱스, 걸러짐 창 집계) |
 | `llm_calls` | LLM 호출 직전 예약 행 — 일일 상한은 이 표로 센다 | `kind` triage / judge / explore, `batch_id`, `called_at` |
 | `summaries` | LLM 결과 캐시 | `title_ko`, `summary_ko`, `tags`, `importance` 1~5, `worth_notifying`, 토큰 수 |
 | `notifications` | 발송 기록 | `user_id`, `channel`, `level` push / silent / feed / explore, `message_id`, `error`, `title`(발송한 제목, NULL 이면 `summaries.title_ko`), `sent_at` (인덱스) |

@@ -199,13 +199,18 @@ def _details(decision: Decision | None) -> dict[str, Any] | None:
 
 
 def score_rationale(details: dict[str, Any] | None, threshold: float) -> ScoreRationale | None:
-    """점수 결정 details → 점수. stale 탈락처럼 breakdown 이 없으면 점수가 없는 것으로 본다."""
+    """점수 결정 details → 점수. stale 탈락처럼 breakdown 이 없으면 점수가 없는 것으로 본다.
+
+    임계값은 결정 행에 남은 당시 값(#39)이고, 그 전 행은 [threshold](지금 값)다.
+    """
     breakdown = (details or {}).get("breakdown")
     if not isinstance(breakdown, dict):
         return None
     components = {k: float(v) for k, v in breakdown.items()}
     return ScoreRationale(
-        total=sum(components.values()), threshold=threshold, components=components
+        total=sum(components.values()),
+        threshold=float((details or {}).get("threshold", threshold)),
+        components=components,
     )
 
 
