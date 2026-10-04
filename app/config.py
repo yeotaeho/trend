@@ -60,8 +60,9 @@ class Settings(BaseSettings):
 
 
 # 앱이 바꿀 수 있는 값의 한도. 설정 모델 검증과 앱 API(/meta·쓰기 스키마)가 이 값 하나를 쓴다.
+# kind 가중치는 감점 전용이다(10-01 사용자 결정). 가점은 09-09 실측으로 기각했다.
 KIND_WEIGHT_MIN = -0.5
-KIND_WEIGHT_MAX = 0.5
+KIND_WEIGHT_MAX = 0.0
 DAILY_PUSH_CAP_MIN = 1
 DAILY_PUSH_CAP_MAX = 50
 INTERESTS_MAX_CHARS = 1000
@@ -184,8 +185,8 @@ class ScoringConfig(_Strict):
     threshold: float = yaml_field(default=0.45, ge=0, le=1)
     # 모든 소스 공통. 이보다 오래된 항목은 선별 호출 없이 stale 로 버린다.
     max_age_hours: int = yaml_field(default=72, ge=1, le=168)
-    # kind 별 가점·감점. 곱이 아니라 그대로 더한다. 없는 kind 는 0. 키가 Kind 밖이면 기동 실패.
-    # 감점만 둔다 — 가점(technique +0.10)은 실측으로 arXiv 154건/2.5일을 판정에 보냈다.
+    # kind 별 감점(−0.5~0). 곱이 아니라 그대로 더한다. 없는 kind 는 0. 키가 Kind 밖이면 기동 실패.
+    # 가점(technique +0.10)은 실측으로 arXiv 154건/2.5일을 판정에 보내 범위에서 뺐다.
     kind_weights: dict[Kind, KindWeight] = app_field(
         default_factory=lambda: {Kind.SURVEY: -0.15, Kind.TUTORIAL: -0.05, Kind.PROMO: -0.30}
     )

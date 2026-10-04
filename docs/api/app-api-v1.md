@@ -315,7 +315,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
   ],
   "kinds": ["release_major", "release_patch", "technique", "survey", "news", "tutorial", "promo", "other"],
   "limits": {
-    "kind_weight": {"min": -0.5, "max": 0.5, "step": 0.05},
+    "kind_weight": {"min": -0.5, "max": 0.0, "step": 0.05},
     "daily_push_cap": {"min": 1, "max": 50},
     "watch_keywords_max": 50,
     "folder_name_max": 30,
@@ -512,7 +512,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 - `profile.self_description` 1~1000자, `not_interested` 0~500자.
 - `selected_categories` 1개 이상, 전부 `policy.taxonomy` 안의 slug, 중복 없음.
 - `watch_keywords` 0~50개, 각 1~50자, 앞뒤 공백 제거 후 대소문자 무시 중복 제거. `/` 를 포함한 값은 `focus_repos`, 나머지는 `focus_stack` 으로 저장한다.
-- `kind_weights` 키는 `kind` 8개 중에서, 값은 −0.50 ~ +0.50. 서버가 소수 2자리로 반올림한다. 빠진 키는 현재 유효값을 유지한다 (앱은 편집하지 않는 `news`·`other` 도 GET 값을 그대로 보낸다).
+- `kind_weights` 키는 `kind` 8개 중에서, 값은 −0.50 ~ 0(감점 전용, 범위 밖은 422). 서버가 소수 2자리로 반올림한다. 빠진 키는 현재 유효값을 유지한다 (앱은 편집하지 않는 `news`·`other` 도 GET 값을 그대로 보낸다).
 - 모르는 키(`updated_at` 포함)를 보내면 422. 저장된 덮어쓰기 중 검증에 실패하는 옛 키(YAML 키가 바뀐 경우)는 저장 때 지워진다. 그래도 합친 결과가 검증에 실패하면 저장하지 않고 422 이며 `details.reason` 에 이유가 있다 (05·06 저장도 같다).
 
 저장 즉시 다음 선별·판정 호출부터 반영된다 (프로세스 안의 유효 설정 캐시를 갈아끼운다). 이미 매긴 점수는 다시 계산하지 않는다.
@@ -1194,7 +1194,7 @@ main 에는 `Kind`, `TriageItem.kind`, 프롬프트 2) kind 절, `ScoringConfig.
 | 사용자 열린 결정 | 결정 | 근거 |
 |---|---|---|
 | 온보딩 8건 추출 규칙 | 범위 밖 (02 온보딩 제외). 08 의 `온보딩 8/8` 은 정적값 | README 범위 |
-| kind 가중치를 노출할지, 숫자 대신 3단계로 할지 | **숫자로 노출** (−0.50 ~ +0.50, 0.05 단계), 6행 | 04 HTML 이 `+0` `−0.15` 숫자 행 |
+| kind 가중치를 노출할지, 숫자 대신 3단계로 할지 | **숫자로 노출** (−0.50 ~ 0 감점 전용, 0.05 단계, 10-04 #32), 6행 | 04 HTML 이 `+0` `−0.15` 숫자 행 |
 | "놓친 이슈" 는 수동 입력인지 | 수동 입력 없음. 걸러진 항목 복원 수로 센다. 캡션은 `직접 찾아본 건` 그대로 | 08 HTML, 09·10 의 👍 복원 |
 | 찜을 프로필 벡터 약한 신호로 넣을지 | 넣지 않는다 | 11 HTML 안내문 `유용/불필요 판정에는 반영되지 않습니다` |
 

@@ -23,6 +23,14 @@ Finder _weightIn(String kind, String text) => find.descendant(
   matching: find.text(text),
 );
 
+/// 가중치 시트의 `weight-up`·`weight-down` 버튼. 범위 끝이면 onTap 이 null 이다.
+GestureDetector _stepButton(WidgetTester tester, String key) => tester.widget(
+  find.descendant(
+    of: find.byKey(ValueKey(key)),
+    matching: find.byType(GestureDetector),
+  ),
+);
+
 Future<void> _tapBack(WidgetTester tester) async {
   await tester.tap(
     find.byWidgetPredicate((w) => w is AppIcon && w.name == 'back'),
@@ -213,32 +221,28 @@ void main() {
     await tester.pumpAndSettle();
     expect(_textColor(tester, _weightIn('survey', '−0.10')), AppColors.warn);
 
+    // 감점 전용(−0.50 ~ 0, /meta). 0 에서는 올릴 수 없고 아래 끝에서 멈춘다.
     await tester.tap(find.byKey(const ValueKey('kind-release_major')));
     await tester.pumpAndSettle();
+    expect(_stepButton(tester, 'weight-up').onTap, isNull, reason: '상한 0');
     for (var i = 0; i < 12; i++) {
-      await tester.tap(find.byKey(const ValueKey('weight-up')));
+      await tester.tap(find.byKey(const ValueKey('weight-down')));
     }
     await tester.pump();
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('weight-value'))).data,
-      '+0.50',
+      '−0.50',
     );
-    final upButton = tester.widget<GestureDetector>(
-      find.descendant(
-        of: find.byKey(const ValueKey('weight-up')),
-        matching: find.byType(GestureDetector),
-      ),
-    );
-    expect(upButton.onTap, isNull, reason: '상한 +0.50');
+    expect(_stepButton(tester, 'weight-down').onTap, isNull, reason: '하한 −0.50');
     await tester.tap(find.widgetWithText(AccentTextButton, '완료'));
     await tester.pumpAndSettle();
-    expect(_weightIn('release_major', '+0.50'), findsOneWidget);
+    expect(_weightIn('release_major', '−0.50'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(AccentTextButton, '저장'));
     await tester.pumpAndSettle();
     final weights = settings.savedBodies.single['kind_weights'] as Map;
     expect(weights['survey'], -0.1);
-    expect(weights['release_major'], 0.5);
+    expect(weights['release_major'], -0.5);
   });
 
   testWidgets('키워드 추가 다이얼로그는 중복을 막고, 길게 눌러 삭제를 확인한다', (tester) async {

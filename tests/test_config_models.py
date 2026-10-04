@@ -33,6 +33,7 @@ def test_real_config_files_pass_validation():
         (("notify", "daily_push_cap"), 51),
         (("dedupe", "related_threshold"), 0.99),  # 중복 임계값(0.96)보다 크면 안 된다
         (("scoring", "kind_weights"), {"promo": -0.9}),
+        (("scoring", "kind_weights"), {"technique": 0.1}),  # 감점 전용(#32)
         (("policy", "focus_stack"), [f"k{i}" for i in range(51)]),
     ],
 )

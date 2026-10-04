@@ -67,7 +67,7 @@ def test_get_interests_reflects_yaml_before_any_save(client: TestClient, store: 
 
 
 def test_put_interests_changes_effective_rules_immediately(client: TestClient, store: PrefsStore):
-    weights = {k.value: 0.0 for k in Kind} | {"survey": -0.2, "technique": 0.123}
+    weights = {k.value: 0.0 for k in Kind} | {"survey": -0.2, "technique": -0.123}
     res = client.put(
         INTERESTS,
         headers=AUTH,
@@ -83,7 +83,7 @@ def test_put_interests_changes_effective_rules_immediately(client: TestClient, s
     assert rules.policy.focus_stack == ["Claude", "MCP"]
     assert rules.policy.focus_repos == ["anthropics/*"]
     assert rules.scoring.kind_weights[Kind.SURVEY] == -0.2
-    assert rules.scoring.kind_weights[Kind.TECHNIQUE] == 0.12  # 소수 2자리 반올림
+    assert rules.scoring.kind_weights[Kind.TECHNIQUE] == -0.12  # 소수 2자리 반올림
     body = res.json()
     assert body["watch_keywords"] == ["Claude", "MCP", "anthropics/*"]
     assert body["updated_at"] == "2026-09-24T02:18:01Z"
@@ -92,15 +92,15 @@ def test_put_interests_changes_effective_rules_immediately(client: TestClient, s
 
 
 def test_missing_kind_keys_keep_current_values(client: TestClient, store: PrefsStore):
-    client.put(INTERESTS, headers=AUTH, json=_interests_body(kind_weights={"news": 0.1}))
+    client.put(INTERESTS, headers=AUTH, json=_interests_body(kind_weights={"news": -0.1}))
 
     weights = {k.value: 0.0 for k in Kind if k not in (Kind.NEWS, Kind.OTHER)}
     res = client.put(INTERESTS, headers=AUTH, json=_interests_body(kind_weights=weights))
 
     assert res.status_code == 200
-    assert res.json()["kind_weights"]["news"] == 0.1  # 앞 저장값
+    assert res.json()["kind_weights"]["news"] == -0.1  # 앞 저장값
     assert res.json()["kind_weights"]["other"] == 0.0  # YAML 값
-    assert get_rules().scoring.kind_weights[Kind.NEWS] == 0.1
+    assert get_rules().scoring.kind_weights[Kind.NEWS] == -0.1
 
 
 @pytest.mark.parametrize(
@@ -110,7 +110,8 @@ def test_missing_kind_keys_keep_current_values(client: TestClient, store: PrefsS
         {"selected_categories": ["not-a-slug"]},
         {"selected_categories": ["agent", "agent"]},
         {"kind_weights": {"survey": -0.6}},
-        {"kind_weights": {"not_a_kind": 0.1}},
+        {"kind_weights": {"technique": 0.1}},  # 감점 전용(#32)
+        {"kind_weights": {"not_a_kind": -0.1}},
         {"watch_keywords": ["   "]},
         {"watch_keywords": ["x" * 51]},
         {"watch_keywords": [f"k{i}" for i in range(51)]},

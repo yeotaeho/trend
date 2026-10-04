@@ -57,7 +57,7 @@ slug 12개는 `config/rules.yaml` `policy.taxonomy` 와 같은 순서·값이다
 ### 9. kind 가중치 카드 — Card `padding 4px 16px`, gap 0, Row 6개 ([tokens Row](../tokens.md#row-row))
 - 좌 — 라벨 15/500, 보조 줄 kind 코드 12 tertiary.
 - 우 — 값 14 `mono` (음수 `#B5651D`, 그 밖 `#55524B`) + `chev` 16 `#B8B4AB`.
-- 행 탭 → 숫자 편집 (디자인 없음). 스테퍼 −0.50 ~ +0.50, 단계 0.05.
+- 행 탭 → 숫자 편집 (디자인 없음). 스테퍼 −0.50 ~ 0(감점 전용, `/meta` 한도), 단계 0.05.
 
 | 라벨 | kind | 값 (HTML 그대로) |
 |---|---|---|

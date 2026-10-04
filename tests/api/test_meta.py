@@ -31,7 +31,7 @@ def test_meta_static_fields(client: TestClient):
     assert body["timezone"] == "Asia/Seoul"
     assert body["kinds"] == [k.value for k in Kind]
     assert body["limits"] == {
-        "kind_weight": {"min": -0.5, "max": 0.5, "step": 0.05},
+        "kind_weight": {"min": -0.5, "max": 0.0, "step": 0.05},
         "daily_push_cap": {"min": 1, "max": 50},
         "watch_keywords_max": 50,
         "folder_name_max": 30,
