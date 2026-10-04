@@ -1,4 +1,4 @@
-# 앱 전용 정적값 (GET /meta·프로필·수집 소스 화면). 파이프라인은 이 파일을 읽지 않는다.
+# 앱 화면(GET /meta·프로필·수집 소스)과 찜 재알림 잡이 읽는 정적값. 수집·선별·판정 파이프라인은 읽지 않는다.
 onboarding: {done: 8, total: 8}
 personal_model_threshold: 50
 resurface_unread_after_days: 7

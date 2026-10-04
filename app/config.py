@@ -6,11 +6,13 @@ import copy
 import functools
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import structlog
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic.config import JsonDict
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.schemas import Kind
@@ -57,15 +59,41 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
 
+# 앱이 바꿀 수 있는 값의 한도. 설정 모델 검증과 앱 API(/meta·쓰기 스키마)가 이 값 하나를 쓴다.
+KIND_WEIGHT_MIN = -0.5
+KIND_WEIGHT_MAX = 0.5
+DAILY_PUSH_CAP_MIN = 1
+DAILY_PUSH_CAP_MAX = 50
+INTERESTS_MAX_CHARS = 1000
+NOT_INTERESTED_MAX_CHARS = 500
+WATCH_KEYWORDS_MAX = 50
+
+Scope = Literal["user", "global"]
+KindWeight = Annotated[float, Field(ge=KIND_WEIGHT_MIN, le=KIND_WEIGHT_MAX)]
+
+
+def app_field(**kwargs: Any) -> Any:
+    """앱이 덮어쓸 수 있는 키(user_prefs). 저장하면 다음 잡부터 반영된다."""
+    meta: JsonDict = {"owner": "app", "apply": "next_job", "scope": "user"}
+    return Field(json_schema_extra=meta, **kwargs)
+
+
+def yaml_field(*, scope: Scope = "global", **kwargs: Any) -> Any:
+    """YAML 이 주인인 키. 앱은 읽기만 하고, 바꾸면 배포 때 반영된다."""
+    meta: JsonDict = {"owner": "yaml", "apply": "deploy", "scope": scope}
+    return Field(json_schema_extra=meta, **kwargs)
+
+
 class SourceConfig(BaseModel):
     """config/sources.yaml 한 항목. `config` 는 소스 타입별 자유 필드."""
 
-    name: str
-    type: str
-    config: dict[str, Any] = Field(default_factory=dict)
-    poll_interval_sec: int = 900
-    trust_score: float = 0.5
-    enabled: bool = True
+    name: str = yaml_field()
+    type: str = yaml_field()
+    config: dict[str, Any] = yaml_field(default_factory=dict)
+    poll_interval_sec: int = yaml_field(default=900, ge=300)
+    trust_score: float = yaml_field(default=0.5, ge=0, le=1)
+    # 06 화면 토글. 앱이 끈 값은 user_prefs.sources 에 있고 sync_sources 가 반영한다.
+    enabled: bool = app_field(default=True)
 
 
 class _Strict(BaseModel):
@@ -92,14 +120,14 @@ DEFAULT_TAXONOMY = (
 class PolicyConfig(_Strict):
     """선별·판정 프롬프트가 읽는 정책. 문장으로 쓴다. 관문이 아니라 힌트다."""
 
-    interests: str = ""
-    not_interested: str = ""
-    focus_repos: list[str] = Field(default_factory=list)
-    focus_stack: list[str] = Field(default_factory=list)
+    interests: str = app_field(default="", max_length=INTERESTS_MAX_CHARS)
+    not_interested: str = app_field(default="", max_length=NOT_INTERESTED_MAX_CHARS)
+    focus_repos: list[str] = app_field(default_factory=list)
+    focus_stack: list[str] = app_field(default_factory=list)
     # 선별 topics 의 분류표 (slug). 앱 표시 라벨은 config/app.yaml 이 따로 가진다.
-    taxonomy: list[str] = Field(default_factory=lambda: list(DEFAULT_TAXONOMY))
+    taxonomy: list[str] = yaml_field(default_factory=lambda: list(DEFAULT_TAXONOMY))
     # 앱 관심사 화면에서 고른 카테고리. 거름망이 아니라 프롬프트 힌트다. 생략하면 taxonomy 전체.
-    categories: list[str] = Field(default_factory=list)
+    categories: list[str] = app_field(default_factory=list)
 
     @model_validator(mode="after")
     def _categories_within_taxonomy(self) -> PolicyConfig:
@@ -110,40 +138,55 @@ class PolicyConfig(_Strict):
             raise ValueError(f"policy.categories 에 taxonomy 밖 slug 가 있다: {unknown}")
         return self
 
+    @model_validator(mode="after")
+    def _keywords_within_limit(self) -> PolicyConfig:
+        # 앱 04 의 관심 키워드 한 목록이 두 키로 나뉘어 저장된다(저장소 경로는 focus_repos).
+        count = len(self.focus_stack) + len(self.focus_repos)
+        if count > WATCH_KEYWORDS_MAX:
+            limit = WATCH_KEYWORDS_MAX
+            raise ValueError(f"focus_stack·focus_repos 는 합쳐 {limit}개까지다: {count}")
+        return self
+
 
 class ExcludeConfig(_Strict):
-    keywords: list[str] = Field(default_factory=list)
-    domains: list[str] = Field(default_factory=list)
+    keywords: list[str] = yaml_field(default_factory=list)
+    domains: list[str] = yaml_field(default_factory=list)
 
 
 class DedupeConfig(_Strict):
     # 2026-09-06 표본 보정값. 0.90~0.95 는 같은 채널의 다른 영상·다른 릴리즈였고,
     # 0.80~0.85 는 arXiv 두 피드의 주제 이웃이었다. rules.yaml 이 우선한다.
-    dup_threshold: float = 0.96
-    related_threshold: float = 0.88
-    window_hours: int = 72
+    dup_threshold: float = yaml_field(default=0.96, gt=0, le=1)
+    related_threshold: float = yaml_field(default=0.88, gt=0, le=1)
+    window_hours: int = yaml_field(default=72, ge=1, le=168)
+
+    @model_validator(mode="after")
+    def _related_not_above_dup(self) -> DedupeConfig:
+        if self.related_threshold > self.dup_threshold:
+            raise ValueError("dedupe.related_threshold 는 dup_threshold 이하여야 한다")
+        return self
 
 
 class TriageConfig(_Strict):
-    batch_size: int = 25
-    daily_cap_calls: int = 60
-    min_batch: int = 10
-    max_wait_minutes: int = 60
+    batch_size: int = yaml_field(default=25, ge=1, le=40)
+    daily_cap_calls: int = yaml_field(default=60, ge=0, le=200)
+    min_batch: int = yaml_field(default=10, ge=1)
+    max_wait_minutes: int = yaml_field(default=60, ge=1, le=240)
 
 
 class ScoringConfig(_Strict):
     # 2026-09-10 조정. 소스 신뢰도가 arXiv 의 신호 밀도를 대신 벌하고 있어 비중을 관련도로 옮겼다.
-    w_src: float = 0.20
-    w_rel: float = 0.30
-    w_hot: float = 0.2
-    w_multi: float = 0.2
-    w_fresh: float = 0.1
-    threshold: float = 0.45
+    w_src: float = yaml_field(default=0.20, ge=0, le=1)
+    w_rel: float = yaml_field(default=0.30, ge=0, le=1)
+    w_hot: float = yaml_field(default=0.2, ge=0, le=1)
+    w_multi: float = yaml_field(default=0.2, ge=0, le=1)
+    w_fresh: float = yaml_field(default=0.1, ge=0, le=1)
+    threshold: float = yaml_field(default=0.45, ge=0, le=1)
     # 모든 소스 공통. 이보다 오래된 항목은 선별 호출 없이 stale 로 버린다.
-    max_age_hours: int = 72
+    max_age_hours: int = yaml_field(default=72, ge=1, le=168)
     # kind 별 가점·감점. 곱이 아니라 그대로 더한다. 없는 kind 는 0. 키가 Kind 밖이면 기동 실패.
     # 감점만 둔다 — 가점(technique +0.10)은 실측으로 arXiv 154건/2.5일을 판정에 보냈다.
-    kind_weights: dict[Kind, float] = Field(
+    kind_weights: dict[Kind, KindWeight] = app_field(
         default_factory=lambda: {Kind.SURVEY: -0.15, Kind.TUTORIAL: -0.05, Kind.PROMO: -0.30}
     )
 
@@ -152,32 +195,41 @@ Delivery = Literal["instant", "quiet", "feed_only"]
 
 
 class DeliveryByImportanceConfig(_Strict):
-    """importance 구간 → 알림 강도. 기본값은 notify/policy.py 의 level_for 와 같다."""
+    """importance 구간 → 알림 강도. notify/policy.py 의 delivery_for 가 읽는다."""
 
-    high: Delivery = "instant"
-    mid: Delivery = "quiet"
-    low: Delivery = "feed_only"
+    high: Delivery = app_field(default="instant")
+    mid: Delivery = app_field(default="quiet")
+    low: Delivery = app_field(default="feed_only")
 
 
 class ChannelsConfig(_Strict):
-    fcm: bool = True
-    discord: bool = True
-    telegram: bool = False
+    fcm: bool = app_field(default=True)
+    discord: bool = app_field(default=True)
+    telegram: bool = app_field(default=False)
 
 
 class NotifyConfig(_Strict):
-    daily_push_cap: int = 15
-    quiet_start_hour: int = 23
-    quiet_end_hour: int = 8
-    timezone: str = "Asia/Seoul"
-    explore_judge_cap: int = 3
+    daily_push_cap: int = app_field(default=15, ge=DAILY_PUSH_CAP_MIN, le=DAILY_PUSH_CAP_MAX)
+    quiet_start_hour: int = app_field(default=23, ge=0, le=23)
+    quiet_end_hour: int = app_field(default=8, ge=0, le=23)
+    timezone: str = yaml_field(default="Asia/Seoul", scope="user")
+    explore_judge_cap: int = yaml_field(default=3, ge=0, le=10)
     # 같은 cluster_id 를 하루에 보내는 서로 다른 항목 수 상한. 0 = 끔.
-    cluster_daily_cap: int = Field(default=1, ge=0)
+    cluster_daily_cap: int = app_field(default=1, ge=0, le=5)
     delivery_by_importance: DeliveryByImportanceConfig = Field(
         default_factory=DeliveryByImportanceConfig
     )
-    explore_enabled: bool = True
+    explore_enabled: bool = app_field(default=True)
     channels: ChannelsConfig = Field(default_factory=ChannelsConfig)
+
+    @field_validator("timezone")
+    @classmethod
+    def _known_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError) as exc:
+            raise ValueError(f"notify.timezone 이 IANA 시간대 이름이 아니다: {value!r}") from exc
+        return value
 
 
 class Rules(_Strict):
@@ -192,20 +244,20 @@ class Rules(_Strict):
 
 
 class OnboardingConfig(_Strict):
-    done: int = 8
-    total: int = 8
+    done: int = yaml_field(default=8, ge=0)
+    total: int = yaml_field(default=8, ge=0)
 
 
 class AppConfig(_Strict):
-    """config/app.yaml — 앱 전용 정적값. 파이프라인은 읽지 않는다."""
+    """config/app.yaml — 앱 화면과 찜 재알림 잡이 읽는 정적값. 선별·판정은 읽지 않는다."""
 
     onboarding: OnboardingConfig = Field(default_factory=OnboardingConfig)
-    personal_model_threshold: int = 50
-    resurface_unread_after_days: int = 7
-    screening_relevance_floor: float = 0.5
-    planned_sources: list[str] = Field(default_factory=list)
+    personal_model_threshold: int = yaml_field(default=50, ge=1)
+    resurface_unread_after_days: int = yaml_field(default=7, ge=1, le=30, scope="user")
+    screening_relevance_floor: float = yaml_field(default=0.5, ge=0, le=1)
+    planned_sources: list[str] = yaml_field(default_factory=list)
     # policy.taxonomy slug → 표시 라벨. 없는 slug 는 slug 를 그대로 라벨로 쓴다.
-    taxonomy_labels: dict[str, str] = Field(default_factory=dict)
+    taxonomy_labels: dict[str, str] = yaml_field(default_factory=dict)
 
 
 def _read_yaml(path: Path) -> dict[str, Any]:
@@ -383,10 +435,3 @@ def get_source_configs() -> list[SourceConfig]:
         # 이름이 소스 행·잡 ID·앱 소스 ID 다. 겹치면 어느 쪽이 이기는지 조용히 정하지 않는다.
         raise ValueError(f"sources.yaml 에 이름이 겹치는 소스가 있다: {duplicated}")
     return configs
-
-
-def reload_configs() -> None:
-    """YAML 을 다시 읽는다 (rules.yaml 핫리로드용). 덮어쓰기는 그대로 유지된다."""
-    get_rules.cache_clear()
-    get_source_configs.cache_clear()
-    get_app_config.cache_clear()
