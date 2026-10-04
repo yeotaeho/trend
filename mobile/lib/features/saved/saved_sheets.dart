@@ -209,7 +209,7 @@ class _MemoEditorState extends State<_MemoEditor> {
             maxLines: 6,
             maxLength: widget.maxLength,
             style: AppText.bodySm,
-            decoration: _inputDecoration(hint: '메모를 남겨 두세요. 비우면 메모가 지워집니다.'),
+            decoration: appInputDecoration(hint: '메모를 남겨 두세요. 비우면 메모가 지워집니다.'),
           ),
           Align(
             alignment: Alignment.centerRight,
@@ -315,7 +315,7 @@ class _FolderNameDialogState<T> extends State<_FolderNameDialog<T>> {
         textInputAction: TextInputAction.done,
         onChanged: (_) => setState(() => _error = null),
         onSubmitted: (_) => _submit(),
-        decoration: _inputDecoration(
+        decoration: appInputDecoration(
           hint: '폴더 이름 (1~${widget.maxLength}자)',
           error: _error,
         ),
@@ -332,27 +332,6 @@ class _FolderNameDialogState<T> extends State<_FolderNameDialog<T>> {
       ],
     );
   }
-}
-
-InputDecoration _inputDecoration({required String hint, String? error}) {
-  OutlineInputBorder border(Color color) => OutlineInputBorder(
-    borderRadius: BorderRadius.circular(AppRadius.button),
-    borderSide: BorderSide(color: color),
-  );
-  return InputDecoration(
-    hintText: hint,
-    hintStyle: AppText.bodySm.copyWith(color: AppColors.textTertiary),
-    errorText: error,
-    errorStyle: AppText.captionMd.copyWith(color: AppColors.error),
-    counterStyle: AppText.captionSm,
-    filled: true,
-    fillColor: AppColors.surface,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    enabledBorder: border(AppColors.borderControl),
-    focusedBorder: border(AppColors.primary),
-    errorBorder: border(AppColors.error),
-    focusedErrorBorder: border(AppColors.error),
-  );
 }
 
 // ── 폴더 관리 (더보기) ──

@@ -7,18 +7,22 @@ import '../../data/repositories/repositories.dart';
 import '../../data/repositories/repository_providers.dart';
 import '../alert/alert_providers.dart';
 
-/// 목록 조회 조건 — 폴더 칩·`안 읽음` 토글·정렬.
+/// 목록 조회 조건 — 폴더 칩·`안 읽음` 토글·정렬·검색어.
 class SavedQuery {
   const SavedQuery({
     this.folderId,
     this.unreadOnly = false,
     this.sort = SavedSort.savedDesc,
+    this.q,
   });
 
   /// `null` 이면 `전체`.
   final String? folderId;
   final bool unreadOnly;
   final SavedSort sort;
+
+  /// 제목·요약 검색어(계약 4.7). `null` 이면 검색하지 않는다.
+  final String? q;
 
   /// 쓰기 뒤 이 조건에 맞지 않게 된 카드는 목록에서 숨긴다.
   bool matches(SavedItem item) =>
@@ -29,10 +33,12 @@ class SavedQuery {
     String? Function()? folderId,
     bool? unreadOnly,
     SavedSort? sort,
+    String? Function()? q,
   }) => SavedQuery(
     folderId: folderId == null ? this.folderId : folderId(),
     unreadOnly: unreadOnly ?? this.unreadOnly,
     sort: sort ?? this.sort,
+    q: q == null ? this.q : q(),
   );
 }
 
@@ -149,6 +155,12 @@ class SavedController extends AsyncNotifier<SavedState> {
   Future<void> setSort(SavedSort sort) =>
       _reload(_current.query.copyWith(sort: sort));
 
+  /// 검색어를 바꾸면 폴더·정렬은 그대로 두고 첫 페이지를 다시 받는다.
+  Future<void> search(String? q) async {
+    if (q == _current.query.q) return;
+    await _reload(_current.query.copyWith(q: () => q));
+  }
+
   /// 당겨서 새로고침 — 폴더 칩과 첫 페이지를 다시 받는다.
   Future<void> refresh() => _reload(_current.query, withFolders: true);
 
@@ -172,6 +184,7 @@ class SavedController extends AsyncNotifier<SavedState> {
         folderId: query.folderId,
         unreadOnly: query.unreadOnly,
         sort: query.sort,
+        q: query.q,
       );
       final foldersFuture = withFolders
           ? _repo.folders()
@@ -206,6 +219,7 @@ class SavedController extends AsyncNotifier<SavedState> {
         folderId: s.query.folderId,
         unreadOnly: s.query.unreadOnly,
         sort: s.query.sort,
+        q: s.query.q,
         cursor: cursor,
       );
       if (generation != _generation) return;

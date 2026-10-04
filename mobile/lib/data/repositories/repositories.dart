@@ -6,8 +6,10 @@ import '../models/models.dart';
 abstract interface class FeedRepository {
   Future<TodayStats> todayStats();
 
+  /// [q] 는 제목·요약 검색어(계약 4.1). `null` 이면 검색하지 않는다.
   Future<CursorPage<Alert>> feed({
     FeedFilter filter = FeedFilter.all,
+    String? q,
     String? cursor,
     int? limit,
   });
@@ -86,6 +88,7 @@ abstract interface class SavedRepository {
     String? folderId,
     bool unreadOnly = false,
     SavedSort sort = SavedSort.savedDesc,
+    String? q,
     String? cursor,
     int? limit,
   });

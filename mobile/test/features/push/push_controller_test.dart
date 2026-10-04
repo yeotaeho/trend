@@ -85,11 +85,12 @@ class _CountingFeed implements FeedRepository {
   @override
   Future<CursorPage<Alert>> feed({
     FeedFilter filter = FeedFilter.all,
+    String? q,
     String? cursor,
     int? limit,
   }) {
     feedCalls++;
-    return _inner.feed(filter: filter, cursor: cursor, limit: limit);
+    return _inner.feed(filter: filter, q: q, cursor: cursor, limit: limit);
   }
 }
 

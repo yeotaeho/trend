@@ -1,4 +1,4 @@
-// 03 피드 화면 — 필터 칩·요약 줄·FeedCard 목록 (무한 스크롤·당겨서 새로고침·빈 상태).
+// 03 피드 화면 — 검색 줄·필터 칩·요약 줄·FeedCard 목록 (무한 스크롤·당겨서 새로고침·빈 상태).
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,6 +27,10 @@ class _FeedPageState extends ConsumerState<FeedPage> {
 
   final ScrollController _scroll = ScrollController();
   FeedFilter _filter = FeedFilter.all;
+  bool _searching = false;
+  String? _q;
+
+  FeedQuery get _query => (filter: _filter, q: _q);
 
   @override
   void initState() {
@@ -44,7 +48,7 @@ class _FeedPageState extends ConsumerState<FeedPage> {
     if (_scroll.position.extentAfter > _loadMoreExtent) return;
     runOrSnack(
       context,
-      () => ref.read(feedProvider(_filter).notifier).loadMore(),
+      () => ref.read(feedProvider(_query).notifier).loadMore(),
     );
   }
 
@@ -54,12 +58,23 @@ class _FeedPageState extends ConsumerState<FeedPage> {
     if (_scroll.hasClients) _scroll.jumpTo(0);
   }
 
+  void _search(String? q) {
+    if (q == _q) return;
+    setState(() => _q = q);
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+  }
+
+  void _closeSearch() {
+    setState(() => _searching = false);
+    _search(null);
+  }
+
   Future<void> _refresh() async {
     ref
       ..invalidate(todayStatsProvider)
-      ..invalidate(feedProvider(_filter));
+      ..invalidate(feedProvider(_query));
     try {
-      await ref.read(feedProvider(_filter).future);
+      await ref.read(feedProvider(_query).future);
     } catch (_) {
       // 오류는 목록 자리의 ErrorState 가 보여 준다.
     }
@@ -67,18 +82,22 @@ class _FeedPageState extends ConsumerState<FeedPage> {
 
   @override
   Widget build(BuildContext context) {
-    final feed = ref.watch(feedProvider(_filter));
+    final feed = ref.watch(feedProvider(_query));
     return Scaffold(
       appBar: RootTopBar(
         title: '오늘',
         actions: [
-          GestureDetector(
-            onTap: () => showSnack(context, '준비 중'),
-            behavior: HitTestBehavior.opaque,
-            child: const AppIcon(
-              'search',
-              size: 22,
-              color: AppColors.textPrimary,
+          Semantics(
+            button: true,
+            label: '검색',
+            child: GestureDetector(
+              onTap: () => setState(() => _searching = true),
+              behavior: HitTestBehavior.opaque,
+              child: const AppIcon(
+                'search',
+                size: 22,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
           // 알림 센터는 디자인이 없다. 받은 알림 중 즉시 발송분을 보는 `즉시` 칩으로 바로 간다.
@@ -100,6 +119,8 @@ class _FeedPageState extends ConsumerState<FeedPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (_searching)
+            SearchField(onSubmitted: _search, onCancel: _closeSearch),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
@@ -125,11 +146,11 @@ class _FeedPageState extends ConsumerState<FeedPage> {
                 error: (error, _) => _Scrollable(
                   child: ErrorState(
                     message: errorMessage(error),
-                    onRetry: () => ref.invalidate(feedProvider(_filter)),
+                    onRetry: () => ref.invalidate(feedProvider(_query)),
                   ),
                 ),
                 data: (state) => state.items.isEmpty
-                    ? const _Scrollable(child: _Empty())
+                    ? _Scrollable(child: _Empty(searching: _q != null))
                     : ListView.separated(
                         controller: _scroll,
                         physics: const AlwaysScrollableScrollPhysics(),
@@ -195,9 +216,12 @@ class _FilteredLink extends StatelessWidget {
   }
 }
 
-/// 필터 결과가 없을 때 — 디자인이 없어 문구와 걸러짐 링크만 둔다.
+/// 필터·검색 결과가 없을 때 — 디자인이 없어 문구와 걸러짐 링크만 둔다.
 class _Empty extends ConsumerWidget {
-  const _Empty();
+  const _Empty({required this.searching});
+
+  /// 검색 중이면 검색 결과 문구만 둔다. 걸러짐 링크는 검색과 무관하다.
+  final bool searching;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -208,11 +232,12 @@ class _Empty extends ConsumerWidget {
         spacing: 12,
         children: [
           Text(
-            '오늘 받은 알림이 없습니다',
+            searching ? '검색 결과가 없습니다' : '오늘 받은 알림이 없습니다',
             textAlign: TextAlign.center,
             style: AppText.captionMd,
           ),
-          if (stats != null) _FilteredLink(count: stats.filteredCount),
+          if (!searching && stats != null)
+            _FilteredLink(count: stats.filteredCount),
         ],
       ),
     );

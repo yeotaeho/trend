@@ -58,3 +58,10 @@ Future<GoRouter> pumpRouterApp(
   await tester.pumpAndSettle();
   return router;
 }
+
+/// 열려 있는 검색 입력에 [q] 를 넣고 키보드의 검색 동작으로 제출한다.
+Future<void> submitSearch(WidgetTester tester, String q) async {
+  await tester.enterText(find.byType(TextField), q);
+  await tester.testTextInput.receiveAction(TextInputAction.search);
+  await tester.pumpAndSettle();
+}

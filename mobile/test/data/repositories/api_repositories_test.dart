@@ -104,14 +104,24 @@ void main() {
       expect(page.items, isNotEmpty);
     });
 
-    test('GET /feed — 필터·커서·개수', () async {
+    test('GET /feed — 필터·검색어·커서·개수', () async {
       http.body = {'items': <Object>[], 'next_cursor': null};
-      await repo.feed(filter: FeedFilter.useful, cursor: 'abc', limit: 50);
+      await repo.feed(
+        filter: FeedFilter.useful,
+        q: 'Claude',
+        cursor: 'abc',
+        limit: 50,
+      );
 
       expectSent(
         'GET',
         '/feed',
-        query: {'filter': 'useful', 'cursor': 'abc', 'limit': '50'},
+        query: {
+          'filter': 'useful',
+          'q': 'Claude',
+          'cursor': 'abc',
+          'limit': '50',
+        },
       );
     });
   });
@@ -353,12 +363,13 @@ void main() {
       expect(page.items, isNotEmpty);
     });
 
-    test('GET /saved — 미분류·안 읽음·정렬·커서', () async {
+    test('GET /saved — 미분류·안 읽음·정렬·검색어·커서', () async {
       http.body = _fixture('saved');
       await repo.saved(
         folderId: SavedRepository.unfiled,
         unreadOnly: true,
         sort: SavedSort.deliveredDesc,
+        q: '에이전트',
         cursor: 'c2',
         limit: 20,
       );
@@ -370,6 +381,7 @@ void main() {
           'folder_id': 'unfiled',
           'unread_only': 'true',
           'sort': 'delivered_desc',
+          'q': '에이전트',
           'cursor': 'c2',
           'limit': '20',
         },

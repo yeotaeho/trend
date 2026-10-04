@@ -5,6 +5,7 @@ export 'badges.dart';
 export 'bars.dart';
 export 'buttons.dart';
 export 'chips.dart';
+export 'inputs.dart';
 export 'segmented_control.dart';
 export 'stat_card.dart';
 export 'states.dart';
