@@ -1,4 +1,6 @@
 // 05 알림 설정 테스트 — fixture 샘플 값, 텔레그램 409 되돌림, 세그먼트·피커 PATCH 본문, 찜 재알림, 채널 보조 줄 규칙.
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +13,7 @@ import 'package:tech_radar/data/repositories/fixture_repositories.dart';
 import 'package:tech_radar/data/repositories/repositories.dart';
 import 'package:tech_radar/data/repositories/repository_providers.dart';
 import 'package:tech_radar/features/notification_settings/notification_settings_page.dart';
+import 'package:tech_radar/features/settings/settings_providers.dart';
 
 /// Fixture 저장소에 넘기면서 PATCH 본문을 모은다.
 class _RecordingSettings implements SettingsRepository {
@@ -53,9 +56,11 @@ class _CountingMeta implements MetaRepository {
 /// 마지막 [_pump] 가 붙인 /meta 저장소.
 late _CountingMeta _meta;
 
+/// [show] 를 주면 false 로 바꿔 05 를 닫을 수 있다(ProviderScope 는 남는다).
 Future<_RecordingSettings> _pump(
   WidgetTester tester, {
   Duration delay = Duration.zero,
+  ValueNotifier<bool>? show,
 }) async {
   tester.view.physicalSize = const Size(390, 1400);
   tester.view.devicePixelRatio = 1;
@@ -77,7 +82,14 @@ Future<_RecordingSettings> _pump(
       ],
       child: MaterialApp(
         theme: buildAppTheme(),
-        home: const NotificationSettingsPage(),
+        home: show == null
+            ? const NotificationSettingsPage()
+            : ValueListenableBuilder<bool>(
+                valueListenable: show,
+                builder: (_, visible, _) => visible
+                    ? const NotificationSettingsPage()
+                    : const Scaffold(), // 돌아간 앞 화면
+              ),
       ),
     ),
   );
@@ -231,6 +243,32 @@ void main() {
     // 11 찜 안내 문구가 이 값을 /meta 로 읽는다. 저장했으면 다음에 다시 읽는다.
     await tester.tap(find.text('8일 뒤'));
     await tester.pumpAndSettle();
+    expect(_meta.calls, 2);
+  });
+
+  testWidgets('찜 재알림 저장 중에 05 를 떠나도 끝나면 /meta 캐시를 버린다', (tester) async {
+    const delay = Duration(milliseconds: 300);
+    final show = ValueNotifier(true);
+    final settings = await _pump(tester, delay: delay, show: show);
+
+    await tester.tap(find.text('7일 뒤'));
+    await tester.pump(delay); // /meta 읽기
+    await tester.pumpAndSettle();
+    await tester.drag(_inPicker(find.text('7일 뒤')), const Offset(0, -36));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('완료'));
+    await tester.pump();
+    show.value = false; // PATCH 가 끝나기 전에 화면을 닫는다
+    await tester.pump();
+    await tester.pump(delay);
+    await tester.pump();
+
+    expect(settings.patches.single, {'resurface_after_days': 8});
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(MaterialApp)),
+    );
+    unawaited(container.read(metaProvider.future));
+    await tester.pump(delay);
     expect(_meta.calls, 2);
   });
 

@@ -75,6 +75,8 @@ class _Body extends ConsumerWidget {
       }
     }
     final messenger = ScaffoldMessenger.of(context);
+    // 저장 중에 화면을 떠나도 /meta 캐시는 버려야 해서 위젯 ref 대신 앱 컨테이너를 잡아 둔다.
+    final container = ProviderScope.containerOf(context, listen: false);
     try {
       await ref.read(notificationSettingsProvider.notifier).save(patch);
     } on ApiException catch (error) {
@@ -84,7 +86,9 @@ class _Body extends ConsumerWidget {
       return;
     }
     // 11 찜 안내가 재알림 일수를 /meta 로 읽는다. 바꿨으면 캐시를 버려 다시 읽게 한다.
-    if (patch.containsKey('resurface_after_days')) ref.invalidate(metaProvider);
+    if (patch.containsKey('resurface_after_days')) {
+      container.invalidate(metaProvider);
+    }
     final back = pickLike(before.toJson(), patch);
     // 같은 이슈 토글은 켜면 서버가 YAML 상한을 쓴다. 이전 상한이 YAML 과 달랐으면 되돌려도
     // 그 숫자로 돌아오지 않아 되돌리기를 주지 않는다.
