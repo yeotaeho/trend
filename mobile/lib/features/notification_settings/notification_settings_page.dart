@@ -84,13 +84,16 @@ class _Body extends ConsumerWidget {
       return;
     }
     final back = pickLike(before.toJson(), patch);
+    // 같은 이슈 토글은 켜면 서버가 YAML 상한을 쓴다. 이전 상한이 YAML 과 달랐으면 되돌려도
+    // 그 숫자로 돌아오지 않아 되돌리기를 주지 않는다.
+    final undoable = !undo && !patch.containsKey('dedupe_same_issue_daily');
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
           content: Text(undo ? '되돌렸습니다.' : '저장했습니다.'),
           persist: false,
-          action: undo
+          action: !undoable
               ? null
               : SnackBarAction(
                   label: '되돌리기',

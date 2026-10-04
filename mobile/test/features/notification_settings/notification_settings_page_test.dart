@@ -344,4 +344,14 @@ void main() {
     });
     expect(find.byKey(const ValueKey('blocked-no_channel')), findsOneWidget);
   });
+
+  testWidgets('같은 이슈 토글은 저장만 알리고 되돌리기를 주지 않는다', (tester) async {
+    await _pump(tester);
+
+    await tester.tap(find.byWidget(_toggleOf(tester, '같은 이슈 하루 1건')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('저장했습니다.'), findsOneWidget);
+    expect(find.text('되돌리기'), findsNothing);
+  });
 }

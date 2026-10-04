@@ -445,6 +445,8 @@ class FixtureSettingsRepository implements SettingsRepository {
 }
 
 /// 값은 바꾸지 않는다. 되돌리기는 이력 한 행을 더하고, 기본값으로는 앱 값 표시만 지운다.
+/// ponytail: 전체 설정은 settings.json 정적 표본이라 다른 화면 쓰기를 반영하지 않는다. 반영하려면
+/// 서버의 키 펼치기(config.setting_leaves)를 앱에 다시 만들어야 한다.
 class FixtureSettingsHistoryRepository implements SettingsHistoryRepository {
   const FixtureSettingsHistoryRepository(this._s);
 
@@ -479,15 +481,20 @@ class FixtureSettingsHistoryRepository implements SettingsHistoryRepository {
 
   @override
   Future<void> resetOverride(String key) => _s._run(() {
+    // 서버처럼 묶음 키(scoring.kind_weights)는 그 아래 키까지 지운다.
+    List<String> without(List<String> keys) => [
+      for (final k in keys)
+        if (k != key && !k.startsWith('$key.')) k,
+    ];
     final interests = _s._interests.toJson();
     _s._interests = InterestsSettings.fromJson({
       ...interests,
       'updated_at': _s._interests.updatedAt?.toIso8601String(),
-      'overridden': [..._s._interests.overridden]..remove(key),
+      'overridden': without(_s._interests.overridden),
     });
     _s._notifications = NotificationSettings.fromJson({
       ..._s._notifications.toJson(),
-      'overridden': [..._s._notifications.overridden]..remove(key),
+      'overridden': without(_s._notifications.overridden),
     });
   });
 }
