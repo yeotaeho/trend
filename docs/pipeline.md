@@ -4,7 +4,7 @@
 
 ## 설정 — YAML + 앱 덮어쓰기
 
-유효 설정은 `config/rules.yaml` 위에 앱이 저장한 덮어쓰기(`user_prefs.data`, 키는 `Rules` 섹션 이름)를 깊은 병합(목록은 통째 교체)한 값이다. `get_rules()` 가 이 값을 돌려주며, 기동 시(lifespan, 스케줄러 전) DB 에서 한 번 읽고 설정 API(`/api/v1/settings/*`, `/api/v1/sources/{id}`)가 저장·커밋한 직후 `set_prefs_overlay()` 로 갈아끼운다. 다음 선별·판정·발송부터 반영되고 이미 매긴 점수는 다시 계산하지 않는다. 덮어쓰기 섹션이 검증에 실패하면(YAML 키가 바뀐 옛 값 등) 기동은 계속하고 그 섹션의 키를 하나씩 얹어 맞지 않는 키만 경고 후 무시하며, 다음 앱 저장이 그 키를 지운다. 키마다 주인이 하나라 앱은 앱 소유 키(`app_field`)만 덮어쓴다. 관문 임계값·`policy.taxonomy` 같은 YAML 소유 키는 저장 때 422, 기동 때 경고 후 무시한다. 저장은 YAML 값과 다른 키만 남기므로, YAML 을 고치면 앱이 다르게 정한 키만 앱 값이 이기고 나머지는 새 YAML 값을 따른다. 키 하나는 `DELETE /api/v1/settings/overrides/{key}` 로 YAML 값으로 되돌린다. 소스 on/off 는 `data.sources` 에 남고 `sync_sources`(기동)와 설정 저장이 `sources` 행에 얹는다. `scripts/run_job.py` 도 잡보다 덮어쓰기를 먼저 읽는다.
+유효 설정은 `config/rules.yaml` 위에 앱이 저장한 덮어쓰기(`user_prefs.data`, 키는 `Rules` 섹션 이름)를 깊은 병합(목록은 통째 교체)한 값이다. `get_rules()` 가 이 값을 돌려주며, 기동 시(lifespan, 스케줄러 전) DB 에서 한 번 읽고 설정 API(`/api/v1/settings/*`, `/api/v1/sources/{id}`)가 저장·커밋한 직후 `set_prefs_overlay()` 로 갈아끼운다. 다음 선별·판정·발송부터 반영되고 이미 매긴 점수는 다시 계산하지 않는다. 덮어쓰기 섹션이 검증에 실패하면(YAML 키가 바뀐 옛 값 등) 기동은 계속하고 그 섹션의 키를 하나씩 얹어 맞지 않는 키만 경고 후 무시하며, 다음 앱 저장이 그 키를 지운다. 키마다 주인이 하나라 앱은 앱 소유 키(`app_field`)만 덮어쓴다. 관문 임계값·`policy.taxonomy` 같은 YAML 소유 키는 저장 때 422, 기동 때 경고 후 무시한다. 저장은 YAML 값과 다른 키만 남기므로, YAML 을 고치면 앱이 다르게 정한 키만 앱 값이 이기고 나머지는 새 YAML 값을 따른다. 키 하나는 `DELETE /api/v1/settings/overrides/{key}` 로 YAML 값으로 되돌린다. 저장마다 `settings_revisions` 에 이력 한 행이 남고 `POST /api/v1/settings/revisions/{id}/restore` 로 그 저장 뒤 상태로 되돌린다. 소스 on/off 는 `data.sources` 에 남고 `sync_sources`(기동)와 설정 저장이 `sources` 행에 얹는다. `scripts/run_job.py` 도 잡보다 덮어쓰기를 먼저 읽는다.
 
 ## 흐름
 

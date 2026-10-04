@@ -1,8 +1,8 @@
-# 화면 04·05 설정 모델 — 관심사(PUT 전체 교체)·알림 설정(PATCH 부분 병합) 요청·응답
+# 화면 04·05 설정 모델 — 관심사(PUT 전체 교체)·알림 설정(PATCH 부분 병합) 요청·응답, 저장 이력
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -16,6 +16,7 @@ from app.api.v1.schemas.common import (
     UtcDateTime,
 )
 from app.config import Delivery, KindWeight, get_rules
+from app.db.models import RevisionOrigin
 from app.schemas import Kind
 
 WATCH_KEYWORD_MAX_LEN = 50
@@ -164,3 +165,26 @@ class NotificationSettingsIn(StrictIn):
     dedupe_same_issue_daily: bool | None = None
     delivery_by_importance: DeliveryByImportanceIn | None = None
     exploration_slot: ExplorationSlotIn | None = None
+
+
+class SettingChange(BaseModel):
+    """유효값이 바뀐 앱 소유 키 하나. default 는 저장 때의 YAML 값이다."""
+
+    key: str
+    old: Any
+    new: Any
+    default: Any
+
+
+class Revision(BaseModel):
+    id: str
+    origin: RevisionOrigin
+    note: str | None
+    changes: list[SettingChange]
+    created_at: UtcDateTime
+
+
+class RestoreResult(BaseModel):
+    revision: Revision
+    # 옛 저장값 가운데 지금 모델·주인에 맞지 않아 버린 키
+    dropped: list[str]

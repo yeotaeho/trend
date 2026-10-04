@@ -15,6 +15,7 @@ Neon(Postgres, pgvector)이 모든 상태의 단일 진실 원천이다. 큐도 
 | `notifications` | 발송 기록 | `user_id`, `channel`, `level` push / silent / feed / explore, `message_id`, `error`, `title`(발송한 제목, NULL 이면 `summaries.title_ko`), `sent_at` (인덱스) |
 | `feedback` | 사용자 반응, (사용자, 항목)당 1건 | `user_id`, `verdict` useful / useless / cleared(앱 해제), `source` discord / telegram / app. 유니크 `uq_feedback_user_item`, 재클릭은 upsert |
 | `user_prefs` | 앱 설정 덮어쓰기, 사용자당 한 행 | `user_id` PK, `data` jsonb (앱 소유 키 중 YAML 과 다른 값만, 키는 `Rules` 섹션 이름과 `sources`, YAML 위에 깊은 병합), `updated_at` |
+| `settings_revisions` | 설정 저장 이력, 저장마다 한 행이고 지우지 않는다 | `user_id`, `data` jsonb(저장 뒤 `user_prefs.data` 전체), `changes` jsonb(`[{key, old, new, default}]`, 유효값이 바뀐 앱 소유 키만), `origin` app / reset / restore / script, `note`, `created_at`(= 그 저장의 `user_prefs.updated_at`). 인덱스 `(user_id, id)` |
 | `bookmark_folders` | 찜 폴더 | `user_id`, `name` (사용자별 유니크), `position` |
 | `bookmarks` | 찜, PK `(user_id, item_id)` | `folder_id` (폴더 삭제 시 NULL), `memo`, `is_read`, `read_at`, `saved_at`, `resurfaced_at`(읽지 않은 찜 재알림 시각) |
 | `devices` | FCM 기기 토큰 | `user_id`, `token` unique, `platform` android / ios, `app_version`, `last_seen_at`, `disabled_at`(NULL 이면 활성), `last_error` |

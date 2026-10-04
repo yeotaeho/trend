@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Literal
 
 from sqlalchemy import (
     JSON,
@@ -163,7 +163,7 @@ class LlmCall(Base):
 
 
 class UserPrefs(Base):
-    """앱 설정 덮어쓰기. `data` 키는 Rules 섹션 이름을 따르고 YAML 위에 깊은 병합한다."""
+    """앱 설정 덮어쓰기. 앱 소유 키 중 YAML 과 다른 값만 있고, YAML 위에 깊은 병합한다."""
 
     __tablename__ = "user_prefs"
 
@@ -172,6 +172,31 @@ class UserPrefs(Base):
     )
     data: Mapped[dict[str, Any]] = mapped_column(Json, server_default="{}")
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+# 설정 이력을 남긴 길. script 는 앱이 아닌 스크립트 저장용으로 비워 둔다.
+RevisionOrigin = Literal["app", "reset", "restore", "script"]
+
+
+class SettingsRevision(Base):
+    """설정 저장 이력. 저장마다 한 행이고 지우지 않는다. 되돌리기는 data 로 새 저장을 만든다.
+
+    decisions 는 item_id 가 NOT NULL 이라 설정 이력을 담을 수 없다.
+    """
+
+    __tablename__ = "settings_revisions"
+    # (user_id, id) 를 거꾸로 훑으면 최신순 목록이다.
+    __table_args__ = (Index("ix_settings_revisions_user_id", "user_id", "id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    data: Mapped[dict[str, Any]] = mapped_column(Json)  # 저장 뒤 user_prefs.data 전체
+    # [{key, old, new, default}] — 유효값이 바뀐 앱 소유 키만. default 는 그때의 YAML 값.
+    changes: Mapped[list[dict[str, Any]]] = mapped_column(Json)
+    origin: Mapped[str] = mapped_column(String(10))  # RevisionOrigin
+    note: Mapped[str | None] = mapped_column(Text)
+    # 같은 저장의 user_prefs.updated_at 과 같은 값을 넣는다.
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class BookmarkFolder(Base):

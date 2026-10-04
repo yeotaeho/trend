@@ -1,8 +1,9 @@
 # 설정 API 테스트 — 관심사 PUT 즉시 반영·검증, 알림 설정 PATCH 부분 병합·409·클러스터 상한 변환,
-# YAML 과 다른 값만 저장, 키 되돌리기
+# YAML 과 다른 값만 저장, 키 되돌리기, 저장 이력·버전 되돌리기
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any
 
@@ -12,9 +13,11 @@ from fastapi.testclient import TestClient
 from app import config
 from app.api.v1 import settings as settings_api
 from app.api.v1.errors import ApiError
+from app.api.v1.pagination import encode_cursor
 from app.api.v1.queries import settings as queries
 from app.config import get_rules, yaml_rules
 from app.db import prefs
+from app.db.models import SettingsRevision
 from app.db.users import DEFAULT_USER_ID
 from app.schemas import Kind
 from tests.api.conftest import AUTH, FakeSession, PrefsStore
@@ -22,6 +25,7 @@ from tests.api.conftest import AUTH, FakeSession, PrefsStore
 INTERESTS = "/api/v1/settings/interests"
 NOTIFICATIONS = "/api/v1/settings/notifications"
 OVERRIDES = "/api/v1/settings/overrides"
+REVISIONS = "/api/v1/settings/revisions"
 
 
 def _interests_body(**changes: Any) -> dict[str, Any]:
@@ -348,7 +352,9 @@ def test_changing_one_kind_stores_only_that_key(client: TestClient, store: Prefs
 async def test_saving_yaml_owned_key_is_422(store: PrefsStore, session: FakeSession):
     # 이 키를 보내는 API 는 없다. 저장 함수가 막는다.
     with pytest.raises(ApiError) as exc:
-        await settings_api.save_or_422(session, DEFAULT_USER_ID, {"scoring": {"threshold": 0.5}})
+        await settings_api.save_or_422(
+            session, DEFAULT_USER_ID, {}, {"scoring": {"threshold": 0.5}}
+        )
 
     assert exc.value.status == 422
     assert "scoring.threshold" in exc.value.details["reason"]
@@ -392,3 +398,147 @@ def test_delete_non_app_key_is_404(client: TestClient, store: PrefsStore, key: s
     assert res.status_code == 404
     assert res.json()["error"]["code"] == "not_found"
     assert store.saves == 0
+
+
+# --- 저장 이력 · 버전 되돌리기 (#34) ---
+
+
+def _changed_keys(session: FakeSession) -> list[list[str]]:
+    return [[c["key"] for c in r.changes] for r in session.revisions()]
+
+
+def test_each_save_leaves_a_revision_with_only_changed_keys(
+    client: TestClient, store: PrefsStore, session: FakeSession, env
+):
+    client.patch(NOTIFICATIONS, headers=AUTH, json={"daily_push_cap": 20})
+    client.patch(NOTIFICATIONS, headers=AUTH, json={"quiet_hours": {"start": "00:00"}})
+    client.patch(NOTIFICATIONS, headers=AUTH, json={"daily_push_cap": 25})
+
+    assert _changed_keys(session) == [
+        ["notify.daily_push_cap"],
+        ["notify.quiet_start_hour"],
+        ["notify.daily_push_cap"],
+    ]
+    last = session.revisions()[-1]
+    default = yaml_rules().notify.daily_push_cap
+    assert last.changes == [
+        {"key": "notify.daily_push_cap", "old": 20, "new": 25, "default": default}
+    ]
+    assert (last.origin, last.data) == ("app", store.data)  # 저장 뒤 user_prefs.data 전체
+    assert last.created_at == store.updated_at
+
+
+def test_restore_brings_values_back_and_adds_a_revision(
+    client: TestClient, store: PrefsStore, session: FakeSession, env
+):
+    client.patch(NOTIFICATIONS, headers=AUTH, json={"daily_push_cap": 20})
+    client.patch(
+        NOTIFICATIONS, headers=AUTH, json={"daily_push_cap": 30, "quiet_hours": {"start": "00:00"}}
+    )
+    first = session.revisions()[0]
+
+    res = client.post(f"{REVISIONS}/{first.id}/restore", headers=AUTH)
+
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["dropped"] == []
+    assert body["revision"]["origin"] == "restore"
+    assert [c["key"] for c in body["revision"]["changes"]] == [
+        "notify.daily_push_cap",
+        "notify.quiet_start_hour",
+    ]
+    notify = get_rules().notify
+    assert (notify.daily_push_cap, notify.quiet_start_hour) == (
+        20,
+        yaml_rules().notify.quiet_start_hour,
+    )
+    assert len(session.revisions()) == 3
+    assert store.data == first.data
+
+
+def test_restore_drops_keys_the_current_model_rejects(
+    client: TestClient, store: PrefsStore, session: FakeSession
+):
+    # 옛 저장에 지금은 YAML 소유인 키가 있었다. 그 키만 빼고 되돌린다.
+    data = {"notify": {"daily_push_cap": 20}, "scoring": {"threshold": 0.5}}
+    session.add(_revision(7, DEFAULT_USER_ID, data))
+
+    res = client.post(f"{REVISIONS}/7/restore", headers=AUTH)
+
+    assert res.status_code == 200, res.text
+    assert res.json()["dropped"] == ["scoring.threshold"]
+    assert store.data == {"notify": {"daily_push_cap": 20}}
+
+
+@pytest.mark.parametrize("revision_id", ["5", "999", "abc", "0"])
+def test_restore_unknown_or_others_revision_is_404(
+    client: TestClient, store: PrefsStore, session: FakeSession, revision_id: str
+):
+    session.add(_revision(5, DEFAULT_USER_ID + 1, {"notify": {"daily_push_cap": 20}}))
+
+    res = client.post(f"{REVISIONS}/{revision_id}/restore", headers=AUTH)
+
+    assert res.status_code == 404
+    assert res.json()["error"]["code"] == "not_found"
+    assert store.saves == 0
+
+
+def test_reset_leaves_a_reset_revision(
+    client: TestClient, store: PrefsStore, session: FakeSession, env
+):
+    client.patch(NOTIFICATIONS, headers=AUTH, json={"daily_push_cap": 20})
+
+    client.delete(f"{OVERRIDES}/notify.daily_push_cap", headers=AUTH)
+
+    reset = session.revisions()[-1]
+    assert (reset.origin, [c["key"] for c in reset.changes]) == ("reset", ["notify.daily_push_cap"])
+
+
+def test_list_revisions_maps_rows(
+    client: TestClient, store: PrefsStore, session: FakeSession, env, monkeypatch
+):
+    client.patch(NOTIFICATIONS, headers=AUTH, json={"daily_push_cap": 20})
+
+    async def page(_s: Any, user_id: int, paging: Any) -> tuple[list[Any], str | None]:
+        assert (user_id, paging.limit) == (DEFAULT_USER_ID, 20)
+        return session.revisions(), None
+
+    monkeypatch.setattr(queries, "revision_page", page)
+
+    body = client.get(REVISIONS, headers=AUTH).json()
+
+    default = yaml_rules().notify.daily_push_cap
+    assert body == {
+        "items": [
+            {
+                "id": "1",
+                "origin": "app",
+                "note": None,
+                "changes": [
+                    {"key": "notify.daily_push_cap", "old": default, "new": 20, "default": default}
+                ],
+                "created_at": "2026-09-24T02:18:01Z",
+            }
+        ],
+        "next_cursor": None,
+    }
+
+
+def _revision(rid: int, user_id: int, data: dict[str, Any]) -> SettingsRevision:
+    return SettingsRevision(
+        id=rid,
+        user_id=user_id,
+        data=data,
+        changes=[],
+        origin="app",
+        note=None,
+        created_at=datetime(2026, 10, 1, tzinfo=UTC),
+    )
+
+
+@pytest.mark.parametrize("key", [{"id": True}, {"id": "3"}, {"id": 0}, {}])
+def test_bad_revision_cursor_is_400(client: TestClient, store: PrefsStore, key: dict[str, Any]):
+    res = client.get(REVISIONS, headers=AUTH, params={"cursor": encode_cursor(key)})
+
+    assert res.status_code == 400
+    assert res.json()["error"]["code"] == "bad_request"

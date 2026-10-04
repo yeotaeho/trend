@@ -41,6 +41,7 @@ docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile
 
 - compose·Caddyfile 을 손으로 받을 때는 같은 SHA 의 raw 파일을 쓰고, Caddyfile 은 `cat 새파일 > Caddyfile` 로 inode 를 유지한다.
 - 롤백은 운영 조작이다. 사용자 승인을 받고 실행한다.
+- **마지막 마이그레이션보다 앞 SHA 로는 되돌리지 않는다.** `app/db/alembic/versions/` 의 가장 큰 리비전(10-04 기준 `0005` settings_revisions)이 들어간 커밋 이후 SHA 만 된다. 그 이전 이미지에는 DB 에 적힌 리비전 파일이 없어 `alembic upgrade head` 가 `Can't locate revision identified by '0005'` 로 실패하고 컨테이너가 재시작을 반복한다(10-04 dev 에서 확인). 더 앞으로 가야 하면 지금 이미지에서 먼저 `docker compose exec -T app alembic downgrade 0004` 로 내린다. 설정 이력이 사라진다.
 
 ## 막혔을 때
 

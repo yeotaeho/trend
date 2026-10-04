@@ -1,4 +1,4 @@
-# 사용자 설정 저장소 — user_prefs 읽기·차이만 저장(소스 행·유효 설정 같이), 기동 시 적재
+# 사용자 설정 저장소 — user_prefs 읽기·차이만 저장(이력·소스 행·유효 설정 같이), 기동 시 적재
 
 from __future__ import annotations
 
@@ -11,12 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import (
     get_source_configs,
+    overlay_changes,
     prune_overlay,
     sanitize_overlay,
     set_prefs_overlay,
     validate_overlay,
+    warn_changed_defaults,
 )
-from app.db.models import Source, User, UserPrefs
+from app.db.models import RevisionOrigin, SettingsRevision, Source, User, UserPrefs
 from app.db.session import session_scope
 from app.db.users import DEFAULT_USER_ID
 
@@ -69,23 +71,40 @@ async def upsert_prefs(session: AsyncSession, user_id: int, data: dict[str, Any]
     return updated_at
 
 
-async def save_prefs(session: AsyncSession, user_id: int, data: dict[str, Any]) -> datetime:
-    """검증 → YAML 과 같은 값 지우기 → 저장 → 소스 행 맞추기 → 커밋 → 유효 설정 교체.
+async def save_prefs(
+    session: AsyncSession,
+    user_id: int,
+    before: dict[str, Any],
+    after: dict[str, Any],
+    *,
+    origin: RevisionOrigin = "app",
+    note: str | None = None,
+) -> SettingsRevision:
+    """검증 → YAML 과 같은 값 지우기 → 저장·이력 한 행 → 소스 행 맞추기 → 커밋 → 유효 설정 교체.
 
-    data 는 prefs_for_update 로 잠그고 읽은 값에 바꿀 것을 합친 전체다. 앱 소유가 아닌 키나
-    틀린 값은 ValueError 로 저장 전에 막는다. 커밋 뒤에 갈아끼운다. 먼저 바꾸면 커밋이 실패한
-    설정이 프로세스에 남는다.
+    before 는 prefs_for_update 로 잠그고 읽은 값, after 는 거기에 바꿀 것을 합친 전체다. 앱 소유가
+    아닌 키나 틀린 값은 ValueError 로 저장 전에 막는다. 커밋 뒤에 갈아끼운다. 먼저 바꾸면 커밋이
+    실패한 설정이 프로세스에 남는다. 돌려주는 이력 행의 created_at 이 user_prefs.updated_at 이다.
     """
-    validate_overlay(data)
-    data = prune_overlay(data)
-    updated_at = await upsert_prefs(session, user_id, data)
+    validate_overlay(after)
+    after = prune_overlay(after)
+    updated_at = await upsert_prefs(session, user_id, after)
+    revision = SettingsRevision(
+        user_id=user_id,
+        data=after,
+        changes=overlay_changes(before, after),
+        origin=origin,
+        note=note,
+        created_at=updated_at,
+    )
+    session.add(revision)
     default_user = user_id == DEFAULT_USER_ID  # 유효 설정과 소스 행은 기본 사용자 것 하나뿐이다
     if default_user:
-        await _sync_source_rows(session, data)
+        await _sync_source_rows(session, after)
     await session.commit()
     if default_user:
-        set_prefs_overlay(data, updated_at)
-    return updated_at
+        set_prefs_overlay(after, updated_at)
+    return revision
 
 
 async def source_rows(session: AsyncSession, names: list[str]) -> dict[str, Source]:
@@ -119,4 +138,22 @@ async def load_prefs_overlay() -> None:
     """기동 시 한 번, 스케줄러보다 먼저. 첫 잡부터 앱에서 저장한 설정으로 돈다."""
     async with session_scope() as session:
         prefs = await fetch_prefs(session, DEFAULT_USER_ID)
-    set_prefs_overlay(prefs.data if prefs else {}, prefs.updated_at if prefs else None)
+        data = prefs.data if prefs else {}
+        if data:
+            warn_changed_defaults(data, await last_defaults(session, DEFAULT_USER_ID))
+    set_prefs_overlay(data, prefs.updated_at if prefs else None)
+
+
+async def last_defaults(session: AsyncSession, user_id: int) -> dict[str, Any]:
+    """키마다 앱이 마지막으로 바꿀 때의 YAML 값(이력 changes 의 default)."""
+    # ponytail: 이력을 전부 읽는다. 행이 수천을 넘으면 키별 최신 한 건만 SQL 로 뽑는다.
+    stmt = (
+        select(SettingsRevision.changes)
+        .where(SettingsRevision.user_id == user_id)
+        .order_by(SettingsRevision.id.desc())
+    )
+    defaults: dict[str, Any] = {}
+    for changes in (await session.execute(stmt)).scalars():
+        for change in changes:
+            defaults.setdefault(change["key"], change["default"])
+    return defaults

@@ -335,6 +335,54 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 - 앱 소유가 아닌 키(`scoring.threshold`, `policy.taxonomy`, `notify.timezone` 등)와 묶음 자체(`notify`, `notify.channels`)는 404 `not_found` 다.
 - 04·05·06 의 키별 되돌리기 화면은 #36 에서 붙인다.
 
+#### `GET /settings/revisions` — 설정 저장 이력
+
+커서 페이지네이션(1.3), 최신 저장부터. 04·05·06 저장, 키 되돌리기, 버전 되돌리기마다 한 행이 남고 지우지 않는다.
+
+```json
+{
+  "items": [
+    {
+      "id": "12",
+      "origin": "app",
+      "note": null,
+      "changes": [
+        {"key": "notify.daily_push_cap", "old": 15, "new": 20, "default": 15}
+      ],
+      "created_at": "2026-10-04T12:20:00Z"
+    }
+  ],
+  "next_cursor": null
+}
+```
+
+- `origin` 은 `app`(04·05·06 저장) · `reset`(키 되돌리기) · `restore`(버전 되돌리기) · `script` 다.
+- `changes` 는 유효값이 바뀐 앱 소유 키만 담는다. `key` 는 `DELETE /settings/overrides/{key}` 와 같은 점 경로이고 `default` 는 저장 때의 YAML 값이다. 바뀐 키가 없는 저장은 빈 목록이다.
+- `created_at` 은 그 저장의 `user_prefs.updated_at` 과 같다.
+
+#### `POST /settings/revisions/{id}/restore` — 그 저장 뒤 상태로
+
+200. 그 이력의 덮어쓰기(저장 뒤 `user_prefs.data`)를 지금 모델·주인 기준으로 정리해 다시 저장한다. 이 저장도 이력 한 행(`origin: restore`)이 되고, 응답은 그 행과 버린 키다.
+
+```json
+{
+  "revision": {
+    "id": "15",
+    "origin": "restore",
+    "note": "#12 저장으로 되돌림",
+    "changes": [
+      {"key": "notify.daily_push_cap", "old": 30, "new": 20, "default": 15}
+    ],
+    "created_at": "2026-10-04T12:40:00Z"
+  },
+  "dropped": []
+}
+```
+
+- `dropped` 는 그 사이 앱 소유가 아니게 됐거나 값이 맞지 않게 돼 버린 키다.
+- 되돌리는 것은 앱 값이다. 그 저장 때 덮어쓰지 않았던 키는 지금 YAML 값을 따른다. `sources.<이름>.enabled` 는 같은 저장에서 `sources` 행도 맞춘다.
+- 없는 이력·다른 사용자의 이력은 404 `not_found`. 이력 화면은 #36 에서 붙인다.
+
 ### 4.1 화면 03 피드
 
 #### `GET /stats/today` — 요약 줄
@@ -1058,6 +1106,7 @@ v2 계획서 Task 1 의 사용자 식별자와 앱 테이블을 **B1 의 `0004` 
 - `get_rules()` 는 시그니처를 유지하고 "YAML + 덮어쓰기" 를 돌려준다. 덮어쓰기는 프로세스 전역 값이며 기동 시(lifespan, 스케줄러 전) DB 에서 한 번 읽고, 설정 API 가 저장한 직후 갈아끼운다. 단일 프로세스 전제라 이것으로 충분하다.
 - 덮어쓰기가 검증에 실패하면(YAML 키가 바뀌어 옛 값이 안 맞는 등) 기동을 멈추지 않고 그 섹션에서 맞지 않는 키만 경고 로그 후 무시한다 (섹션을 통째로 버리면 같은 섹션의 멀쩡한 설정까지 사라진다). 다음 저장이 그 키를 지운다.
 - 키마다 주인이 하나다 (에픽 #30). `data` 에는 앱 소유 키(`app/config.py` 의 `app_field`)만, 그중 YAML 값과 다른 것만 남는다. YAML 소유 키(관문 임계값·`policy.taxonomy`·`notify.timezone` 등)는 저장 때 422, 기동 때 경고 후 무시한다. `sources` 는 `Rules` 밖이라 `sync_sources` 가 읽고, 설정 저장도 같은 트랜잭션에서 `sources` 행을 맞춘다. 표시 이름은 `users.name` 이라 여기 없다.
+- 저장마다 같은 트랜잭션에서 `settings_revisions` 에 한 행(저장 뒤 `data` 전체, 바뀐 키 `changes`, `origin`)이 남는다 (#34). 기동 때 앱 값이 있는 키 가운데 앱이 마지막으로 바꾼 뒤 YAML 값이 바뀐 키는 `config.default_changed` 경고로 남긴다. 그 키는 앱 값이 이겨 YAML 변경이 반영되지 않는다.
 - `config/rules.yaml` 에 새 키와 기본값을 적는다. 전부 기본값이 있어 옛 YAML 로도 기동된다 (v2 계획서 Global Constraints).
 
 | 키 | 기본 | 작업 |
