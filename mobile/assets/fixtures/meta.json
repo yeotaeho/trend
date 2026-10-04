@@ -64,7 +64,7 @@
   "limits": {
     "kind_weight": {
       "min": -0.5,
-      "max": 0.5,
+      "max": 0.0,
       "step": 0.05
     },
     "daily_push_cap": {
