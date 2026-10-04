@@ -1,4 +1,4 @@
-# 설정 이력 통합 테스트 — 저장마다 이력 한 행·바뀐 키만, 커서 목록, 버전 되돌리기로 값·소스 행 복구
+# 설정 이력 통합 테스트 — 저장마다 이력 한 행·바뀐 키만, 커서 목록, 버전 되돌리기, 전체 설정 조회
 
 from __future__ import annotations
 
@@ -89,6 +89,18 @@ async def test_saves_list_and_restore_round_trip():
         )
         listed = _ok(await c.get("/api/v1/sources", headers=AUTH))["sources"]
         assert {s["id"]: s["enabled"] for s in listed}[SOURCE] is True
+
+        overview = _ok(await c.get("/api/v1/settings", headers=AUTH))
+        items = {item["key"]: item for item in overview["items"]}
+        assert overview["revision"] == restored["revision"]["id"]
+        assert (
+            items["notify.daily_push_cap"]["source"],
+            items["notify.daily_push_cap"]["value"],
+        ) == (
+            "app",
+            20,
+        )
+        assert items[f"sources.{SOURCE}.enabled"]["source"] == "default"
 
     async with SessionLocal() as s:
         row = select(Source.enabled).where(Source.name == SOURCE)

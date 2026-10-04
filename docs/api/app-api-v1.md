@@ -383,6 +383,114 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 - 되돌리는 것은 앱 값이다. 그 저장 때 덮어쓰지 않았던 키는 지금 YAML 값을 따른다. `sources.<이름>.enabled` 는 같은 저장에서 `sources` 행도 맞춘다.
 - 없는 이력·다른 사용자의 이력은 404 `not_found`. 이력 화면은 #36 에서 붙인다.
 
+#### `GET /settings` — 전체 설정
+
+앱 설정 화면(#36)이 모든 설정 키를 한 목록으로 본다. 앱에서 바꿀 수 있는 것은 `owner: app` 뿐이고, 나머지는 `edit_url`(GitHub 편집 화면)이나 VM 에서 바꾼다.
+
+```json
+{
+  "revision": "12",
+  "git_sha": "b21264b0c4e1f9a8d7c6b5a4e3d2c1b0a9f8e7d6",
+  "delivery_blocked": [],
+  "items": [
+    {
+      "key": "policy.categories",
+      "label": "관심 카테고리",
+      "category": "policy",
+      "value": ["llm-model", "agent", "mcp-tooling", "inference-opt", "python-backend", "web-frontend", "dev-community", "video"],
+      "default": ["llm-model", "agent", "mcp-tooling", "inference-opt", "rag-retrieval", "training-finetune", "python-backend", "web-frontend", "devops-infra", "ai-safety-eval", "dev-community", "video"],
+      "source": "app",
+      "owner": "app",
+      "apply": "next_job",
+      "default_changed": false,
+      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/rules.yaml"
+    },
+    {
+      "key": "scoring.threshold",
+      "label": "점수 관문",
+      "category": "scoring",
+      "value": 0.45,
+      "default": 0.45,
+      "source": "default",
+      "owner": "yaml",
+      "apply": "deploy",
+      "default_changed": false,
+      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/rules.yaml"
+    },
+    {
+      "key": "notify.daily_push_cap",
+      "label": "하루 push 상한",
+      "category": "notify",
+      "value": 20,
+      "default": 15,
+      "source": "app",
+      "owner": "app",
+      "apply": "next_job",
+      "default_changed": true,
+      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/rules.yaml"
+    },
+    {
+      "key": "app.resurface_unread_after_days",
+      "label": "찜 재알림 일수",
+      "category": "app",
+      "value": 7,
+      "default": 7,
+      "source": "default",
+      "owner": "yaml",
+      "apply": "deploy",
+      "default_changed": false,
+      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/app.yaml"
+    },
+    {
+      "key": "sources.youtube:codingapple.enabled",
+      "label": "코딩애플 · 켜기",
+      "category": "sources",
+      "value": false,
+      "default": true,
+      "source": "app",
+      "owner": "app",
+      "apply": "next_job",
+      "default_changed": false,
+      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/sources.yaml"
+    },
+    {
+      "key": "server.llm_model",
+      "label": "LLM 모델",
+      "category": "server",
+      "value": "claude-haiku-4-5",
+      "default": "claude-haiku-4-5",
+      "source": "default",
+      "owner": "server",
+      "apply": "restart",
+      "default_changed": false,
+      "edit_url": null
+    }
+  ]
+}
+```
+
+| 필드 | 뜻 |
+|---|---|
+| `revision` | 마지막 저장 이력 id(`GET /settings/revisions`). 한 번도 저장하지 않았으면 `null` |
+| `git_sha` | 배포한 커밋. 이미지가 넣는다(Dockerfile `GIT_SHA`). 로컬은 `null` |
+| `delivery_blocked` | 설정 조합 때문에 알림이 막히는 사유(아래 표). 없으면 빈 목록 |
+| `items[].key` | 점 경로. 첫 마디가 `category` 다. `policy`·`exclude`·`dedupe`·`triage`·`scoring`·`notify` 는 rules.yaml, `app` 은 app.yaml, `sources` 는 sources.yaml(`sources.<이름>.<필드>`), `server` 는 VM `.env` |
+| `items[].label` | 한국어 라벨. kind 가중치는 `kind 가중치 · survey`, 소스는 `<표시 이름> · <필드>` |
+| `items[].value` · `default` | 유효값과 YAML 값(server 는 코드 기본값) |
+| `items[].source` | `app` 이면 앱이 덮어쓴 값이다. 되돌리기는 `DELETE /settings/overrides/{key}` |
+| `items[].owner` · `apply` | `app`·`next_job`(다음 잡부터), `yaml`·`deploy`(머지·배포 뒤), `server`·`restart`(VM `.env` 수정 뒤 컨테이너 재생성) |
+| `items[].default_changed` | 앱 값이 있는데 앱이 마지막으로 바꾼 뒤 YAML 값이 바뀌었다. 그 YAML 변경은 앱 값에 가려진다 |
+| `items[].edit_url` | YAML 파일 편집 주소. `server` 는 `null` |
+
+- 비밀값(API 키·토큰·DB 주소·채널 id 등)은 키 이름도 내보내지 않는다. `server` 는 `llm_model`·`embedding_model`·`scheduler_enabled` 셋뿐이다.
+
+| `delivery_blocked` | 뜻 |
+|---|---|
+| `no_channel` | 켜지고 연결된 채널이 없다. 모든 항목이 피드에만 남는다 |
+| `no_instant` | 중요도별 강도에 `instant` 가 없다. push 가 0건이다 |
+| `quiet_long` | 무음 시간이 20시간 이상이다 |
+| `resurface_off` | FCM 이 꺼졌거나 연결되지 않았다. 찜 재알림이 멈춘다 |
+
 ### 4.1 화면 03 피드
 
 #### `GET /stats/today` — 요약 줄
@@ -546,7 +654,8 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
     "release_major": 0.0, "release_patch": 0.0, "technique": 0.0, "survey": -0.15,
     "news": 0.0, "tutorial": -0.05, "promo": -0.30, "other": 0.0
   },
-  "updated_at": "2026-09-20T11:00:00Z"
+  "updated_at": "2026-09-20T11:00:00Z",
+  "overridden": ["policy.categories"]
 }
 ```
 
@@ -558,11 +667,11 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 | `watch_keywords` | `rules.policy.focus_stack` + `rules.policy.focus_repos` 를 이 순서로 이은 목록 |
 | `kind_weights` | `rules.scoring.kind_weights` (8개 전부, 설정에 없는 kind 는 0. main 기본값은 survey −0.15 · tutorial −0.05 · promo −0.30, 나머지 0) |
 
-`updated_at` 은 `user_prefs.updated_at`, 한 번도 저장하지 않았으면 `null`.
+`updated_at` 은 `user_prefs.updated_at`, 한 번도 저장하지 않았으면 `null`. `overridden` 은 이 화면 키(`policy.*`·`scoring.kind_weights.*`) 가운데 앱 값이 있는 점 경로다(#35). 키별 출처 배지와 되돌리기가 쓴다.
 
 #### `PUT /settings/interests` — 명시 저장 (헤더 `저장`)
 
-요청은 GET 응답에서 `updated_at` 을 뺀 전체 객체. 응답은 저장 후 GET 과 같은 객체.
+요청은 GET 응답에서 `updated_at`·`overridden` 을 뺀 전체 객체. 응답은 저장 후 GET 과 같은 객체.
 
 검증 (위반 시 422).
 - `profile.self_description` 1~1000자, `not_interested` 0~500자.
@@ -593,7 +702,8 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
   "dedupe_same_issue_daily": true,
   "delivery_by_importance": {"high": "instant", "mid": "quiet", "low": "feed_only"},
   "exploration_slot": {"enabled": true, "daily_limit": 1},
-  "updated_at": "2026-09-20T11:00:00Z"
+  "updated_at": "2026-09-20T11:00:00Z",
+  "overridden": ["notify.channels.discord"]
 }
 ```
 
@@ -612,6 +722,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 | `dedupe_same_issue_daily` | `rules.notify.cluster_daily_cap > 0` (v2 계획서 Task 3, 기본 1) |
 | `delivery_by_importance` | `rules.notify.delivery_by_importance` (새, 기본 high=instant, mid=quiet, low=feed_only — 현재 하드코딩 `level_for` 와 같은 값) |
 | `exploration_slot.enabled` | `rules.notify.explore_enabled` (새, 기본 true). `daily_limit` 은 1 고정 (정적) |
+| `overridden` | 이 화면 키(`notify.*`) 가운데 앱 값이 있는 점 경로 (#35) |
 
 #### `PATCH /settings/notifications` — 즉시 저장
 

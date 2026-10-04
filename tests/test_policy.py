@@ -1,12 +1,20 @@
-# 발송 정책 테스트 — 중요도별 강도·자정을 넘기는 무음 시간·push 상한·클러스터 상한·제목 병기
+# 발송 정책 테스트 — 중요도별 강도·자정 넘는 무음·push 상한·클러스터 상한·제목 병기·막힘 사유
 
 from datetime import UTC, datetime
+from typing import Any
 
 import pytest
 
 from app.config import DeliveryByImportanceConfig, NotifyConfig
 from app.notify import policy
-from app.notify.policy import decide, decorate_title, delivery_for, in_quiet_hours, sibling_versions
+from app.notify.policy import (
+    decide,
+    decorate_title,
+    delivery_blocked,
+    delivery_for,
+    in_quiet_hours,
+    sibling_versions,
+)
 from app.schemas import Level
 
 CFG = NotifyConfig()  # 23:00~08:00 KST
@@ -141,3 +149,45 @@ def test_decorate_title_appends_versions_once():
 def test_decorate_title_noop_for_single_version():
     assert decorate_title("x", ["v1"]) == "x"
     assert decorate_title("x", []) == "x"
+
+
+ALL_CONNECTED = {"fcm": True, "discord": True, "telegram": True}
+
+
+def _cfg(**changes: Any) -> NotifyConfig:
+    return NotifyConfig.model_validate(CFG.model_dump() | changes)
+
+
+def test_delivery_blocked_is_empty_for_working_settings():
+    assert delivery_blocked(CFG, ALL_CONNECTED) == []
+
+
+def test_no_channel_when_every_channel_is_off_or_unconnected():
+    off = _cfg(channels={"fcm": False, "discord": False, "telegram": False})
+
+    assert "no_channel" in delivery_blocked(off, ALL_CONNECTED)
+    # 켜져 있어도 연결 정보가 없으면 보낼 곳이 없다(jobs/notify.py enabled_notifiers 와 같은 규칙).
+    assert "no_channel" in delivery_blocked(CFG, dict.fromkeys(ALL_CONNECTED, False))
+
+
+def test_no_instant_quiet_long_and_resurface_off():
+    cfg = _cfg(
+        delivery_by_importance={"high": "quiet", "mid": "quiet", "low": "feed_only"},
+        quiet_start_hour=0,
+        quiet_end_hour=20,
+        channels={"fcm": False, "discord": True, "telegram": False},
+    )
+
+    assert delivery_blocked(cfg, ALL_CONNECTED) == ["no_instant", "quiet_long", "resurface_off"]
+
+
+def test_quiet_long_counts_hours_across_midnight():
+    assert "quiet_long" not in delivery_blocked(
+        _cfg(quiet_start_hour=1, quiet_end_hour=20), ALL_CONNECTED
+    )
+    assert "quiet_long" in delivery_blocked(
+        _cfg(quiet_start_hour=23, quiet_end_hour=19), ALL_CONNECTED
+    )
+    assert "quiet_long" not in delivery_blocked(
+        _cfg(quiet_start_hour=5, quiet_end_hour=5), ALL_CONNECTED
+    )

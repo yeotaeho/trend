@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import functools
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -57,6 +58,8 @@ class Settings(BaseSettings):
     fcm_service_account_file: str = ""  # 서비스 계정 JSON 경로. 커밋 금지
 
     scheduler_enabled: bool = True
+    # 배포한 커밋. 이미지가 넣는다(Dockerfile ARG GIT_SHA). 로컬은 비어 있다.
+    git_sha: str = ""
     log_level: str = "INFO"
 
 
@@ -74,28 +77,28 @@ Scope = Literal["user", "global"]
 KindWeight = Annotated[float, Field(ge=KIND_WEIGHT_MIN, le=KIND_WEIGHT_MAX)]
 
 
-def app_field(**kwargs: Any) -> Any:
-    """앱이 덮어쓸 수 있는 키(user_prefs). 저장하면 다음 잡부터 반영된다."""
+def app_field(title: str, **kwargs: Any) -> Any:
+    """앱이 덮어쓸 수 있는 키(user_prefs). 저장하면 다음 잡부터 반영된다. title 은 앱 표시 라벨."""
     meta: JsonDict = {"owner": "app", "apply": "next_job", "scope": "user"}
-    return Field(json_schema_extra=meta, **kwargs)
+    return Field(title=title, json_schema_extra=meta, **kwargs)
 
 
-def yaml_field(*, scope: Scope = "global", **kwargs: Any) -> Any:
-    """YAML 이 주인인 키. 앱은 읽기만 하고, 바꾸면 배포 때 반영된다."""
+def yaml_field(title: str, *, scope: Scope = "global", **kwargs: Any) -> Any:
+    """YAML 이 주인인 키. 앱은 읽기만 하고, 바꾸면 배포 때 반영된다. title 은 앱 표시 라벨."""
     meta: JsonDict = {"owner": "yaml", "apply": "deploy", "scope": scope}
-    return Field(json_schema_extra=meta, **kwargs)
+    return Field(title=title, json_schema_extra=meta, **kwargs)
 
 
 class SourceConfig(BaseModel):
     """config/sources.yaml 한 항목. `config` 는 소스 타입별 자유 필드."""
 
-    name: str = yaml_field()
-    type: str = yaml_field()
-    config: dict[str, Any] = yaml_field(default_factory=dict)
-    poll_interval_sec: int = yaml_field(default=900, ge=300)
-    trust_score: float = yaml_field(default=0.5, ge=0, le=1)
+    name: str = yaml_field("이름")
+    type: str = yaml_field("종류")
+    config: dict[str, Any] = yaml_field("소스별 설정", default_factory=dict)
+    poll_interval_sec: int = yaml_field("수집 주기(초)", default=900, ge=300)
+    trust_score: float = yaml_field("신뢰도", default=0.5, ge=0, le=1)
     # 06 화면 토글. 앱이 끈 값은 user_prefs.sources 에 있고 sync_sources 가 반영한다.
-    enabled: bool = app_field(default=True)
+    enabled: bool = app_field("켜기", default=True)
 
 
 class _Strict(BaseModel):
@@ -122,14 +125,14 @@ DEFAULT_TAXONOMY = (
 class PolicyConfig(_Strict):
     """선별·판정 프롬프트가 읽는 정책. 문장으로 쓴다. 관문이 아니라 힌트다."""
 
-    interests: str = app_field(default="", max_length=INTERESTS_MAX_CHARS)
-    not_interested: str = app_field(default="", max_length=NOT_INTERESTED_MAX_CHARS)
-    focus_repos: list[str] = app_field(default_factory=list)
-    focus_stack: list[str] = app_field(default_factory=list)
+    interests: str = app_field("나를 한 줄로", default="", max_length=INTERESTS_MAX_CHARS)
+    not_interested: str = app_field("관심 없음", default="", max_length=NOT_INTERESTED_MAX_CHARS)
+    focus_repos: list[str] = app_field("주목 저장소", default_factory=list)
+    focus_stack: list[str] = app_field("주목 키워드", default_factory=list)
     # 선별 topics 의 분류표 (slug). 앱 표시 라벨은 config/app.yaml 이 따로 가진다.
-    taxonomy: list[str] = yaml_field(default_factory=lambda: list(DEFAULT_TAXONOMY))
+    taxonomy: list[str] = yaml_field("분류표", default_factory=lambda: list(DEFAULT_TAXONOMY))
     # 앱 관심사 화면에서 고른 카테고리. 거름망이 아니라 프롬프트 힌트다. 생략하면 taxonomy 전체.
-    categories: list[str] = app_field(default_factory=list)
+    categories: list[str] = app_field("관심 카테고리", default_factory=list)
 
     @model_validator(mode="after")
     def _categories_within_taxonomy(self) -> PolicyConfig:
@@ -151,16 +154,16 @@ class PolicyConfig(_Strict):
 
 
 class ExcludeConfig(_Strict):
-    keywords: list[str] = yaml_field(default_factory=list)
-    domains: list[str] = yaml_field(default_factory=list)
+    keywords: list[str] = yaml_field("제외 키워드", default_factory=list)
+    domains: list[str] = yaml_field("제외 도메인", default_factory=list)
 
 
 class DedupeConfig(_Strict):
     # 2026-09-06 표본 보정값. 0.90~0.95 는 같은 채널의 다른 영상·다른 릴리즈였고,
     # 0.80~0.85 는 arXiv 두 피드의 주제 이웃이었다. rules.yaml 이 우선한다.
-    dup_threshold: float = yaml_field(default=0.96, gt=0, le=1)
-    related_threshold: float = yaml_field(default=0.88, gt=0, le=1)
-    window_hours: int = yaml_field(default=72, ge=1, le=168)
+    dup_threshold: float = yaml_field("중복 임계값", default=0.96, gt=0, le=1)
+    related_threshold: float = yaml_field("관련 임계값", default=0.88, gt=0, le=1)
+    window_hours: int = yaml_field("비교 창(시간)", default=72, ge=1, le=168)
 
     @model_validator(mode="after")
     def _related_not_above_dup(self) -> DedupeConfig:
@@ -170,26 +173,27 @@ class DedupeConfig(_Strict):
 
 
 class TriageConfig(_Strict):
-    batch_size: int = yaml_field(default=25, ge=1, le=40)
-    daily_cap_calls: int = yaml_field(default=60, ge=0, le=200)
-    min_batch: int = yaml_field(default=10, ge=1)
-    max_wait_minutes: int = yaml_field(default=60, ge=1, le=240)
+    batch_size: int = yaml_field("선별 묶음 크기", default=25, ge=1, le=40)
+    daily_cap_calls: int = yaml_field("선별 하루 호출 상한", default=60, ge=0, le=200)
+    min_batch: int = yaml_field("최소 묶음", default=10, ge=1)
+    max_wait_minutes: int = yaml_field("최대 대기(분)", default=60, ge=1, le=240)
 
 
 class ScoringConfig(_Strict):
     # 2026-09-10 조정. 소스 신뢰도가 arXiv 의 신호 밀도를 대신 벌하고 있어 비중을 관련도로 옮겼다.
-    w_src: float = yaml_field(default=0.20, ge=0, le=1)
-    w_rel: float = yaml_field(default=0.30, ge=0, le=1)
-    w_hot: float = yaml_field(default=0.2, ge=0, le=1)
-    w_multi: float = yaml_field(default=0.2, ge=0, le=1)
-    w_fresh: float = yaml_field(default=0.1, ge=0, le=1)
-    threshold: float = yaml_field(default=0.45, ge=0, le=1)
+    w_src: float = yaml_field("소스 신뢰도 가중치", default=0.20, ge=0, le=1)
+    w_rel: float = yaml_field("관련도 가중치", default=0.30, ge=0, le=1)
+    w_hot: float = yaml_field("화제성 가중치", default=0.2, ge=0, le=1)
+    w_multi: float = yaml_field("여러 소스 가중치", default=0.2, ge=0, le=1)
+    w_fresh: float = yaml_field("신선도 가중치", default=0.1, ge=0, le=1)
+    threshold: float = yaml_field("점수 관문", default=0.45, ge=0, le=1)
     # 모든 소스 공통. 이보다 오래된 항목은 선별 호출 없이 stale 로 버린다.
-    max_age_hours: int = yaml_field(default=72, ge=1, le=168)
+    max_age_hours: int = yaml_field("최대 나이(시간)", default=72, ge=1, le=168)
     # kind 별 감점(−0.5~0). 곱이 아니라 그대로 더한다. 없는 kind 는 0. 키가 Kind 밖이면 기동 실패.
     # 가점(technique +0.10)은 실측으로 arXiv 154건/2.5일을 판정에 보내 범위에서 뺐다.
     kind_weights: dict[Kind, KindWeight] = app_field(
-        default_factory=lambda: {Kind.SURVEY: -0.15, Kind.TUTORIAL: -0.05, Kind.PROMO: -0.30}
+        "kind 가중치",
+        default_factory=lambda: {Kind.SURVEY: -0.15, Kind.TUTORIAL: -0.05, Kind.PROMO: -0.30},
     )
 
 
@@ -199,29 +203,31 @@ Delivery = Literal["instant", "quiet", "feed_only"]
 class DeliveryByImportanceConfig(_Strict):
     """importance 구간 → 알림 강도. notify/policy.py 의 delivery_for 가 읽는다."""
 
-    high: Delivery = app_field(default="instant")
-    mid: Delivery = app_field(default="quiet")
-    low: Delivery = app_field(default="feed_only")
+    high: Delivery = app_field("중요도 높음 강도", default="instant")
+    mid: Delivery = app_field("중요도 중간 강도", default="quiet")
+    low: Delivery = app_field("중요도 낮음 강도", default="feed_only")
 
 
 class ChannelsConfig(_Strict):
-    fcm: bool = app_field(default=True)
-    discord: bool = app_field(default=True)
-    telegram: bool = app_field(default=False)
+    fcm: bool = app_field("앱 푸시(FCM)", default=True)
+    discord: bool = app_field("Discord", default=True)
+    telegram: bool = app_field("Telegram", default=False)
 
 
 class NotifyConfig(_Strict):
-    daily_push_cap: int = app_field(default=15, ge=DAILY_PUSH_CAP_MIN, le=DAILY_PUSH_CAP_MAX)
-    quiet_start_hour: int = app_field(default=23, ge=0, le=23)
-    quiet_end_hour: int = app_field(default=8, ge=0, le=23)
-    timezone: str = yaml_field(default="Asia/Seoul", scope="user")
-    explore_judge_cap: int = yaml_field(default=3, ge=0, le=10)
+    daily_push_cap: int = app_field(
+        "하루 push 상한", default=15, ge=DAILY_PUSH_CAP_MIN, le=DAILY_PUSH_CAP_MAX
+    )
+    quiet_start_hour: int = app_field("무음 시작 시각", default=23, ge=0, le=23)
+    quiet_end_hour: int = app_field("무음 끝 시각", default=8, ge=0, le=23)
+    timezone: str = yaml_field("시간대", default="Asia/Seoul", scope="user")
+    explore_judge_cap: int = yaml_field("탐색 판정 하루 상한", default=3, ge=0, le=10)
     # 같은 cluster_id 를 하루에 보내는 서로 다른 항목 수 상한. 0 = 끔.
-    cluster_daily_cap: int = app_field(default=1, ge=0, le=5)
+    cluster_daily_cap: int = app_field("같은 이슈 하루 상한", default=1, ge=0, le=5)
     delivery_by_importance: DeliveryByImportanceConfig = Field(
         default_factory=DeliveryByImportanceConfig
     )
-    explore_enabled: bool = app_field(default=True)
+    explore_enabled: bool = app_field("탐색 슬롯", default=True)
     channels: ChannelsConfig = Field(default_factory=ChannelsConfig)
 
     @field_validator("timezone")
@@ -246,20 +252,22 @@ class Rules(_Strict):
 
 
 class OnboardingConfig(_Strict):
-    done: int = yaml_field(default=8, ge=0)
-    total: int = yaml_field(default=8, ge=0)
+    done: int = yaml_field("온보딩 완료 수", default=8, ge=0)
+    total: int = yaml_field("온보딩 전체 수", default=8, ge=0)
 
 
 class AppConfig(_Strict):
     """config/app.yaml — 앱 화면과 찜 재알림 잡이 읽는 정적값. 선별·판정은 읽지 않는다."""
 
     onboarding: OnboardingConfig = Field(default_factory=OnboardingConfig)
-    personal_model_threshold: int = yaml_field(default=50, ge=1)
-    resurface_unread_after_days: int = yaml_field(default=7, ge=1, le=30, scope="user")
-    screening_relevance_floor: float = yaml_field(default=0.5, ge=0, le=1)
-    planned_sources: list[str] = yaml_field(default_factory=list)
+    personal_model_threshold: int = yaml_field("개인 모델 기준 판정 수", default=50, ge=1)
+    resurface_unread_after_days: int = yaml_field(
+        "찜 재알림 일수", default=7, ge=1, le=30, scope="user"
+    )
+    screening_relevance_floor: float = yaml_field("선별 관련도 하한", default=0.5, ge=0, le=1)
+    planned_sources: list[str] = yaml_field("추가 예정 소스", default_factory=list)
     # policy.taxonomy slug → 표시 라벨. 없는 slug 는 slug 를 그대로 라벨로 쓴다.
-    taxonomy_labels: dict[str, str] = yaml_field(default_factory=dict)
+    taxonomy_labels: dict[str, str] = yaml_field("분류표 라벨", default_factory=dict)
 
 
 def _read_yaml(path: Path) -> dict[str, Any]:
@@ -540,18 +548,109 @@ def _leaf_paths(value: dict[str, Any], path: tuple[str, ...] = ()) -> set[str]:
     return paths
 
 
-def warn_changed_defaults(overlay: dict[str, Any], then: dict[str, Any]) -> None:
-    """앱 값이 있는 키 가운데 앱이 마지막으로 바꾼 뒤 YAML 값이 바뀐 키를 경고한다.
+def changed_defaults(overlay: dict[str, Any], then: dict[str, Any]) -> dict[str, tuple[Any, Any]]:
+    """앱 값이 있는 키 가운데 앱이 마지막으로 바꾼 뒤 YAML 값이 바뀐 키 → (그때 값, 지금 값).
 
     그 키는 앱 값이 이겨 YAML 변경이 반영되지 않는다. then 은 키마다 마지막 이력의 default 이고,
     이력이 없는 키(#34 이전 저장)는 알 수 없어 넘어간다.
     """
     now = _app_leaves(_yaml_values())
-    for key, value in _app_leaves(overlay).items():
-        if key in then and then[key] != now.get(key):
-            log.warning(
-                "config.default_changed", key=key, value=value, then=then[key], now=now.get(key)
+    return {
+        key: (then[key], now.get(key))
+        for key in _app_leaves(overlay)
+        if key in then and then[key] != now.get(key)
+    }
+
+
+def warn_changed_defaults(overlay: dict[str, Any], then: dict[str, Any]) -> None:
+    """기동 때 changed_defaults 를 경고로 남긴다."""
+    values = _app_leaves(overlay)
+    for key, (old, new) in changed_defaults(overlay, then).items():
+        log.warning("config.default_changed", key=key, value=values[key], then=old, now=new)
+
+
+def overridden_keys(overlay: dict[str, Any]) -> list[str]:
+    """앱 값이 있는 키(점 경로). 모델 순서다."""
+    return list(_app_leaves(overlay))
+
+
+@dataclass(frozen=True, slots=True)
+class SettingLeaf:
+    """설정 키 하나. GET /settings 의 한 줄이다."""
+
+    key: str  # 점 경로. app.yaml 은 app., sources.yaml 은 sources.<이름>. 으로 시작한다
+    label: str
+    file: str  # config/ 아래 YAML 파일
+    owner: str
+    apply: str
+    value: Any
+    default: Any
+
+
+def _walk_leaves(
+    model: type[BaseModel],
+    value: dict[str, Any],
+    default: dict[str, Any],
+    path: list[str],
+    label: str,
+    file: str,
+    out: list[SettingLeaf],
+) -> None:
+    for key, info in model.model_fields.items():
+        sub = _sub_model(info)
+        if sub:
+            _walk_leaves(sub, value[key], default[key], [*path, key], label, file, out)
+            continue
+        meta = info.json_schema_extra
+        assert isinstance(meta, dict), key
+        owner, apply = str(meta["owner"]), str(meta["apply"])
+        title = f"{label}{info.title}"
+        if _app_owned(info) and isinstance(default[key], dict):  # kind_weights 는 kind 마다
+            for sub_key, sub_default in default[key].items():
+                out.append(
+                    SettingLeaf(
+                        ".".join([*path, key, sub_key]),
+                        f"{title} · {sub_key}",
+                        file,
+                        owner,
+                        apply,
+                        value[key].get(sub_key, sub_default),
+                        sub_default,
+                    )
+                )
+        else:
+            out.append(
+                SettingLeaf(
+                    ".".join([*path, key]), title, file, owner, apply, value[key], default[key]
+                )
             )
+
+
+def setting_leaves(overlay: dict[str, Any]) -> list[SettingLeaf]:
+    """YAML 세 파일의 모든 설정 키와 유효값·기본값. overlay 는 정리된 앱 덮어쓰기다.
+
+    sources.<이름>.name 은 키 자체라 뺀다.
+    """
+    yaml = _yaml_values()
+    merged = merge_overlay(yaml, overlay)
+    leaves: list[SettingLeaf] = []
+    _walk_leaves(Rules, merged, yaml, [], "", "rules.yaml", leaves)
+    app = get_app_config().model_dump(mode="json")
+    _walk_leaves(AppConfig, app, app, ["app"], "", "app.yaml", leaves)
+    for cfg in get_source_configs():
+        name, display = cfg.name, cfg.config.get("display_name") or cfg.name
+        source: list[SettingLeaf] = []
+        _walk_leaves(
+            SourceConfig,
+            merged["sources"][name],
+            yaml["sources"][name],
+            ["sources", name],
+            f"{display} · ",
+            "sources.yaml",
+            source,
+        )
+        leaves += [leaf for leaf in source if leaf.key != f"sources.{name}.name"]
+    return leaves
 
 
 def app_key_path(key: str) -> list[str] | None:

@@ -178,6 +178,7 @@ def test_restore_after_toggle_puts_row_and_list_back(
 ):
     interests = client.get("/api/v1/settings/interests", headers=AUTH).json()
     interests.pop("updated_at")
+    interests.pop("overridden")
     client.put("/api/v1/settings/interests", headers=AUTH, json=interests)  # 토글 전 저장
     client.patch("/api/v1/sources/rss:anthropic", headers=AUTH, json={"enabled": False})
     before_toggle = session.revisions()[0]

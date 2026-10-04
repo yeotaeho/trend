@@ -1,8 +1,8 @@
-# 화면 04·05 설정 모델 — 관심사(PUT 전체 교체)·알림 설정(PATCH 부분 병합) 요청·응답, 저장 이력
+# 설정 모델 — 04 관심사(PUT 전체)·05 알림(PATCH 부분) 요청·응답, 저장 이력, 전체 설정
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -17,6 +17,7 @@ from app.api.v1.schemas.common import (
 )
 from app.config import Delivery, KindWeight, get_rules
 from app.db.models import RevisionOrigin
+from app.notify.policy import DeliveryBlocked
 from app.schemas import Kind
 
 WATCH_KEYWORD_MAX_LEN = 50
@@ -35,6 +36,8 @@ class Interests(BaseModel):
     watch_keywords: list[str]
     kind_weights: dict[Kind, float]
     updated_at: UtcDateTime | None
+    # 이 화면 키 가운데 앱 값이 있는 것(점 경로). 없으면 빈 목록이다(#35).
+    overridden: list[str] = Field(default_factory=list)
 
 
 class InterestProfileIn(StrictIn):
@@ -125,6 +128,8 @@ class NotificationSettings(BaseModel):
     delivery_by_importance: DeliveryByImportance
     exploration_slot: ExplorationSlot
     updated_at: UtcDateTime | None
+    # 이 화면 키 가운데 앱 값이 있는 것(점 경로). 없으면 빈 목록이다(#35).
+    overridden: list[str] = Field(default_factory=list)
 
 
 # 발송 정책이 시 단위라 정각만 받는다.
@@ -188,3 +193,30 @@ class RestoreResult(BaseModel):
     revision: Revision
     # 옛 저장값 가운데 지금 모델·주인에 맞지 않아 버린 키
     dropped: list[str]
+
+
+# 키의 첫 마디. app 은 config/app.yaml, sources 는 config/sources.yaml, server 는 VM .env 다.
+SettingCategory = Literal[
+    "policy", "exclude", "dedupe", "triage", "scoring", "notify", "app", "sources", "server"
+]
+
+
+class SettingItem(BaseModel):
+    key: str
+    label: str
+    category: SettingCategory
+    value: Any
+    default: Any
+    source: Literal["default", "app"]
+    owner: Literal["app", "yaml", "server"]
+    apply: Literal["next_job", "deploy", "restart"]
+    # 앱 값이 있는데 앱이 마지막으로 바꾼 뒤 YAML 기본값이 바뀌었다
+    default_changed: bool
+    edit_url: str | None
+
+
+class SettingsOverview(BaseModel):
+    revision: str | None
+    git_sha: str | None
+    delivery_blocked: list[DeliveryBlocked]
+    items: list[SettingItem]

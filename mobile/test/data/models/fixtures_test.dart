@@ -34,6 +34,7 @@ final Map<String, _Json Function(_Json)> _roundTrips = {
   'report_12': (j) => Report.fromJson(j).toJson(),
   'reports': (j) => _page(j, ReportSummary.fromJson, (r) => r.toJson()),
   'saved': (j) => _page(j, SavedItem.fromJson, (s) => s.toJson()),
+  'settings': (j) => SettingsOverview.fromJson(j).toJson(),
   'settings_interests': (j) => InterestsSettings.fromJson(j).toJson(),
   'settings_notifications': (j) => NotificationSettings.fromJson(j).toJson(),
   'sources': (j) => SourcesResponse.fromJson(j).toJson(),
@@ -41,8 +42,10 @@ final Map<String, _Json Function(_Json)> _roundTrips = {
 };
 
 /// 모델이 일부러 되돌려 보내지 않는 키 (`PUT` 본문에서 빠지는 서버 값).
+/// `overridden`(#35)은 출처 배지를 붙이는 #36 전까지 앱이 읽지 않는다.
 const Map<String, Set<String>> _readOnlyKeys = {
-  'settings_interests': {'updated_at'},
+  'settings_interests': {'updated_at', 'overridden'},
+  'settings_notifications': {'overridden'},
 };
 
 Future<_Json> _fixture(String name) async =>

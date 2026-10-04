@@ -1,4 +1,4 @@
-# 화면 04·05 설정 — 관심사·알림 조회·저장, 키 되돌리기, 저장 이력·버전 되돌리기
+# 설정 — 04·05 조회·저장, 키 되돌리기, 저장 이력·버전 되돌리기, 전체 설정·발송 막힘 사유
 
 from __future__ import annotations
 
@@ -31,6 +31,8 @@ from app.api.v1.schemas.settings import (
     RestoreResult,
     Revision,
     SettingChange,
+    SettingItem,
+    SettingsOverview,
     TelegramChannel,
 )
 from app.config import (
@@ -38,17 +40,22 @@ from app.config import (
     Rules,
     Settings,
     app_key_path,
+    changed_defaults,
     effective_rules,
     get_rules,
     get_settings,
     merge_overlay,
+    overridden_keys,
     restorable,
+    sanitize_overlay,
+    setting_leaves,
     without_key,
     yaml_rules,
 )
 from app.db import prefs
 from app.db.models import RevisionOrigin, SettingsRevision
 from app.notify.base import channel_connected
+from app.notify.policy import delivery_blocked
 from app.schemas import Kind
 
 router = APIRouter(prefix="/settings")
@@ -74,7 +81,16 @@ async def save_or_422(
         ) from exc
 
 
-def _interests(rules: Rules, updated_at: datetime | None) -> Interests:
+def _overridden(data: dict[str, Any], prefixes: tuple[str, ...]) -> list[str]:
+    return [key for key in overridden_keys(data) if key.startswith(prefixes)]
+
+
+_INTERESTS_KEYS = ("policy.", "scoring.kind_weights.")
+_NOTIFICATION_KEYS = ("notify.",)
+
+
+def _interests(rules: Rules, data: dict[str, Any], updated_at: datetime | None) -> Interests:
+    """data 는 저장된 덮어쓰기다. overridden 을 고른다."""
     policy = rules.policy
     return Interests(
         profile=InterestProfile(
@@ -84,13 +100,14 @@ def _interests(rules: Rules, updated_at: datetime | None) -> Interests:
         watch_keywords=policy.focus_stack + policy.focus_repos,
         kind_weights={k: rules.scoring.kind_weights.get(k, 0.0) for k in Kind},
         updated_at=updated_at,
+        overridden=_overridden(data, _INTERESTS_KEYS),
     )
 
 
 @router.get("/interests")
 async def get_interests(session: Session, user_id: UserId) -> Interests:
-    _, updated_at = await prefs.current_prefs(session, user_id)
-    return _interests(get_rules(), updated_at)
+    data, updated_at = await prefs.current_prefs(session, user_id)
+    return _interests(get_rules(), data, updated_at)
 
 
 @router.put("/interests")
@@ -107,7 +124,7 @@ async def put_interests(body: InterestsIn, session: Session, user_id: UserId) ->
     weights = {kind.value: round(w, 2) for kind, w in body.kind_weights.items()}
     after = merge_overlay(before, {"policy": policy, "scoring": {"kind_weights": weights}})
     saved = await save_or_422(session, user_id, before, after)
-    return _interests(get_rules(), saved.created_at)
+    return _interests(get_rules(), saved.data, saved.created_at)
 
 
 def _discord_channel_name(settings: Settings) -> str | None:
@@ -117,7 +134,7 @@ def _discord_channel_name(settings: Settings) -> str | None:
 
 
 async def _notifications(
-    session: AsyncSession, user_id: int, updated_at: datetime | None
+    session: AsyncSession, user_id: int, data: dict[str, Any], updated_at: datetime | None
 ) -> NotificationSettings:
     notify = get_rules().notify
     settings = get_settings()
@@ -152,6 +169,7 @@ async def _notifications(
             enabled=notify.explore_enabled, daily_limit=EXPLORATION_DAILY_LIMIT
         ),
         updated_at=updated_at,
+        overridden=_overridden(data, _NOTIFICATION_KEYS),
     )
 
 
@@ -198,8 +216,8 @@ def _notify_patch(body: NotificationSettingsIn) -> dict[str, Any]:
 
 @router.get("/notifications")
 async def get_notifications(session: Session, user_id: UserId) -> NotificationSettings:
-    _, updated_at = await prefs.current_prefs(session, user_id)
-    return await _notifications(session, user_id, updated_at)
+    data, updated_at = await prefs.current_prefs(session, user_id)
+    return await _notifications(session, user_id, data, updated_at)
 
 
 @router.patch("/notifications")
@@ -211,7 +229,7 @@ async def patch_notifications(
         _require_connected(body.channels, effective_rules(before).notify.channels)
     after = merge_overlay(before, {"notify": _notify_patch(body)})
     saved = await save_or_422(session, user_id, before, after)
-    return await _notifications(session, user_id, saved.created_at)
+    return await _notifications(session, user_id, saved.data, saved.created_at)
 
 
 @router.delete("/overrides/{key}", status_code=204)
@@ -258,3 +276,63 @@ async def restore_revision(revision_id: str, session: Session, user_id: UserId) 
         session, user_id, before, data, origin="restore", note=f"#{rid} 저장으로 되돌림"
     )
     return RestoreResult(revision=_revision(saved), dropped=dropped)
+
+
+# GET /settings 에 보이는 서버 소유 키(VM .env). 비밀값은 키 이름도 내보내지 않는다.
+_SERVER_KEYS = {
+    "llm_model": "LLM 모델",
+    "embedding_model": "임베딩 모델",
+    "scheduler_enabled": "스케줄러",
+}
+# 공개 레포의 YAML 편집 화면. 앱은 YAML 소유 키를 여기로 보낸다.
+_EDIT_URL = "https://github.com/yeotaeho/trend/edit/main/config"
+
+
+@router.get("")
+async def settings_overview(session: Session, user_id: UserId) -> SettingsOverview:
+    """모든 설정 키를 값·기본값·출처·주인과 함께. 앱에서 바꿀 수 있는 것은 owner=app 뿐이다."""
+    data, _ = await prefs.current_prefs(session, user_id)
+    overlay = sanitize_overlay(data)
+    app_keys = set(overridden_keys(overlay))
+    changed = changed_defaults(overlay, await prefs.last_defaults(session, user_id))
+    settings = get_settings()
+    items = [
+        SettingItem.model_validate(
+            {
+                "key": leaf.key,
+                "label": leaf.label,
+                "category": leaf.key.split(".")[0],
+                "value": leaf.value,
+                "default": leaf.default,
+                "source": "app" if leaf.key in app_keys else "default",
+                "owner": leaf.owner,
+                "apply": leaf.apply,
+                "default_changed": leaf.key in changed,
+                "edit_url": f"{_EDIT_URL}/{leaf.file}",
+            }
+        )
+        for leaf in setting_leaves(overlay)
+    ]
+    items += [
+        SettingItem(
+            key=f"server.{name}",
+            label=label,
+            category="server",
+            value=getattr(settings, name),
+            default=Settings.model_fields[name].default,
+            source="default",
+            owner="server",
+            apply="restart",
+            default_changed=False,
+            edit_url=None,
+        )
+        for name, label in _SERVER_KEYS.items()
+    ]
+    latest = await queries.latest_revision_id(session, user_id)
+    notify = effective_rules(overlay).notify
+    return SettingsOverview(
+        revision=str(latest) if latest else None,
+        git_sha=settings.git_sha or None,
+        delivery_blocked=delivery_blocked(notify, channel_connected(settings)),
+        items=items,
+    )

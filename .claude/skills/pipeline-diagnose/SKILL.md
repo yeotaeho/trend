@@ -52,6 +52,7 @@ description: 이 알림이 왜 왔는지·왜 안 왔는지 물을 때, 알림�
 1. 실DB 에서 대상 구간 분포를 뽑는다. 쌍 유사도, 점수 구간별 건수, 도착 시각 같은 것이다. dedupe 는 `uv run python scripts/calibrate_dedupe.py` 가 표본을 준다.
 2. 후보 값마다 통과 건수와 LLM 호출 수를 계산하거나 시뮬레이션한다(선별 게이트는 72시간 도착 시각 1,811건으로 2분 틱을 시뮬레이션해 골랐다).
 3. 표로 사용자에게 제시하고 **결정은 사용자가 한다.** 정책·임계값은 사용자 결정 사항이다.
-4. `config/rules.yaml`, `app/config.py` 기본값, `docs/pipeline.md` 수치를 같이 고친다. 코드 기본값과 YAML 이 어긋나 테스트가 옛 기준으로 돈 전례가 있다.
-5. 다음 실배치로 확인한다.
-6. 소스 신뢰도는 `uv run python scripts/weekly_report.py --days 7` 로 보고, 사용자가 동의하면 `--apply` 로 쓴다.
+4. rules.yaml 키를 고치기 전에 앱 `GET /api/v1/settings` 에서 그 키가 `source: app` 인지 본다. 앱 값이 있으면 YAML 수정이 가려진다(앱에서 되돌리거나 사용자와 정한다).
+5. `config/rules.yaml`, `app/config.py` 기본값, `docs/pipeline.md` 수치를 같이 고친다. 코드 기본값과 YAML 이 어긋나 테스트가 옛 기준으로 돈 전례가 있다.
+6. 다음 실배치로 확인한다.
+7. 소스 신뢰도는 `uv run python scripts/weekly_report.py --days 7` 로 보고, 사용자가 동의하면 `--apply` 로 쓴다.
