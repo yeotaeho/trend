@@ -1,4 +1,4 @@
-# 설정 덮어쓰기 병합 테스트 — 목록 교체·dict 병합, 알 수 없는 키·taxonomy 거부, 틀린 키만 무시
+# 설정 덮어쓰기 테스트 — 병합, 앱 소유 키만 저장, 틀린 키만 무시, YAML 과 같은 값 지우기
 
 from __future__ import annotations
 
@@ -12,8 +12,10 @@ from app.config import (
     CONFIG_DIR,
     PolicyConfig,
     _read_yaml,
+    app_key_path,
     get_rules,
     merge_overlay,
+    prune_overlay,
     rules_with_overlay,
     sanitize_overlay,
     set_prefs_overlay,
@@ -45,10 +47,84 @@ def test_kind_weights_overlay_keeps_other_yaml_kinds():
 
 
 def test_unknown_key_is_rejected_on_save():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="notify.bogus"):
         validate_overlay({"notify": {"bogus": 1}})
-    with pytest.raises(ValueError, match="알 수 없는 설정 섹션"):
+    with pytest.raises(ValueError, match="앱에서 바꿀 수 없는 설정 키"):
         validate_overlay({"bogus": {}})
+
+
+@pytest.mark.parametrize(
+    "overlay",
+    [
+        {"scoring": {"threshold": 0.5}},
+        {"policy": {"taxonomy": ["agent"]}},
+        {"notify": {"timezone": "UTC"}},
+        {"notify": {"channels": True}},
+        {"sources": {"rss:openai": {"trust_score": 0.9}}},
+        {"sources": {"rss:not-in-yaml": {"enabled": False}}},
+    ],
+)
+def test_only_app_owned_keys_can_be_saved(overlay: dict[str, Any]):
+    # 키마다 주인이 하나다(에픽 #30). 관문 임계값·분류표·시간대는 YAML 이 주인이다.
+    with pytest.raises(ValueError, match="앱에서 바꿀 수 없는 설정 키"):
+        validate_overlay(overlay)
+
+
+def test_yaml_owned_stored_key_is_ignored_on_startup():
+    overlay = {"scoring": {"threshold": 0.9, "kind_weights": {"survey": -0.2}}}
+
+    with capture_logs() as logs:
+        rules = rules_with_overlay(_yaml(), overlay)
+
+    assert rules.scoring.threshold == yaml_rules().scoring.threshold
+    assert rules.scoring.kind_weights[Kind.SURVEY] == -0.2
+    ignored = [e["path"] for e in logs if e["event"] == "config.prefs_key_ignored"]
+    assert ignored == ["scoring.threshold"]
+
+
+def test_prune_keeps_only_differences_from_yaml():
+    yaml = yaml_rules()
+    changed_stack = [*yaml.policy.focus_stack, "rust"]
+    overlay = {
+        "policy": {
+            "interests": yaml.policy.interests,
+            "categories": list(yaml.policy.taxonomy),  # YAML 에 없으면 taxonomy 전체가 기본값
+            "focus_stack": changed_stack,
+        },
+        "scoring": {
+            "kind_weights": {"survey": yaml.scoring.kind_weights[Kind.SURVEY], "promo": -0.1}
+        },
+        "notify": {
+            "daily_push_cap": yaml.notify.daily_push_cap,
+            "channels": {"fcm": yaml.notify.channels.fcm, "telegram": True},
+        },
+        "sources": {"rss:openai": {"enabled": True}, "rss:anthropic": {"enabled": False}},
+    }
+
+    assert prune_overlay(overlay) == {
+        "policy": {"focus_stack": changed_stack},  # 목록은 통째로 비교한다
+        "scoring": {"kind_weights": {"promo": -0.1}},  # dict 는 kind 마다
+        "notify": {"channels": {"telegram": True}},
+        "sources": {"rss:anthropic": {"enabled": False}},
+    }
+
+
+def test_app_key_path_accepts_only_app_owned_keys():
+    assert app_key_path("notify.daily_push_cap") == ["notify", "daily_push_cap"]
+    assert app_key_path("notify.channels.fcm") == ["notify", "channels", "fcm"]
+    assert app_key_path("scoring.kind_weights.survey") == ["scoring", "kind_weights", "survey"]
+    assert app_key_path("sources.rss:openai.enabled") == ["sources", "rss:openai", "enabled"]
+    for key in (
+        "scoring.threshold",
+        "policy.taxonomy",
+        "notify",
+        "notify.channels",
+        "sources.rss:openai",
+        "sources.rss:not-in-yaml.enabled",
+        "bogus",
+        "",
+    ):
+        assert app_key_path(key) is None, key
 
 
 def test_invalid_keys_are_ignored_with_warning_and_rest_applies():
@@ -120,16 +196,15 @@ def test_sanitize_drops_only_invalid_keys():
     overlay = {
         "notify": {"removed_key": 1, "channels": {"discord": False}},
         "policy": {"categories": ["removed-slug"], "interests": "내 문장"},
-        "scoring": {"threshold": 0.5},
+        "scoring": {"threshold": 0.5},  # YAML 소유
         "bogus": {},
-        "sources": {"rss:a": {"enabled": False}},
+        "sources": {"rss:removed": {"enabled": False}, "rss:openai": {"enabled": False}},
     }
     with capture_logs():
         assert sanitize_overlay(overlay) == {
             "notify": {"channels": {"discord": False}},
             "policy": {"interests": "내 문장"},
-            "scoring": {"threshold": 0.5},
-            "sources": {"rss:a": {"enabled": False}},
+            "sources": {"rss:openai": {"enabled": False}},
         }
 
 

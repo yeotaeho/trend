@@ -1,4 +1,5 @@
-# 설정 API 테스트 — 관심사 PUT 즉시 반영·검증, 알림 설정 PATCH 부분 병합·409·클러스터 상한 변환
+# 설정 API 테스트 — 관심사 PUT 즉시 반영·검증, 알림 설정 PATCH 부분 병합·409·클러스터 상한 변환,
+# YAML 과 다른 값만 저장, 키 되돌리기
 
 from __future__ import annotations
 
@@ -8,15 +9,19 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from app import config
 from app.api.v1 import settings as settings_api
+from app.api.v1.errors import ApiError
 from app.api.v1.queries import settings as queries
 from app.config import get_rules, yaml_rules
 from app.db import prefs
+from app.db.users import DEFAULT_USER_ID
 from app.schemas import Kind
-from tests.api.conftest import AUTH, PrefsStore
+from tests.api.conftest import AUTH, FakeSession, PrefsStore
 
 INTERESTS = "/api/v1/settings/interests"
 NOTIFICATIONS = "/api/v1/settings/notifications"
+OVERRIDES = "/api/v1/settings/overrides"
 
 
 def _interests_body(**changes: Any) -> dict[str, Any]:
@@ -221,7 +226,7 @@ def test_dedupe_toggle_maps_to_cluster_daily_cap(client: TestClient, store: Pref
     on = client.patch(NOTIFICATIONS, headers=AUTH, json={"dedupe_same_issue_daily": True})
     assert on.json()["dedupe_same_issue_daily"] is True
     assert get_rules().notify.cluster_daily_cap == yaml_rules().notify.cluster_daily_cap == 1
-    assert "cluster_daily_cap" not in store.data["notify"]  # 덮어쓰기를 지워 YAML 값으로
+    assert store.data == {}  # YAML 값과 같아 덮어쓰기가 지워진다
 
 
 def test_dedupe_on_writes_one_when_yaml_cap_is_zero(
@@ -230,6 +235,7 @@ def test_dedupe_on_writes_one_when_yaml_cap_is_zero(
     zero = yaml_rules().model_copy(deep=True)
     zero.notify.cluster_daily_cap = 0
     monkeypatch.setattr(settings_api, "yaml_rules", lambda: zero)
+    monkeypatch.setattr(config, "yaml_rules", lambda: zero)  # 저장 때 비교하는 YAML 값
 
     client.patch(NOTIFICATIONS, headers=AUTH, json={"dedupe_same_issue_daily": True})
 
@@ -262,14 +268,14 @@ def test_patch_notifications_rejects_invalid(client: TestClient, store: PrefsSto
 def test_stale_stored_keys_are_dropped_on_save(client: TestClient, store: PrefsStore, env):
     # 기동 때 무시된 옛 키가 남아 있어도 새 저장은 막히지 않고, 그 키만 지워진다.
     store.data = {
-        "notify": {"removed_key": 1, "channels": {"discord": False}},
+        "notify": {"removed_key": 1, "channels": {"fcm": False}},
         "policy": {"taxonomy": ["agent"]},
     }
 
     res = client.patch(NOTIFICATIONS, headers=AUTH, json={"daily_push_cap": 7})
     assert res.status_code == 200, res.text
     assert store.data == {
-        "notify": {"channels": {"discord": False}, "daily_push_cap": 7},
+        "notify": {"channels": {"fcm": False}, "daily_push_cap": 7},
     }
 
     res = client.put(INTERESTS, headers=AUTH, json=_interests_body())
@@ -310,4 +316,79 @@ def test_channel_check_uses_locked_stored_value(client: TestClient, store: Prefs
     res = client.patch(NOTIFICATIONS, headers=AUTH, json={"channels": {"fcm": {"enabled": True}}})
 
     assert res.status_code == 409
+    assert store.saves == 0
+
+
+# --- YAML 과 다른 값만 저장 · 키 되돌리기 (에픽 #30) ---
+
+
+def _interests_from_get(client: TestClient) -> dict[str, Any]:
+    body = client.get(INTERESTS, headers=AUTH).json()
+    body.pop("updated_at")
+    return body
+
+
+def test_saving_get_values_back_stores_nothing(client: TestClient, store: PrefsStore):
+    # YAML 과 같은 값을 덮어쓰기로 남기면 나중에 YAML 을 고쳐도 옛 값이 이긴다.
+    res = client.put(INTERESTS, headers=AUTH, json=_interests_from_get(client))
+
+    assert res.status_code == 200, res.text
+    assert store.data == {}
+
+
+def test_changing_one_kind_stores_only_that_key(client: TestClient, store: PrefsStore):
+    body = _interests_from_get(client)
+    body["kind_weights"]["survey"] = -0.2
+
+    client.put(INTERESTS, headers=AUTH, json=body)
+
+    assert store.data == {"scoring": {"kind_weights": {"survey": -0.2}}}
+
+
+async def test_saving_yaml_owned_key_is_422(store: PrefsStore, session: FakeSession):
+    # 이 키를 보내는 API 는 없다. 저장 함수가 막는다.
+    with pytest.raises(ApiError) as exc:
+        await settings_api.save_or_422(session, DEFAULT_USER_ID, {"scoring": {"threshold": 0.5}})
+
+    assert exc.value.status == 422
+    assert "scoring.threshold" in exc.value.details["reason"]
+    assert store.saves == 0
+
+
+def test_delete_override_restores_yaml_value(client: TestClient, store: PrefsStore, env):
+    client.patch(
+        NOTIFICATIONS, headers=AUTH, json={"daily_push_cap": 20, "quiet_hours": {"start": "00:00"}}
+    )
+
+    res = client.delete(f"{OVERRIDES}/notify.daily_push_cap", headers=AUTH)
+
+    assert res.status_code == 204, res.text
+    body = client.get(NOTIFICATIONS, headers=AUTH).json()
+    assert body["daily_push_cap"] == yaml_rules().notify.daily_push_cap
+    assert body["quiet_hours"]["start"] == "00:00"  # 다른 키는 그대로
+    assert store.data == {"notify": {"quiet_start_hour": 0}}
+
+
+def test_delete_one_kind_keeps_the_others(client: TestClient, store: PrefsStore):
+    body = _interests_from_get(client)
+    body["kind_weights"] |= {"survey": -0.2, "promo": -0.1}
+    client.put(INTERESTS, headers=AUTH, json=body)
+
+    res = client.delete(f"{OVERRIDES}/scoring.kind_weights.survey", headers=AUTH)
+
+    assert res.status_code == 204, res.text
+    assert get_rules().scoring.kind_weights == yaml_rules().scoring.kind_weights | {
+        Kind.PROMO: -0.1
+    }
+    assert store.data == {"scoring": {"kind_weights": {"promo": -0.1}}}
+
+
+@pytest.mark.parametrize(
+    "key", ["scoring.threshold", "policy.taxonomy", "notify", "notify.channels", "bogus"]
+)
+def test_delete_non_app_key_is_404(client: TestClient, store: PrefsStore, key: str):
+    res = client.delete(f"{OVERRIDES}/{key}", headers=AUTH)
+
+    assert res.status_code == 404
+    assert res.json()["error"]["code"] == "not_found"
     assert store.saves == 0

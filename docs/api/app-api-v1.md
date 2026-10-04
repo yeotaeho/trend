@@ -327,6 +327,14 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 
 `taxonomy` 는 `rules.policy.taxonomy` 순서대로, 라벨은 `config/app.yaml` `taxonomy_labels[slug]` (없으면 slug 그대로)다. 선별 프롬프트는 slug 만 쓰고 라벨을 보지 않는다.
 
+#### `DELETE /settings/overrides/{key}` — 키 하나를 기본값으로
+
+204. `key` 는 앱 소유 키의 점 경로다. 예) `notify.daily_push_cap`, `notify.channels.discord`, `policy.categories`, `scoring.kind_weights.survey`(kind 하나) 또는 `scoring.kind_weights`(전부), `sources.rss:openai.enabled`. 덮어쓰지 않은 키여도 204 다.
+
+- `user_prefs` 에서 그 키를 지워 YAML 값이 유효 설정이 된다. `sources.<이름>.enabled` 는 같은 저장에서 `sources` 행도 YAML 값으로 맞춘다.
+- 앱 소유가 아닌 키(`scoring.threshold`, `policy.taxonomy`, `notify.timezone` 등)와 묶음 자체(`notify`, `notify.channels`)는 404 `not_found` 다.
+- 04·05·06 의 키별 되돌리기 화면은 #36 에서 붙인다.
+
 ### 4.1 화면 03 피드
 
 #### `GET /stats/today` — 요약 줄
@@ -513,9 +521,10 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 - `selected_categories` 1개 이상, 전부 `policy.taxonomy` 안의 slug, 중복 없음.
 - `watch_keywords` 0~50개, 각 1~50자, 앞뒤 공백 제거 후 대소문자 무시 중복 제거. `/` 를 포함한 값은 `focus_repos`, 나머지는 `focus_stack` 으로 저장한다.
 - `kind_weights` 키는 `kind` 8개 중에서, 값은 −0.50 ~ 0(감점 전용, 범위 밖은 422). 서버가 소수 2자리로 반올림한다. 빠진 키는 현재 유효값을 유지한다 (앱은 편집하지 않는 `news`·`other` 도 GET 값을 그대로 보낸다).
-- 모르는 키(`updated_at` 포함)를 보내면 422. 저장된 덮어쓰기 중 검증에 실패하는 옛 키(YAML 키가 바뀐 경우)는 저장 때 지워진다. 그래도 합친 결과가 검증에 실패하면 저장하지 않고 422 이며 `details.reason` 에 이유가 있다 (05·06 저장도 같다).
+- 모르는 키(`updated_at` 포함)를 보내면 422. 저장된 덮어쓰기 중 앱 소유가 아니거나 검증에 실패하는 옛 키(YAML 키가 바뀐 경우)는 저장 때 지워진다. 그래도 합친 결과가 검증에 실패하면 저장하지 않고 422 이며 `details.reason` 에 이유가 있다 (05·06 저장도 같다).
 
 저장 즉시 다음 선별·판정 호출부터 반영된다 (프로세스 안의 유효 설정 캐시를 갈아끼운다). 이미 매긴 점수는 다시 계산하지 않는다.
+저장은 YAML 값과 다른 키만 `user_prefs` 에 남긴다 (05·06 도 같다). GET 값을 그대로 보내면 덮어쓰기가 비고, YAML 과 같은 값으로 돌린 키는 지워져 이후 YAML 을 고치면 그 값을 따른다.
 `selected_categories` 는 거름망이 아니라 힌트다. `render_policy` 가 선별·판정 프롬프트의 정책 블록에 `관심 카테고리: llm-model, agent, …` 한 줄을 넣는다. 선별은 여전히 `policy.taxonomy` 12개 전체에서 `topics` 를 고른다. 사용자별 카테고리 필터는 v2 계획서 범위 밖이다.
 
 키워드 추가·삭제, 카테고리 선택, 가중치 편집은 모두 클라이언트 로컬 상태에서 바꾸고 이 PUT 한 번으로 저장한다.
@@ -573,7 +582,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 - `daily_push_cap` 1~50.
 - `quiet_hours.start`·`end` 는 `HH:00` 만 허용한다 (백엔드 정책이 시 단위). 분이 0 이 아니면 422. 같은 값이면 무음 없음.
 - `timezone`, `connected`, `channel_name`, `reaction_sync`, `device_count`, `daily_limit` 은 읽기 전용이며 보내면 422.
-- `dedupe_same_issue_daily` 는 `cluster_daily_cap` 에 이렇게 옮긴다. `false` → 덮어쓰기 `notify.cluster_daily_cap = 0`. `true` → YAML 값이 1 이상이면 덮어쓰기 키를 지우고(YAML 값 복귀), 0 이면 1 을 쓴다. 상한 숫자 자체는 앱에서 바꾸지 않는다.
+- `dedupe_same_issue_daily` 는 `cluster_daily_cap` 에 이렇게 옮긴다. `false` → 덮어쓰기 `notify.cluster_daily_cap = 0`. `true` → YAML 값(0 이면 1)을 쓴다. YAML 값과 같으면 저장 때 덮어쓰기가 지워진다. 상한 숫자 자체는 앱에서 바꾸지 않는다.
 - `connected=false` 인 채널을 `enabled=true` 로 바꾸면 409 `channel_not_connected`. 앱은 토글을 되돌리고 `message` 를 보여 준다 (연결 플로우 디자인은 없다).
 
 발송 동작 (백엔드 `notify/policy.py` 가 이 설정을 읽는다).
@@ -624,7 +633,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 
 요청 `{"enabled": false}`. 응답은 갱신된 `Source`. `sources.yaml` 에 없는 ID 는 404 `not_found`.
 
-- `sources.enabled` 와 `user_prefs.data.sources.{name}.enabled` 를 같이 쓴다. 기동 시 `sync_sources` 가 YAML 값 위에 이 덮어쓰기를 적용하므로 재시작해도 유지된다.
+- `user_prefs.data.sources.{name}.enabled` 에 쓰고(YAML 값과 같으면 지운다) 같은 저장에서 `sources.enabled` 행을 맞춘다. 기동 시 `sync_sources` 가 YAML 값 위에 이 덮어쓰기를 적용하므로 재시작해도 유지된다.
 - 스케줄러는 YAML 의 모든 소스에 잡을 등록하고 `run_source` 가 비활성 소스를 건너뛴다. 그래서 켜고 끌 때 잡을 다시 등록할 필요가 없다.
 
 ### 4.6 화면 09 · 10 걸러진 항목
@@ -1039,21 +1048,16 @@ v2 계획서 Task 1 의 사용자 식별자와 앱 테이블을 **B1 의 `0004` 
 
 ```json
 {
-  "policy": {"interests": "…", "not_interested": "…", "focus_stack": ["claude"], "focus_repos": ["anthropics/*"], "categories": ["llm-model"]},
-  "scoring": {"kind_weights": {"survey": -0.15}},
-  "notify": {
-    "daily_push_cap": 15, "quiet_start_hour": 23, "quiet_end_hour": 8,
-    "cluster_daily_cap": 1, "explore_enabled": true,
-    "delivery_by_importance": {"high": "instant", "mid": "quiet", "low": "feed_only"},
-    "channels": {"fcm": true, "discord": true, "telegram": false}
-  },
+  "policy": {"interests": "…", "categories": ["llm-model", "agent"]},
+  "scoring": {"kind_weights": {"survey": -0.2}},
+  "notify": {"daily_push_cap": 20, "channels": {"telegram": true}},
   "sources": {"youtube:codingapple": {"enabled": false}}
 }
 ```
 
 - `get_rules()` 는 시그니처를 유지하고 "YAML + 덮어쓰기" 를 돌려준다. 덮어쓰기는 프로세스 전역 값이며 기동 시(lifespan, 스케줄러 전) DB 에서 한 번 읽고, 설정 API 가 저장한 직후 갈아끼운다. 단일 프로세스 전제라 이것으로 충분하다.
 - 덮어쓰기가 검증에 실패하면(YAML 키가 바뀌어 옛 값이 안 맞는 등) 기동을 멈추지 않고 그 섹션에서 맞지 않는 키만 경고 로그 후 무시한다 (섹션을 통째로 버리면 같은 섹션의 멀쩡한 설정까지 사라진다). 다음 저장이 그 키를 지운다.
-- `policy.taxonomy` 는 덮어쓸 수 없다 (선별 어휘라 YAML 만). `sources` 는 `Rules` 밖이라 `sync_sources` 가 읽는다. 표시 이름은 `users.name` 이라 여기 없다.
+- 키마다 주인이 하나다 (에픽 #30). `data` 에는 앱 소유 키(`app/config.py` 의 `app_field`)만, 그중 YAML 값과 다른 것만 남는다. YAML 소유 키(관문 임계값·`policy.taxonomy`·`notify.timezone` 등)는 저장 때 422, 기동 때 경고 후 무시한다. `sources` 는 `Rules` 밖이라 `sync_sources` 가 읽고, 설정 저장도 같은 트랜잭션에서 `sources` 행을 맞춘다. 표시 이름은 `users.name` 이라 여기 없다.
 - `config/rules.yaml` 에 새 키와 기본값을 적는다. 전부 기본값이 있어 옛 YAML 로도 기동된다 (v2 계획서 Global Constraints).
 
 | 키 | 기본 | 작업 |

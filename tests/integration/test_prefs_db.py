@@ -67,11 +67,15 @@ async def test_concurrent_first_saves_do_not_lose_updates():
             await upsert_prefs(s, DEFAULT_USER_ID, merge_overlay(data, patch))
 
     await asyncio.gather(
-        save({"sources": {"rss:a": {"enabled": False}}}),
+        # sources.yaml 에 있는 이름이어야 잠근 뒤 읽기(sanitize)에서 남는다.
+        save({"sources": {"rss:openai": {"enabled": False}}}),
         save({"notify": {"daily_push_cap": 5}}),
     )
 
     async with SessionLocal() as s:
         row = await fetch_prefs(s, DEFAULT_USER_ID)
     assert row is not None
-    assert row.data == {"sources": {"rss:a": {"enabled": False}}, "notify": {"daily_push_cap": 5}}
+    assert row.data == {
+        "sources": {"rss:openai": {"enabled": False}},
+        "notify": {"daily_push_cap": 5},
+    }

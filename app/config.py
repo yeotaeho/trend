@@ -271,8 +271,6 @@ def get_settings() -> Settings:
     return Settings()
 
 
-# user_prefs.data 중 Rules 밖 키. sources 는 sync_sources 가 따로 읽는다.
-PREFS_NON_RULES_KEYS = frozenset({"sources"})
 # 앱이 저장한 설정 덮어쓰기 (DEFAULT_USER_ID 의 user_prefs.data)와 그 저장 시각.
 # set_prefs_overlay 로만 바꾼다.
 _prefs_overlay: dict[str, Any] = {}
@@ -290,14 +288,49 @@ def merge_overlay(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, An
     return merged
 
 
-def _check_overlay_section(name: str, value: Any) -> None:
-    if name not in Rules.model_fields:
-        raise ValueError(f"알 수 없는 설정 섹션 {name!r}")
-    if not isinstance(value, dict):
-        raise ValueError(f"설정 섹션 {name!r} 은 객체여야 한다")
-    if name == "policy" and "taxonomy" in value:
-        # 선별 어휘라 YAML 만 바꾼다.
-        raise ValueError("policy.taxonomy 는 덮어쓸 수 없다")
+def _owned_part(
+    value: dict[str, Any], model: type[BaseModel], path: list[str], dropped: list[str]
+) -> dict[str, Any]:
+    """value 에서 앱 소유 키만 남긴다. 하위 모델은 안으로 내려가고 그 밖은 필드 주인을 본다.
+
+    kind_weights 처럼 값이 dict 인 필드도 키 하나다. 모르는 키·주인이 앱이 아닌 키는 경로를
+    dropped 에 쌓는다.
+    """
+    kept: dict[str, Any] = {}
+    for key, item in value.items():
+        info = model.model_fields.get(key)
+        sub = info.annotation if info else None
+        extra = info.json_schema_extra if info else None
+        if isinstance(sub, type) and issubclass(sub, BaseModel) and isinstance(item, dict):
+            if part := _owned_part(item, sub, [*path, key], dropped):
+                kept[key] = part
+        elif isinstance(extra, dict) and extra.get("owner") == "app":
+            kept[key] = item
+        else:
+            dropped.append(".".join([*path, key]))
+    return kept
+
+
+def _split_owned(overlay: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    """(앱 소유 키만 남긴 덮어쓰기, 버린 키 경로). 키마다 주인이 하나다(에픽 #30).
+
+    sources 는 Rules 밖이다. sources.yaml 에 있는 이름 아래가 SourceConfig 이고
+    sync_sources 가 읽는다.
+    """
+    dropped: list[str] = []
+    kept = _owned_part({k: v for k, v in overlay.items() if k != "sources"}, Rules, [], dropped)
+    sources = overlay.get("sources", {})
+    if not isinstance(sources, dict):
+        dropped.append("sources")
+        sources = {}
+    names = {c.name for c in get_source_configs()}
+    for name, item in sources.items():
+        if name in names and isinstance(item, dict):
+            if part := _owned_part(item, SourceConfig, ["sources", name], dropped):
+                kept.setdefault("sources", {})[name] = part
+        else:
+            dropped.append(f"sources.{name}")
+    return kept, dropped
 
 
 def _nest(path: list[str], value: Any) -> dict[str, Any]:
@@ -310,8 +343,6 @@ def _nest(path: list[str], value: Any) -> dict[str, Any]:
 def _overlay_error(base: dict[str, Any], fragment: dict[str, Any]) -> str | None:
     """fragment(섹션 하나짜리 덮어쓰기)를 base 에 얹었을 때의 검증 오류. 맞으면 None."""
     try:
-        for name, value in fragment.items():
-            _check_overlay_section(name, value)
         Rules.model_validate(merge_overlay(base, fragment))
     except ValueError as exc:  # pydantic ValidationError 도 ValueError 다
         return str(exc)
@@ -341,18 +372,19 @@ def _valid_part(base: dict[str, Any], path: list[str], value: dict[str, Any]) ->
 def _apply_overlay(
     base: dict[str, Any], overlay: dict[str, Any]
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    """덮어쓰기를 섹션 단위로 얹고 (병합 결과, 실제로 쓴 덮어쓰기) 를 돌려준다.
+    """앱 소유 키만 섹션 단위로 얹고 (병합 결과, 실제로 쓴 덮어쓰기) 를 돌려준다.
 
-    섹션이 검증에 실패하면 맞지 않는 키만 경고 후 버린다. 다 버려진 섹션은 남기지 않는다.
+    주인이 앱이 아니거나 모르는 키, 검증에 실패하는 키는 경고 후 버린다. 다 버려진 섹션은
+    남기지 않는다.
     """
+    owned, dropped = _split_owned(overlay)
+    for path in dropped:
+        log.warning("config.prefs_key_ignored", path=path, error="앱이 덮어쓸 수 없는 키")
     merged = base
     kept: dict[str, Any] = {}
-    for name, value in overlay.items():
-        if name in PREFS_NON_RULES_KEYS:
+    for name, value in owned.items():
+        if name == "sources":
             kept[name] = value
-            continue
-        if not isinstance(value, dict) or name not in Rules.model_fields:
-            log.warning("config.prefs_key_ignored", path=name, error="알 수 없는 섹션")
             continue
         if _overlay_error(merged, {name: value}) is not None:
             value = _valid_part(merged, [name], value)
@@ -381,12 +413,59 @@ def sanitize_overlay(overlay: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_overlay(overlay: dict[str, Any]) -> Rules:
-    """저장 전 검증. 섹션 하나라도 틀리면 ValueError. 저장된 값은 rules_with_overlay 가 읽는다."""
-    for name, value in overlay.items():
-        if name not in PREFS_NON_RULES_KEYS:
-            _check_overlay_section(name, value)
-    sections = {k: v for k, v in overlay.items() if k not in PREFS_NON_RULES_KEYS}
+    """저장 전 검증. 앱 소유가 아닌 키가 있거나 합친 값이 틀리면 ValueError.
+
+    저장된 값은 rules_with_overlay 가 읽는다.
+    """
+    _, dropped = _split_owned(overlay)
+    if dropped:
+        raise ValueError(f"앱에서 바꿀 수 없는 설정 키다: {', '.join(dropped)}")
+    sections = {k: v for k, v in overlay.items() if k != "sources"}
     return Rules.model_validate(merge_overlay(_read_yaml(CONFIG_DIR / "rules.yaml"), sections))
+
+
+def prune_overlay(overlay: dict[str, Any]) -> dict[str, Any]:
+    """YAML 값과 같은 말단을 지운 사본. 차이만 남겨야 YAML 을 고쳤을 때 앱 값에 가려지지 않는다.
+
+    dict 는 말단 단위(kind_weights 는 kind 마다), 목록은 통째로 비교한다. 생략된 categories 의
+    YAML 값은 검증기가 채운 taxonomy 전체다.
+    """
+    yaml = yaml_rules().model_dump(mode="json")
+    yaml["sources"] = {c.name: c.model_dump(mode="json") for c in get_source_configs()}
+    return _differences(overlay, yaml)
+
+
+def _differences(value: dict[str, Any], base: dict[str, Any]) -> dict[str, Any]:
+    kept: dict[str, Any] = {}
+    for key, item in value.items():
+        if isinstance(item, dict) and isinstance(base.get(key), dict):
+            if inner := _differences(item, base[key]):
+                kept[key] = inner
+        elif key not in base or item != base[key]:
+            kept[key] = item
+    return kept
+
+
+def app_key_path(key: str) -> list[str] | None:
+    """점 경로가 앱 소유 키면 경로 목록, 아니면 None. 섹션·하위 모델 자체는 키가 아니다.
+
+    예) notify.daily_push_cap, scoring.kind_weights.survey, sources.rss:openai.enabled
+    """
+    path = key.split(".")
+    _, dropped = _split_owned(_nest(path, None))
+    return None if dropped else path
+
+
+def without_key(overlay: dict[str, Any], path: list[str]) -> dict[str, Any]:
+    """path 의 덮어쓰기를 뺀 사본. 비게 된 상위 dict 는 저장 때 prune_overlay 가 지운다."""
+    result = copy.deepcopy(overlay)
+    parent: Any = result
+    for key in path[:-1]:
+        parent = parent.get(key)
+        if not isinstance(parent, dict):
+            return result
+    parent.pop(path[-1], None)
+    return result
 
 
 def set_prefs_overlay(overlay: dict[str, Any], version: datetime | None = None) -> None:
@@ -409,7 +488,7 @@ def effective_rules(overlay: dict[str, Any]) -> Rules:
 
 
 def yaml_rules() -> Rules:
-    """덮어쓰기 없는 YAML 값. 앱이 '기본값으로 되돌리기' 를 계산할 때 쓴다."""
+    """덮어쓰기 없는 YAML 값. 저장 때 이 값과 같은 덮어쓰기를 지운다(prune_overlay)."""
     return Rules.model_validate(_read_yaml(CONFIG_DIR / "rules.yaml"))
 
 
