@@ -486,10 +486,10 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 
 | `delivery_blocked` | 뜻 |
 |---|---|
-| `no_channel` | 켜지고 연결된 채널이 없다. 모든 항목이 피드에만 남는다 |
+| `no_channel` | 보낼 수 있는 채널이 없다. 켜지고 연결된 채널이 없으면 피드에만 남고, FCM 뿐인데 등록된 기기가 없으면 발송이 실패한다 |
 | `no_instant` | 중요도별 강도에 `instant` 가 없다. push 가 0건이다 |
 | `quiet_long` | 무음 시간이 20시간 이상이다 |
-| `resurface_off` | FCM 이 꺼졌거나 연결되지 않았다. 찜 재알림이 멈춘다 |
+| `resurface_off` | FCM 이 꺼졌거나 연결 정보·등록된 기기가 없다. 찜 재알림이 멈춘다 |
 
 ### 4.1 화면 03 피드
 

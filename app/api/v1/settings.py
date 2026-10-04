@@ -329,10 +329,14 @@ async def settings_overview(session: Session, user_id: UserId) -> SettingsOvervi
         for name, label in _SERVER_KEYS.items()
     ]
     latest = await queries.latest_revision_id(session, user_id)
-    notify = effective_rules(overlay).notify
+    blocked = delivery_blocked(
+        effective_rules(overlay).notify,
+        channel_connected(settings),
+        fcm_devices=await queries.active_device_count(session, user_id),
+    )
     return SettingsOverview(
         revision=str(latest) if latest else None,
         git_sha=settings.git_sha or None,
-        delivery_blocked=delivery_blocked(notify, channel_connected(settings)),
+        delivery_blocked=blocked,
         items=items,
     )

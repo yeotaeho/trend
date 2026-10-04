@@ -649,3 +649,19 @@ def test_screens_list_their_overridden_keys(client: TestClient, store: PrefsStor
         "scoring.kind_weights.survey"
     ]
     assert client.get(NOTIFICATIONS, headers=AUTH).json()["overridden"] == ["notify.daily_push_cap"]
+
+
+def test_fcm_without_devices_blocks_resurfacing(
+    client: TestClient, store: PrefsStore, env, monkeypatch, tmp_path
+):
+    account = tmp_path / "fcm.json"
+    account.write_text("{}", encoding="utf-8")
+    env.fcm_project_id, env.fcm_service_account_file = "p", str(account)
+    assert "resurface_off" not in client.get(SETTINGS, headers=AUTH).json()["delivery_blocked"]
+
+    async def no_devices(_session: Any, _user_id: int) -> int:
+        return 0
+
+    monkeypatch.setattr(queries, "active_device_count", no_devices)
+
+    assert "resurface_off" in client.get(SETTINGS, headers=AUTH).json()["delivery_blocked"]

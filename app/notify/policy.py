@@ -57,23 +57,28 @@ DeliveryBlocked = Literal["no_channel", "no_instant", "quiet_long", "resurface_o
 QUIET_LONG_HOURS = 20
 
 
-def delivery_blocked(cfg: NotifyConfig, connected: dict[str, bool]) -> list[DeliveryBlocked]:
+def delivery_blocked(
+    cfg: NotifyConfig, connected: dict[str, bool], *, fcm_devices: int
+) -> list[DeliveryBlocked]:
     """발송 잡과 같은 규칙으로 본다. connected 는 notify.base.channel_connected 결과다.
 
-    no_channel 켜지고 연결된 채널이 없다. 모든 항목이 피드에만 남는다(jobs/notify.py).
+    FCM 은 연결 정보가 있어도 활성 기기가 없으면 쓸 수 없다(FcmNotifier 가 실패한다).
+
+    no_channel 보낼 수 있는 채널이 없다. 피드에만 남거나(jobs/notify.py) 발송이 실패한다.
     no_instant 즉시 구간이 없다. push 가 0건이다.
     quiet_long 무음 시간이 20시간 이상이다.
-    resurface_off FCM 이 꺼졌거나 연결되지 않았다. 찜 재알림이 멈춘다(jobs/resurface.py).
+    resurface_off FCM 을 쓸 수 없다. 찜 재알림이 멈춘다(jobs/resurface.py).
     """
+    usable = {**connected, "fcm": connected["fcm"] and fcm_devices > 0}
     on = cfg.channels.model_dump()
     reasons: list[DeliveryBlocked] = []
-    if not any(on[name] and ok for name, ok in connected.items()):
+    if not any(on[name] and ok for name, ok in usable.items()):
         reasons.append("no_channel")
     if "instant" not in cfg.delivery_by_importance.model_dump().values():
         reasons.append("no_instant")
     if (cfg.quiet_end_hour - cfg.quiet_start_hour) % 24 >= QUIET_LONG_HOURS:
         reasons.append("quiet_long")
-    if not (on["fcm"] and connected["fcm"]):
+    if not (on["fcm"] and usable["fcm"]):
         reasons.append("resurface_off")
     return reasons
 
