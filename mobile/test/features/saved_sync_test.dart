@@ -1,4 +1,4 @@
-// 찜 동기화 — 피드·07 의 찜 쓰기와 11 찜 탭의 쓰기가 서로의 화면에 반영된다.
+// 찜 동기화 — 피드·07 의 찜 쓰기와 11 찜 탭의 쓰기가 서로의 화면에 반영되고, 05 재알림 일수가 찜 안내에 따라온다.
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +8,7 @@ import 'package:tech_radar/data/repositories/fixture_repositories.dart';
 import 'package:tech_radar/data/repositories/repository_providers.dart';
 import 'package:tech_radar/features/alert/alert_providers.dart';
 import 'package:tech_radar/features/saved/saved_controller.dart';
+import 'package:tech_radar/features/settings/settings_providers.dart';
 
 import '../helpers.dart';
 
@@ -26,6 +27,19 @@ class _SlowFirstFolders extends FixtureSavedRepository {
     }
     return super.folders();
   }
+}
+
+/// /meta 의 재알림 일수를 [days] 로 바꿔 준다 — 05 에서 저장한 뒤 서버가 주는 값.
+class _DaysMeta extends FixtureMetaRepository {
+  _DaysMeta(super.store, this.days);
+
+  final int Function() days;
+
+  @override
+  Future<Meta> meta() async => Meta.fromJson({
+    ...(await super.meta()).toJson(),
+    'resurface_unread_after_days': days(),
+  });
 }
 
 /// 피드 카드·07 이 그리는 찜 표시 — 앱에서 바꾼 값이 있으면 그것, 없으면 서버 값.
@@ -103,5 +117,33 @@ void main() {
     await notifier.undoUnsave(item, index);
 
     expect(_shownSaved(container, alert), isTrue);
+  });
+
+  test('05 에서 재알림 일수를 바꿔 /meta 캐시를 버리면 찜 안내 일수가 따라온다', () async {
+    var days = 7;
+    container = ProviderContainer(
+      overrides: fixtureOverrides(
+        extra: [
+          metaRepositoryProvider.overrideWith(
+            (ref) => _DaysMeta(ref.watch(fixtureStoreProvider), () => days),
+          ),
+        ],
+      ),
+    );
+    addTearDown(container.dispose);
+    // 찜 탭이 떠 있다가 05 로 가면 멈추고(pause), 돌아오면 다시 듣는다(resume).
+    final tab = container.listen(savedControllerProvider, (_, _) {});
+    final before = await container.read(savedControllerProvider.future);
+    expect(before.meta.resurfaceUnreadAfterDays, 7);
+
+    tab.pause();
+    days = 3;
+    container.invalidate(metaProvider);
+    await pumpEventQueue();
+    tab.resume();
+    await pumpEventQueue();
+
+    final after = container.read(savedControllerProvider).requireValue;
+    expect(after.meta.resurfaceUnreadAfterDays, 3);
   });
 }

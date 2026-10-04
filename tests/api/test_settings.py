@@ -166,6 +166,7 @@ def test_get_notifications_defaults(client: TestClient, store: PrefsStore, env):
         "cluster_daily_cap": 1,
         "delivery_by_importance": {"high": "instant", "mid": "quiet", "low": "feed_only"},
         "exploration_slot": {"enabled": True, "daily_limit": 1},
+        "resurface_after_days": 7,
         "updated_at": None,
         "overridden": [],
     }
@@ -196,6 +197,29 @@ def test_patch_notifications_merges_partially(client: TestClient, store: PrefsSt
     notify = get_rules().notify
     assert (notify.daily_push_cap, notify.quiet_start_hour, notify.quiet_end_hour) == (20, 0, 8)
     assert notify.explore_enabled is False
+
+
+def test_patch_resurface_days_is_an_app_value(client: TestClient, store: PrefsStore, env):
+    # 05 재알림 일수 행(#38). 앱 소유라 덮어쓰기에 남고 재알림 잡이 읽는 rules 에 바로 든다.
+    res = client.patch(NOTIFICATIONS, headers=AUTH, json={"resurface_after_days": 3})
+
+    assert res.status_code == 200, res.text
+    assert res.json()["resurface_after_days"] == 3
+    assert res.json()["overridden"] == ["notify.resurface_after_days"]
+    assert store.data["notify"] == {"resurface_after_days": 3}
+    assert get_rules().notify.resurface_after_days == 3
+
+
+@pytest.mark.parametrize(("days", "error"), [(0, "greater_than_equal"), (31, "less_than_equal")])
+def test_resurface_days_out_of_range_is_422(
+    client: TestClient, store: PrefsStore, env, days: int, error: str
+):
+    # 모르는 키(extra_forbidden)가 아니라 1~30 범위로 거부되는지 본다.
+    res = client.patch(NOTIFICATIONS, headers=AUTH, json={"resurface_after_days": days})
+
+    assert res.status_code == 422
+    assert [e["type"] for e in res.json()["error"]["details"]["errors"]] == [error]
+    assert store.saves == 0
 
 
 def test_patch_enables_connected_channel(client: TestClient, store: PrefsStore, env):

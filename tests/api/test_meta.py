@@ -33,6 +33,7 @@ def test_meta_static_fields(client: TestClient):
     assert body["limits"] == {
         "kind_weight": {"min": -0.5, "max": 0.0, "step": 0.05},
         "daily_push_cap": {"min": 1, "max": 50},
+        "resurface_after_days": {"min": 1, "max": 30},
         "watch_keywords_max": 50,
         "folder_name_max": 30,
         "memo_max": 500,

@@ -55,12 +55,16 @@ MetaLimits _$MetaLimitsFromJson(Map<String, dynamic> json) => MetaLimits(
   watchKeywordsMax: (json['watch_keywords_max'] as num).toInt(),
   folderNameMax: (json['folder_name_max'] as num).toInt(),
   memoMax: (json['memo_max'] as num).toInt(),
+  resurfaceAfterDays: json['resurface_after_days'] == null
+      ? null
+      : IntRange.fromJson(json['resurface_after_days'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$MetaLimitsToJson(MetaLimits instance) =>
     <String, dynamic>{
       'kind_weight': instance.kindWeight.toJson(),
       'daily_push_cap': instance.dailyPushCap.toJson(),
+      'resurface_after_days': instance.resurfaceAfterDays?.toJson(),
       'watch_keywords_max': instance.watchKeywordsMax,
       'folder_name_max': instance.folderNameMax,
       'memo_max': instance.memoMax,

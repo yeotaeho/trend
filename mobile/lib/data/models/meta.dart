@@ -53,10 +53,14 @@ class MetaLimits {
     required this.watchKeywordsMax,
     required this.folderNameMax,
     required this.memoMax,
+    this.resurfaceAfterDays,
   });
 
   final StepRange kindWeight;
   final IntRange dailyPushCap;
+
+  /// 05 찜 재알림 일수 범위. #38 전 서버에는 없고, 없으면 05 에서 바꿀 수 없다.
+  final IntRange? resurfaceAfterDays;
   final int watchKeywordsMax;
   final int folderNameMax;
   final int memoMax;

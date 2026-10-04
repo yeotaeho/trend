@@ -33,6 +33,7 @@
     "enabled": true,
     "daily_limit": 1
   },
+  "resurface_after_days": 7,
   "updated_at": "2026-09-20T11:00:00Z",
   "overridden": [
     "notify.channels.discord"

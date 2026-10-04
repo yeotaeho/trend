@@ -69,6 +69,7 @@ NotificationSettings _$NotificationSettingsFromJson(
       ? null
       : DateTime.parse(json['updated_at'] as String),
   clusterDailyCap: (json['cluster_daily_cap'] as num?)?.toInt() ?? 1,
+  resurfaceAfterDays: (json['resurface_after_days'] as num?)?.toInt() ?? 7,
   overridden:
       (json['overridden'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -86,6 +87,7 @@ Map<String, dynamic> _$NotificationSettingsToJson(
   'cluster_daily_cap': instance.clusterDailyCap,
   'delivery_by_importance': instance.deliveryByImportance.toJson(),
   'exploration_slot': instance.explorationSlot.toJson(),
+  'resurface_after_days': instance.resurfaceAfterDays,
   'updated_at': instance.updatedAt?.toIso8601String(),
   'overridden': instance.overridden,
 };

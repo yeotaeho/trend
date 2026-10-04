@@ -317,6 +317,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
   "limits": {
     "kind_weight": {"min": -0.5, "max": 0.0, "step": 0.05},
     "daily_push_cap": {"min": 1, "max": 50},
+    "resurface_after_days": {"min": 1, "max": 30},
     "watch_keywords_max": 50,
     "folder_name_max": 30,
     "memo_max": 500
@@ -703,6 +704,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
   "cluster_daily_cap": 1,
   "delivery_by_importance": {"high": "instant", "mid": "quiet", "low": "feed_only"},
   "exploration_slot": {"enabled": true, "daily_limit": 1},
+  "resurface_after_days": 7,
   "updated_at": "2026-09-20T11:00:00Z",
   "overridden": ["notify.channels.discord"]
 }
@@ -724,6 +726,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 | `cluster_daily_cap` | `rules.notify.cluster_daily_cap` 유효값 (읽기 전용, 0 = 끔). 앱 토글 라벨 `같은 이슈 하루 N건` 의 N (#36) |
 | `delivery_by_importance` | `rules.notify.delivery_by_importance` (새, 기본 high=instant, mid=quiet, low=feed_only — 현재 하드코딩 `level_for` 와 같은 값) |
 | `exploration_slot.enabled` | `rules.notify.explore_enabled` (새, 기본 true). `daily_limit` 은 1 고정 (정적) |
+| `resurface_after_days` | `rules.notify.resurface_after_days` (앱 소유, 기본 7). 범위는 `/meta` 의 `limits.resurface_after_days`. 05 `찜 재알림` 행 (#38) |
 | `overridden` | 이 화면 키(`notify.*`) 가운데 앱 값이 있는 점 경로 (#35) |
 
 #### `PATCH /settings/notifications` — 즉시 저장
@@ -737,10 +740,12 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 {"dedupe_same_issue_daily": false}
 {"delivery_by_importance": {"mid": "feed_only"}}
 {"exploration_slot": {"enabled": false}}
+{"resurface_after_days": 3}
 ```
 
 검증.
 - `daily_push_cap` 1~50.
+- `resurface_after_days` 1~30.
 - `quiet_hours.start`·`end` 는 `HH:00` 만 허용한다 (백엔드 정책이 시 단위). 분이 0 이 아니면 422. 같은 값이면 무음 없음.
 - `timezone`, `connected`, `channel_name`, `reaction_sync`, `device_count`, `daily_limit`, `cluster_daily_cap`, `overridden` 은 읽기 전용이며 보내면 422.
 - `dedupe_same_issue_daily` 는 `cluster_daily_cap` 에 이렇게 옮긴다. `false` → 덮어쓰기 `notify.cluster_daily_cap = 0`. `true` → YAML 값(0 이면 1)을 쓴다. YAML 값과 같으면 저장 때 덮어쓰기가 지워진다. 상한 숫자 자체는 앱에서 바꾸지 않는다.
@@ -977,7 +982,7 @@ PATCH `{"name": "...", "position": 0}` (둘 다 선택). `position` 은 옮겨 �
 
 #### 읽지 않은 찜 재알림 (정책, 설정 UI 없음)
 
-`resurface_unread_after_days`(7, `rules.notify.resurface_after_days`, 앱 소유. 앱에서 바꾸는 행은 #38) 가 지나도록 `is_read=false` 인 찜은 한 번 FCM **조용한 알림**(`quiet`)으로 다시 알린다 (사용자 설계 문서의 "발송 잡의 silent 레벨로" 와 같은 강도다. 다만 별도 잡이며 `notifications` 에 남기지 않는다). `bookmarks.resurfaced_at` 에 기록하고 피드·통계·push 상한에는 넣지 않는다. FCM 이 꺼져 있으면 보내지 않고 기록도 하지 않는다. 무음 시간에는 보내지 않는다. 한 회차(1시간)에 5건까지만 보낸다(`RESURFACE_PER_ROUND`). 재알림은 push 상한을 거치지 않아, 일수를 줄였을 때 밀린 찜이 한꺼번에 나가지 않게 끊는다.
+`resurface_unread_after_days`(7, `rules.notify.resurface_after_days`, 앱 소유. 05 `찜 재알림` 행에서 바꾼다) 가 지나도록 `is_read=false` 인 찜은 한 번 FCM **조용한 알림**(`quiet`)으로 다시 알린다 (사용자 설계 문서의 "발송 잡의 silent 레벨로" 와 같은 강도다. 다만 별도 잡이며 `notifications` 에 남기지 않는다). `bookmarks.resurfaced_at` 에 기록하고 피드·통계·push 상한에는 넣지 않는다. FCM 이 꺼져 있으면 보내지 않고 기록도 하지 않는다. 무음 시간에는 보내지 않는다. 한 회차(1시간)에 5건까지만 보낸다(`RESURFACE_PER_ROUND`). 재알림은 push 상한을 거치지 않아, 일수를 줄였을 때 밀린 찜이 한꺼번에 나가지 않게 끊는다.
 
 ### 4.8 화면 08 내 프로필
 
@@ -1158,6 +1163,7 @@ PATCH `{"name": "...", "position": 0}` (둘 다 선택). `position` 은 옮겨 �
 | 같은 이슈 하루 1건 | 05 | `PATCH` `{"dedupe_same_issue_daily"}` |
 | 중요도별 강도 세그먼트 | 05 | `PATCH` `{"delivery_by_importance": {"high"|"mid"|"low"}}` |
 | 탐색 슬롯 | 05 | `PATCH` `{"exploration_slot": {"enabled"}}` |
+| 찜 재알림 일수 | 05 | `PATCH` `{"resurface_after_days"}` |
 | 소스 on/off | 06 | `PATCH /sources/{id}` |
 | 기간 (최근 7·14·30일) | 08 | `GET /profile?period_days=…` |
 | 주간 리포트 열기 | 08 | `GET /reports/{id}` |
