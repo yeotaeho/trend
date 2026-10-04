@@ -17,7 +17,7 @@ from app.api.v1.schemas.meta import Meta
 from app.api.v1.schemas.profile import Profile
 from app.api.v1.schemas.reports import Report, ReportSummary
 from app.api.v1.schemas.saved import FolderList, SavedItem
-from app.api.v1.schemas.settings import Interests, NotificationSettings
+from app.api.v1.schemas.settings import Interests, NotificationSettings, SettingsOverview
 from app.api.v1.schemas.sources import SourceList
 
 FIXTURES = Path(__file__).resolve().parents[2] / "mobile" / "assets" / "fixtures"
@@ -38,6 +38,7 @@ MODELS: dict[str, Any] = {
     "report_12.json": Report,
     "reports.json": Page[ReportSummary],
     "saved.json": Page[SavedItem],
+    "settings.json": SettingsOverview,
     "settings_interests.json": Interests,
     "settings_notifications.json": NotificationSettings,
     "sources.json": SourceList,

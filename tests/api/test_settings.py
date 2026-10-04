@@ -15,7 +15,7 @@ from app.api.v1 import settings as settings_api
 from app.api.v1.errors import ApiError
 from app.api.v1.pagination import encode_cursor
 from app.api.v1.queries import settings as queries
-from app.config import get_rules, yaml_rules
+from app.config import Settings, get_rules, yaml_rules
 from app.db import prefs
 from app.db.models import SettingsRevision
 from app.db.users import DEFAULT_USER_ID
@@ -26,6 +26,8 @@ INTERESTS = "/api/v1/settings/interests"
 NOTIFICATIONS = "/api/v1/settings/notifications"
 OVERRIDES = "/api/v1/settings/overrides"
 REVISIONS = "/api/v1/settings/revisions"
+SETTINGS = "/api/v1/settings"
+EDIT = "https://github.com/yeotaeho/trend/edit/main/config"
 
 
 def _interests_body(**changes: Any) -> dict[str, Any]:
@@ -50,6 +52,10 @@ def env(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
         discord_channel_name="",
         telegram_bot_token="",
         telegram_chat_id="",
+        llm_model="claude-haiku-4-5",
+        embedding_model="voyage-3.5-lite",
+        scheduler_enabled=True,
+        git_sha="abc1234",
     )
     monkeypatch.setattr(settings_api, "get_settings", lambda: settings)
 
@@ -160,6 +166,7 @@ def test_get_notifications_defaults(client: TestClient, store: PrefsStore, env):
         "delivery_by_importance": {"high": "instant", "mid": "quiet", "low": "feed_only"},
         "exploration_slot": {"enabled": True, "daily_limit": 1},
         "updated_at": None,
+        "overridden": [],
     }
 
 
@@ -329,6 +336,7 @@ def test_channel_check_uses_locked_stored_value(client: TestClient, store: Prefs
 def _interests_from_get(client: TestClient) -> dict[str, Any]:
     body = client.get(INTERESTS, headers=AUTH).json()
     body.pop("updated_at")
+    body.pop("overridden")
     return body
 
 
@@ -542,3 +550,118 @@ def test_bad_revision_cursor_is_400(client: TestClient, store: PrefsStore, key: 
 
     assert res.status_code == 400
     assert res.json()["error"]["code"] == "bad_request"
+
+
+# --- 전체 설정 조회 · 발송 막힘 사유 (#35) ---
+
+
+def _items(body: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {item["key"]: item for item in body["items"]}
+
+
+def test_settings_overview_shows_value_default_and_source(
+    client: TestClient, store: PrefsStore, session: FakeSession, env
+):
+    client.patch(NOTIFICATIONS, headers=AUTH, json={"daily_push_cap": 20})
+
+    body = client.get(SETTINGS, headers=AUTH).json()
+
+    items = _items(body)
+    assert items["notify.daily_push_cap"] == {
+        "key": "notify.daily_push_cap",
+        "label": "하루 push 상한",
+        "category": "notify",
+        "value": 20,
+        "default": yaml_rules().notify.daily_push_cap,
+        "source": "app",
+        "owner": "app",
+        "apply": "next_job",
+        "default_changed": False,
+        "edit_url": f"{EDIT}/rules.yaml",
+    }
+    threshold = items["scoring.threshold"]
+    assert (threshold["source"], threshold["owner"], threshold["apply"]) == (
+        "default",
+        "yaml",
+        "deploy",
+    )
+    assert items["scoring.kind_weights.survey"]["owner"] == "app"
+    assert items["sources.rss:openai.enabled"]["edit_url"] == f"{EDIT}/sources.yaml"
+    assert items["app.resurface_unread_after_days"]["edit_url"] == f"{EDIT}/app.yaml"
+    assert items["server.llm_model"] == {
+        "key": "server.llm_model",
+        "label": "LLM 모델",
+        "category": "server",
+        "value": "claude-haiku-4-5",
+        "default": Settings.model_fields["llm_model"].default,
+        "source": "default",
+        "owner": "server",
+        "apply": "restart",
+        "default_changed": False,
+        "edit_url": None,
+    }
+    assert (body["revision"], body["git_sha"]) == ("1", "abc1234")
+
+
+def test_settings_overview_never_names_secret_fields(client: TestClient, store: PrefsStore, env):
+    text = client.get(SETTINGS, headers=AUTH).text
+
+    shown = {"llm_model", "embedding_model", "scheduler_enabled", "git_sha"}
+    assert [name for name in Settings.model_fields if name not in shown and name in text] == []
+
+
+def test_settings_overview_flags_changed_default(
+    client: TestClient, store: PrefsStore, env, monkeypatch
+):
+    default = yaml_rules().notify.daily_push_cap
+    store.data = {"notify": {"daily_push_cap": 20}}
+
+    async def then(_s: Any, _user_id: int) -> dict[str, Any]:
+        return {"notify.daily_push_cap": default + 5}
+
+    monkeypatch.setattr(prefs, "last_defaults", then)
+
+    items = _items(client.get(SETTINGS, headers=AUTH).json())
+
+    assert items["notify.daily_push_cap"]["default_changed"] is True
+    assert items["notify.quiet_start_hour"]["default_changed"] is False
+
+
+def test_turning_every_channel_off_blocks_delivery(client: TestClient, store: PrefsStore, env):
+    client.patch(NOTIFICATIONS, headers=AUTH, json={"channels": {"discord": {"enabled": True}}})
+    assert "no_channel" not in client.get(SETTINGS, headers=AUTH).json()["delivery_blocked"]
+
+    off = {name: {"enabled": False} for name in ("fcm", "discord", "telegram")}
+    client.patch(NOTIFICATIONS, headers=AUTH, json={"channels": off})
+
+    assert "no_channel" in client.get(SETTINGS, headers=AUTH).json()["delivery_blocked"]
+
+
+def test_screens_list_their_overridden_keys(client: TestClient, store: PrefsStore, env):
+    saved = client.patch(NOTIFICATIONS, headers=AUTH, json={"daily_push_cap": 20}).json()
+    body = _interests_from_get(client)
+    body["kind_weights"]["survey"] = -0.2
+    put = client.put(INTERESTS, headers=AUTH, json=body).json()
+
+    assert saved["overridden"] == ["notify.daily_push_cap"]
+    assert put["overridden"] == ["scoring.kind_weights.survey"]
+    assert client.get(INTERESTS, headers=AUTH).json()["overridden"] == [
+        "scoring.kind_weights.survey"
+    ]
+    assert client.get(NOTIFICATIONS, headers=AUTH).json()["overridden"] == ["notify.daily_push_cap"]
+
+
+def test_fcm_without_devices_blocks_resurfacing(
+    client: TestClient, store: PrefsStore, env, monkeypatch, tmp_path
+):
+    account = tmp_path / "fcm.json"
+    account.write_text("{}", encoding="utf-8")
+    env.fcm_project_id, env.fcm_service_account_file = "p", str(account)
+    assert "resurface_off" not in client.get(SETTINGS, headers=AUTH).json()["delivery_blocked"]
+
+    async def no_devices(_session: Any, _user_id: int) -> int:
+        return 0
+
+    monkeypatch.setattr(queries, "active_device_count", no_devices)
+
+    assert "resurface_off" in client.get(SETTINGS, headers=AUTH).json()["delivery_blocked"]

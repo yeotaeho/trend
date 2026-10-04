@@ -59,6 +59,9 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ github.sha }}
+          # 앱 설정 조회(GET /api/v1/settings)가 배포 커밋을 보여 준다.
+          build-args: |
+            GIT_SHA=${{ github.sha }}
       - name: Deploy to VM
         uses: appleboy/ssh-action@v1
         with:

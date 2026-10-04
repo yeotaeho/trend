@@ -193,3 +193,50 @@ Map<String, dynamic> _$ExplorationSlotToJson(ExplorationSlot instance) =>
       'enabled': instance.enabled,
       'daily_limit': instance.dailyLimit,
     };
+
+SettingsOverview _$SettingsOverviewFromJson(Map<String, dynamic> json) =>
+    SettingsOverview(
+      revision: json['revision'] as String?,
+      gitSha: json['git_sha'] as String?,
+      deliveryBlocked: (json['delivery_blocked'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
+      items: (json['items'] as List<dynamic>)
+          .map((e) => SettingItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+Map<String, dynamic> _$SettingsOverviewToJson(SettingsOverview instance) =>
+    <String, dynamic>{
+      'revision': instance.revision,
+      'git_sha': instance.gitSha,
+      'delivery_blocked': instance.deliveryBlocked,
+      'items': instance.items.map((e) => e.toJson()).toList(),
+    };
+
+SettingItem _$SettingItemFromJson(Map<String, dynamic> json) => SettingItem(
+  key: json['key'] as String,
+  label: json['label'] as String,
+  category: json['category'] as String,
+  value: json['value'],
+  defaultValue: json['default'],
+  source: json['source'] as String,
+  owner: json['owner'] as String,
+  apply: json['apply'] as String,
+  defaultChanged: json['default_changed'] as bool,
+  editUrl: json['edit_url'] as String?,
+);
+
+Map<String, dynamic> _$SettingItemToJson(SettingItem instance) =>
+    <String, dynamic>{
+      'key': instance.key,
+      'label': instance.label,
+      'category': instance.category,
+      'value': instance.value,
+      'default': instance.defaultValue,
+      'source': instance.source,
+      'owner': instance.owner,
+      'apply': instance.apply,
+      'default_changed': instance.defaultChanged,
+      'edit_url': instance.editUrl,
+    };

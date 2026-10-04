@@ -1,9 +1,10 @@
-# 발송 정책 — 알림 강도·하루 push 상한·무음 시간·클러스터 하루 상한을 이 파일 한 곳에서 결정
+# 발송 정책 — 알림 강도·push 상한·무음 시간·클러스터 상한·막힘 사유를 이 파일 한 곳에서 결정
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Literal
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import Select, func, select
@@ -49,6 +50,37 @@ def in_quiet_hours(cfg: NotifyConfig, now: datetime) -> bool:
     if cfg.quiet_start_hour < cfg.quiet_end_hour:
         return cfg.quiet_start_hour <= hour < cfg.quiet_end_hour
     return hour >= cfg.quiet_start_hour or hour < cfg.quiet_end_hour
+
+
+# 설정 조합 때문에 알림이 사실상 막히는 사유 (GET /settings 의 delivery_blocked).
+DeliveryBlocked = Literal["no_channel", "no_instant", "quiet_long", "resurface_off"]
+QUIET_LONG_HOURS = 20
+
+
+def delivery_blocked(
+    cfg: NotifyConfig, connected: dict[str, bool], *, fcm_devices: int
+) -> list[DeliveryBlocked]:
+    """발송 잡과 같은 규칙으로 본다. connected 는 notify.base.channel_connected 결과다.
+
+    FCM 은 연결 정보가 있어도 활성 기기가 없으면 쓸 수 없다(FcmNotifier 가 실패한다).
+
+    no_channel 보낼 수 있는 채널이 없다. 피드에만 남거나(jobs/notify.py) 발송이 실패한다.
+    no_instant 즉시 구간이 없다. push 가 0건이다.
+    quiet_long 무음 시간이 20시간 이상이다.
+    resurface_off FCM 을 쓸 수 없다. 찜 재알림이 멈춘다(jobs/resurface.py).
+    """
+    usable = {**connected, "fcm": connected["fcm"] and fcm_devices > 0}
+    on = cfg.channels.model_dump()
+    reasons: list[DeliveryBlocked] = []
+    if not any(on[name] and ok for name, ok in usable.items()):
+        reasons.append("no_channel")
+    if "instant" not in cfg.delivery_by_importance.model_dump().values():
+        reasons.append("no_instant")
+    if (cfg.quiet_end_hour - cfg.quiet_start_hour) % 24 >= QUIET_LONG_HOURS:
+        reasons.append("quiet_long")
+    if not (on["fcm"] and usable["fcm"]):
+        reasons.append("resurface_off")
+    return reasons
 
 
 async def push_count_today(session: AsyncSession, cfg: NotifyConfig, now: datetime) -> int:

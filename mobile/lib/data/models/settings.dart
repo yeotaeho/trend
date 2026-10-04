@@ -1,4 +1,4 @@
-// 설정 모델 — 04 관심사(InterestsSettings)와 05 알림 설정(NotificationSettings) (계약 4.3·4.4).
+// 설정 모델 — 04 관심사(InterestsSettings)·05 알림 설정(NotificationSettings)·전체 설정(SettingsOverview).
 import 'package:json_annotation/json_annotation.dart';
 
 import '../../core/labels.dart';
@@ -214,4 +214,79 @@ class ExplorationSlot {
       _$ExplorationSlotFromJson(json);
 
   Map<String, dynamic> toJson() => _$ExplorationSlotToJson(this);
+}
+
+
+/// `GET /settings` — 모든 설정 키와 출처·주인(계약 4.0). 화면은 #36 에서 붙인다.
+@JsonSerializable()
+class SettingsOverview {
+  const SettingsOverview({
+    required this.revision,
+    required this.gitSha,
+    required this.deliveryBlocked,
+    required this.items,
+  });
+
+  /// 마지막 저장 이력 id. 저장한 적이 없으면 `null`.
+  final String? revision;
+
+  /// 배포한 커밋. 로컬 서버는 `null`.
+  final String? gitSha;
+
+  /// 알림이 막히는 사유 — `no_channel`·`no_instant`·`quiet_long`·`resurface_off`.
+  final List<String> deliveryBlocked;
+
+  final List<SettingItem> items;
+
+  factory SettingsOverview.fromJson(Map<String, dynamic> json) =>
+      _$SettingsOverviewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SettingsOverviewToJson(this);
+}
+
+/// 설정 키 하나. `owner` 가 `app` 인 키만 앱에서 바꾼다.
+@JsonSerializable()
+class SettingItem {
+  const SettingItem({
+    required this.key,
+    required this.label,
+    required this.category,
+    required this.value,
+    required this.defaultValue,
+    required this.source,
+    required this.owner,
+    required this.apply,
+    required this.defaultChanged,
+    required this.editUrl,
+  });
+
+  /// 점 경로(`notify.daily_push_cap`). 첫 마디가 [category] 다.
+  final String key;
+  final String label;
+  final String category;
+
+  /// 유효값. 숫자·문자열·불리언·목록·객체 가운데 하나다.
+  final Object? value;
+
+  @JsonKey(name: 'default')
+  final Object? defaultValue;
+
+  /// `default` 또는 `app`.
+  final String source;
+
+  /// `app`·`yaml`·`server`.
+  final String owner;
+
+  /// `next_job`·`deploy`·`restart`.
+  final String apply;
+
+  final bool defaultChanged;
+
+  /// YAML 편집 주소. `server` 는 `null`.
+  final String? editUrl;
+
+  factory SettingItem.fromJson(Map<String, dynamic> json) =>
+      _$SettingItemFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SettingItemToJson(this);
 }

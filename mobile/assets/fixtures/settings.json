@@ -1,0 +1,79 @@
+{
+  "revision": "12",
+  "git_sha": "b21264b0c4e1f9a8d7c6b5a4e3d2c1b0a9f8e7d6",
+  "delivery_blocked": [],
+  "items": [
+    {
+      "key": "policy.categories",
+      "label": "관심 카테고리",
+      "category": "policy",
+      "value": ["llm-model", "agent", "mcp-tooling", "inference-opt", "python-backend", "web-frontend", "dev-community", "video"],
+      "default": ["llm-model", "agent", "mcp-tooling", "inference-opt", "rag-retrieval", "training-finetune", "python-backend", "web-frontend", "devops-infra", "ai-safety-eval", "dev-community", "video"],
+      "source": "app",
+      "owner": "app",
+      "apply": "next_job",
+      "default_changed": false,
+      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/rules.yaml"
+    },
+    {
+      "key": "scoring.threshold",
+      "label": "점수 관문",
+      "category": "scoring",
+      "value": 0.45,
+      "default": 0.45,
+      "source": "default",
+      "owner": "yaml",
+      "apply": "deploy",
+      "default_changed": false,
+      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/rules.yaml"
+    },
+    {
+      "key": "notify.daily_push_cap",
+      "label": "하루 push 상한",
+      "category": "notify",
+      "value": 20,
+      "default": 15,
+      "source": "app",
+      "owner": "app",
+      "apply": "next_job",
+      "default_changed": true,
+      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/rules.yaml"
+    },
+    {
+      "key": "app.resurface_unread_after_days",
+      "label": "찜 재알림 일수",
+      "category": "app",
+      "value": 7,
+      "default": 7,
+      "source": "default",
+      "owner": "yaml",
+      "apply": "deploy",
+      "default_changed": false,
+      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/app.yaml"
+    },
+    {
+      "key": "sources.youtube:codingapple.enabled",
+      "label": "코딩애플 · 켜기",
+      "category": "sources",
+      "value": false,
+      "default": true,
+      "source": "app",
+      "owner": "app",
+      "apply": "next_job",
+      "default_changed": false,
+      "edit_url": "https://github.com/yeotaeho/trend/edit/main/config/sources.yaml"
+    },
+    {
+      "key": "server.llm_model",
+      "label": "LLM 모델",
+      "category": "server",
+      "value": "claude-haiku-4-5",
+      "default": "claude-haiku-4-5",
+      "source": "default",
+      "owner": "server",
+      "apply": "restart",
+      "default_changed": false,
+      "edit_url": null
+    }
+  ]
+}

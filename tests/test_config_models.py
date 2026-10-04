@@ -71,6 +71,7 @@ def test_every_setting_has_an_owner(model: type[BaseModel]):
         assert meta.get("owner") in {"app", "yaml"}, key
         assert meta.get("apply") in {"next_job", "deploy"}, key
         assert meta.get("scope") in {"user", "global"}, key
+        assert info.title, key  # GET /settings 의 label
 
 
 def test_real_policy_sentences_are_not_empty():

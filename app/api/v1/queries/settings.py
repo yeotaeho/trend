@@ -1,4 +1,4 @@
-# 설정 화면 조회 SQL — 활성 FCM 기기 수, 설정 저장 이력(커서 목록·한 건)
+# 설정 화면 조회 SQL — 활성 FCM 기기 수, 설정 저장 이력(커서 목록·한 건·최신 id)
 
 from __future__ import annotations
 
@@ -51,3 +51,9 @@ async def find_revision(
         SettingsRevision.id == revision_id, SettingsRevision.user_id == user_id
     )
     return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def latest_revision_id(session: AsyncSession, user_id: int) -> int | None:
+    stmt = select(func.max(SettingsRevision.id)).where(SettingsRevision.user_id == user_id)
+    latest: int | None = (await session.execute(stmt)).scalar_one()
+    return latest

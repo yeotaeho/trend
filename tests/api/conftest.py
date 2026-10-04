@@ -102,5 +102,13 @@ def store(monkeypatch: pytest.MonkeyPatch, session: FakeSession) -> PrefsStore:
         rows = session.revisions()
         return next((r for r in rows if (r.id, r.user_id) == (revision_id, user_id)), None)
 
+    async def latest_revision_id(_s: Any, user_id: int) -> int | None:
+        return max((r.id for r in session.revisions() if r.user_id == user_id), default=None)
+
+    async def no_history(_s: Any, _user_id: int) -> dict[str, Any]:
+        return {}
+
     monkeypatch.setattr(settings_queries, "find_revision", find_revision)
+    monkeypatch.setattr(settings_queries, "latest_revision_id", latest_revision_id)
+    monkeypatch.setattr(prefs, "last_defaults", no_history)
     return fake
