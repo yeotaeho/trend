@@ -9,13 +9,13 @@ from pydantic import BaseModel, Field, field_validator
 from app.api.v1.schemas.common import (
     DAILY_PUSH_CAP_MAX,
     DAILY_PUSH_CAP_MIN,
-    KIND_WEIGHT_MAX,
-    KIND_WEIGHT_MIN,
+    INTERESTS_MAX_CHARS,
+    NOT_INTERESTED_MAX_CHARS,
     WATCH_KEYWORDS_MAX,
     StrictIn,
     UtcDateTime,
 )
-from app.config import Delivery, get_rules
+from app.config import Delivery, KindWeight, get_rules
 from app.schemas import Kind
 
 WATCH_KEYWORD_MAX_LEN = 50
@@ -37,11 +37,8 @@ class Interests(BaseModel):
 
 
 class InterestProfileIn(StrictIn):
-    self_description: str = Field(min_length=1, max_length=1000)
-    not_interested: str = Field(max_length=500)
-
-
-KindWeight = Annotated[float, Field(ge=KIND_WEIGHT_MIN, le=KIND_WEIGHT_MAX)]
+    self_description: str = Field(min_length=1, max_length=INTERESTS_MAX_CHARS)
+    not_interested: str = Field(max_length=NOT_INTERESTED_MAX_CHARS)
 
 
 class InterestsIn(StrictIn):

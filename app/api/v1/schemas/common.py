@@ -7,19 +7,23 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, PlainSerializer
 
+# 설정 키의 한도는 설정 모델(app.config)이 주인이다. 여기서 다시 내보내 /meta 와 쓰기 스키마가 쓴다.
+from app.config import DAILY_PUSH_CAP_MAX as DAILY_PUSH_CAP_MAX
+from app.config import DAILY_PUSH_CAP_MIN as DAILY_PUSH_CAP_MIN
+from app.config import INTERESTS_MAX_CHARS as INTERESTS_MAX_CHARS
+from app.config import KIND_WEIGHT_MAX as KIND_WEIGHT_MAX
+from app.config import KIND_WEIGHT_MIN as KIND_WEIGHT_MIN
+from app.config import NOT_INTERESTED_MAX_CHARS as NOT_INTERESTED_MAX_CHARS
+from app.config import WATCH_KEYWORDS_MAX as WATCH_KEYWORDS_MAX
+
 # 계약 1.2 — ISO-8601 UTC, 초 단위, Z 접미.
 UtcDateTime = Annotated[
     datetime,
     PlainSerializer(lambda v: v.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"), return_type=str),
 ]
 
-# 입력 한도. GET /meta 로 앱에 알려 주고, 쓰기 API 가 같은 값으로 검증한다.
-KIND_WEIGHT_MIN = -0.5
-KIND_WEIGHT_MAX = 0.5
+# 앱 API 에만 있는 입력 한도. GET /meta 로 앱에 알려 주고, 쓰기 API 가 같은 값으로 검증한다.
 KIND_WEIGHT_STEP = 0.05
-DAILY_PUSH_CAP_MIN = 1
-DAILY_PUSH_CAP_MAX = 50
-WATCH_KEYWORDS_MAX = 50
 FOLDER_NAME_MAX = 30
 MEMO_MAX = 500
 
