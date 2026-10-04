@@ -217,3 +217,37 @@ enum DevicePlatform {
   const DevicePlatform(this.value);
   final String value;
 }
+
+/// 전체 설정 섹션 — 설정 키의 첫 마디 (계약 4.0 `items[].category`). 이 순서로 보인다.
+enum SettingCategory {
+  policy('policy', '관심사·정책'),
+  exclude('exclude', '제외 규칙'),
+  dedupe('dedupe', '중복 판정'),
+  triage('triage', '선별'),
+  scoring('scoring', '점수'),
+  notify('notify', '알림'),
+  sources('sources', '수집 소스'),
+  app('app', '앱 화면·찜 재알림'),
+  server('server', '서버 (VM .env)');
+
+  const SettingCategory(this.value, this.label);
+  final String value;
+  final String label;
+}
+
+/// 설정을 바꾸면 반영되는 때 (`items[].apply`).
+String settingApplyLabel(String apply) => switch (apply) {
+  'next_job' => '다음 잡부터',
+  'deploy' => '머지·배포 뒤',
+  'restart' => 'VM 재시작 뒤',
+  _ => apply,
+};
+
+/// 설정 이력을 남긴 길 (`origin`).
+String revisionOriginLabel(String origin) => switch (origin) {
+  'app' => '앱 저장',
+  'reset' => '기본값으로',
+  'restore' => '버전 되돌리기',
+  'script' => '스크립트',
+  _ => origin,
+};

@@ -15,7 +15,6 @@ Map<String, dynamic> deepMerge(
         : value,
 };
 
-
 /// [shape] 와 같은 키 모양으로 [source] 의 값을 고른다. 저장 전 JSON 으로 그 PATCH 의 되돌리기 본문을 만든다.
 Map<String, Object?> pickLike(
   Map<String, dynamic> source,

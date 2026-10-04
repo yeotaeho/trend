@@ -11,8 +11,10 @@ import '../features/notification_settings/notification_settings_page.dart';
 import '../features/profile/profile_page.dart';
 import '../features/profile/report_page.dart';
 import '../features/saved/saved_page.dart';
+import '../features/settings/all_settings_page.dart';
 import '../features/settings/interests_page.dart';
 import '../features/settings/settings_page.dart';
+import '../features/settings/settings_history_page.dart';
 import '../features/sources/sources_page.dart';
 import 'routes.dart';
 import 'tab_shell.dart';
@@ -79,6 +81,14 @@ GoRouter createRouter({String initialLocation = AppRoutes.feed}) {
                   GoRoute(
                     path: 'sources',
                     builder: (context, state) => const SourcesPage(),
+                  ),
+                  GoRoute(
+                    path: 'all',
+                    builder: (context, state) => const AllSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'history',
+                    builder: (context, state) => const SettingsHistoryPage(),
                   ),
                 ],
               ),
