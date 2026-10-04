@@ -110,6 +110,39 @@ class ApiSettingsRepository implements SettingsRepository {
   );
 }
 
+class ApiSettingsHistoryRepository implements SettingsHistoryRepository {
+  const ApiSettingsHistoryRepository(this._api);
+
+  final ApiClient _api;
+
+  @override
+  Future<SettingsOverview> overview() async =>
+      SettingsOverview.fromJson(await _api.get('/settings') as _Json);
+
+  @override
+  Future<CursorPage<SettingsRevision>> revisions({
+    String? cursor,
+    int? limit,
+  }) async => _page(
+    await _api.get(
+      '/settings/revisions',
+      query: _withoutNulls({'cursor': cursor, 'limit': limit}),
+    ),
+    SettingsRevision.fromJson,
+  );
+
+  @override
+  Future<RevisionRestore> restoreRevision(String revisionId) async =>
+      RevisionRestore.fromJson(
+        await _api.post('/settings/revisions/${_seg(revisionId)}/restore')
+            as _Json,
+      );
+
+  @override
+  Future<void> resetOverride(String key) =>
+      _api.delete('/settings/overrides/${_seg(key)}');
+}
+
 class ApiSourceRepository implements SourceRepository {
   const ApiSourceRepository(this._api);
 

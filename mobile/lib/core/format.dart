@@ -40,3 +40,20 @@ String _signed(double value, {required String positive}) {
   final isNegative = value < 0 && digits != '0.00';
   return '${isNegative ? minusSign : positive}$digits';
 }
+
+/// 설정 값 한 줄 — 켬·끔, 목록·객체는 개수, 소수는 2자리, 긴 문장은 앞부분만 (전체 설정·설정 이력).
+String formatSettingValue(Object? value) => switch (value) {
+  null => '없음',
+  bool on => on ? '켬' : '끔',
+  List<Object?> list => '${list.length}개',
+  Map<Object?, Object?> map => '${map.length}개',
+  double number => formatScore(number),
+  String text => _shortText(text.replaceAll(RegExp(r'\s+'), ' ').trim()),
+  _ => '$value',
+};
+
+const int _settingTextLength = 24;
+
+String _shortText(String text) => text.length > _settingTextLength
+    ? '${text.substring(0, _settingTextLength).trim()}…'
+    : text;

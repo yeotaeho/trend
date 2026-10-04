@@ -15,6 +15,10 @@ abstract final class AppRoutes {
   static const String notifications = '/settings/notifications';
   static const String sources = '/settings/sources';
 
+  /// 전체 설정·설정 이력 (디자인 없음).
+  static const String allSettings = '/settings/all';
+  static const String settingsHistory = '/settings/history';
+
   /// 08 내 프로필 (탭 4).
   static const String profile = '/profile';
 

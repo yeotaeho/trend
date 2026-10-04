@@ -700,6 +700,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
   "daily_push_cap": 15,
   "quiet_hours": {"start": "23:00", "end": "08:00", "timezone": "Asia/Seoul"},
   "dedupe_same_issue_daily": true,
+  "cluster_daily_cap": 1,
   "delivery_by_importance": {"high": "instant", "mid": "quiet", "low": "feed_only"},
   "exploration_slot": {"enabled": true, "daily_limit": 1},
   "updated_at": "2026-09-20T11:00:00Z",
@@ -720,6 +721,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 | `quiet_hours.start` / `end` | `rules.notify.quiet_start_hour` / `quiet_end_hour` 를 `HH:00` 으로 |
 | `quiet_hours.timezone` | `rules.notify.timezone` (읽기 전용) |
 | `dedupe_same_issue_daily` | `rules.notify.cluster_daily_cap > 0` (v2 계획서 Task 3, 기본 1) |
+| `cluster_daily_cap` | `rules.notify.cluster_daily_cap` 유효값 (읽기 전용, 0 = 끔). 앱 토글 라벨 `같은 이슈 하루 N건` 의 N (#36) |
 | `delivery_by_importance` | `rules.notify.delivery_by_importance` (새, 기본 high=instant, mid=quiet, low=feed_only — 현재 하드코딩 `level_for` 와 같은 값) |
 | `exploration_slot.enabled` | `rules.notify.explore_enabled` (새, 기본 true). `daily_limit` 은 1 고정 (정적) |
 | `overridden` | 이 화면 키(`notify.*`) 가운데 앱 값이 있는 점 경로 (#35) |
@@ -740,7 +742,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 검증.
 - `daily_push_cap` 1~50.
 - `quiet_hours.start`·`end` 는 `HH:00` 만 허용한다 (백엔드 정책이 시 단위). 분이 0 이 아니면 422. 같은 값이면 무음 없음.
-- `timezone`, `connected`, `channel_name`, `reaction_sync`, `device_count`, `daily_limit` 은 읽기 전용이며 보내면 422.
+- `timezone`, `connected`, `channel_name`, `reaction_sync`, `device_count`, `daily_limit`, `cluster_daily_cap`, `overridden` 은 읽기 전용이며 보내면 422.
 - `dedupe_same_issue_daily` 는 `cluster_daily_cap` 에 이렇게 옮긴다. `false` → 덮어쓰기 `notify.cluster_daily_cap = 0`. `true` → YAML 값(0 이면 1)을 쓴다. YAML 값과 같으면 저장 때 덮어쓰기가 지워진다. 상한 숫자 자체는 앱에서 바꾸지 않는다.
 - `connected=false` 인 채널을 `enabled=true` 로 바꾸면 409 `channel_not_connected`. 앱은 토글을 되돌리고 `message` 를 보여 준다 (연결 플로우 디자인은 없다).
 

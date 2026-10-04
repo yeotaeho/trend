@@ -163,6 +163,7 @@ def test_get_notifications_defaults(client: TestClient, store: PrefsStore, env):
         "daily_push_cap": 15,
         "quiet_hours": {"start": "23:00", "end": "08:00", "timezone": "Asia/Seoul"},
         "dedupe_same_issue_daily": True,
+        "cluster_daily_cap": 1,
         "delivery_by_importance": {"high": "instant", "mid": "quiet", "low": "feed_only"},
         "exploration_slot": {"enabled": True, "daily_limit": 1},
         "updated_at": None,
@@ -232,6 +233,7 @@ def test_disabling_unconnected_channel_is_allowed(client: TestClient, store: Pre
 def test_dedupe_toggle_maps_to_cluster_daily_cap(client: TestClient, store: PrefsStore, env):
     off = client.patch(NOTIFICATIONS, headers=AUTH, json={"dedupe_same_issue_daily": False})
     assert off.json()["dedupe_same_issue_daily"] is False
+    assert off.json()["cluster_daily_cap"] == 0
     assert get_rules().notify.cluster_daily_cap == 0
 
     on = client.patch(NOTIFICATIONS, headers=AUTH, json={"dedupe_same_issue_daily": True})

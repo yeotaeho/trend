@@ -73,6 +73,8 @@ class FixtureStore {
   late RecentFeedback _recent;
   late InterestsSettings _interests;
   late NotificationSettings _notifications;
+  late SettingsOverview _overview;
+  late List<SettingsRevision> _revisions;
   late SourcesResponse _sources;
   late FilteredSummary _summary;
   late Map<FilteredView, FilteredGroups> _groups;
@@ -115,6 +117,11 @@ class FixtureStore {
     _interests = InterestsSettings.fromJson(await _read('settings_interests'));
     _notifications = NotificationSettings.fromJson(
       await _read('settings_notifications'),
+    );
+    _overview = SettingsOverview.fromJson(await _read('settings'));
+    _revisions = await _readPage(
+      'settings_revisions',
+      SettingsRevision.fromJson,
     );
     _sources = SourcesResponse.fromJson(await _read('sources'));
     _summary = FilteredSummary.fromJson(await _read('filtered_summary'));
@@ -425,9 +432,69 @@ class FixtureSettingsRepository implements SettingsRepository {
         }
       }
     }
+    final merged = deepMerge(current, patch);
+    // 서버는 토글을 상한 숫자로 옮긴다(켜면 YAML 값). fixture 의 YAML 값은 1 이다.
+    if (patch['dedupe_same_issue_daily'] case final bool on) {
+      merged['cluster_daily_cap'] = on ? 1 : 0;
+    }
     return _s._notifications = NotificationSettings.fromJson({
-      ...deepMerge(current, patch),
+      ...merged,
       'updated_at': _now().toIso8601String(),
+    });
+  });
+}
+
+/// 값은 바꾸지 않는다. 되돌리기는 이력 한 행을 더하고, 기본값으로는 앱 값 표시만 지운다.
+/// ponytail: 전체 설정은 settings.json 정적 표본이라 다른 화면 쓰기를 반영하지 않는다. 반영하려면
+/// 서버의 키 펼치기(config.setting_leaves)를 앱에 다시 만들어야 한다.
+class FixtureSettingsHistoryRepository implements SettingsHistoryRepository {
+  const FixtureSettingsHistoryRepository(this._s);
+
+  final FixtureStore _s;
+
+  @override
+  Future<SettingsOverview> overview() => _s._run(() => _s._overview);
+
+  @override
+  Future<CursorPage<SettingsRevision>> revisions({
+    String? cursor,
+    int? limit,
+  }) => _s._run(() => _paginate(_s._revisions, cursor, limit));
+
+  @override
+  Future<RevisionRestore> restoreRevision(String revisionId) => _s._run(() {
+    if (!_s._revisions.any((r) => r.id == revisionId)) {
+      throw _notFound('설정 이력을 찾을 수 없습니다.');
+    }
+    final ids = [for (final r in _s._revisions) int.parse(r.id)];
+    final next = ids.fold(0, (a, b) => a > b ? a : b) + 1;
+    final revision = SettingsRevision(
+      id: '$next',
+      origin: 'restore',
+      note: '#$revisionId 저장으로 되돌림',
+      changes: const [],
+      createdAt: _now(),
+    );
+    _s._revisions = [revision, ..._s._revisions];
+    return RevisionRestore(revision: revision, dropped: const []);
+  });
+
+  @override
+  Future<void> resetOverride(String key) => _s._run(() {
+    // 서버처럼 묶음 키(scoring.kind_weights)는 그 아래 키까지 지운다.
+    List<String> without(List<String> keys) => [
+      for (final k in keys)
+        if (k != key && !k.startsWith('$key.')) k,
+    ];
+    final interests = _s._interests.toJson();
+    _s._interests = InterestsSettings.fromJson({
+      ...interests,
+      'updated_at': _s._interests.updatedAt?.toIso8601String(),
+      'overridden': without(_s._interests.overridden),
+    });
+    _s._notifications = NotificationSettings.fromJson({
+      ..._s._notifications.toJson(),
+      'overridden': without(_s._notifications.overridden),
     });
   });
 }

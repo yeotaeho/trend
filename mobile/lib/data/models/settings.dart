@@ -1,4 +1,4 @@
-// 설정 모델 — 04 관심사(InterestsSettings)·05 알림 설정(NotificationSettings)·전체 설정(SettingsOverview).
+// 설정 모델 — 04 관심사·05 알림 설정·전체 설정(SettingsOverview)·저장 이력(SettingsRevision).
 import 'package:json_annotation/json_annotation.dart';
 
 import '../../core/labels.dart';
@@ -14,6 +14,7 @@ class InterestsSettings {
     required this.watchKeywords,
     required this.kindWeights,
     this.updatedAt,
+    this.overridden = const <String>[],
   });
 
   final InterestsProfile profile;
@@ -32,6 +33,11 @@ class InterestsSettings {
   /// 한 번도 저장하지 않았으면 `null`.
   @JsonKey(includeToJson: false)
   final DateTime? updatedAt;
+
+  /// 앱 값이 있는 키(`policy.categories`·`scoring.kind_weights.survey` 같은 점 경로). PUT 본문에는
+  /// 넣지 않는다. 서버가 모르는 키라며 422 를 낸다.
+  @JsonKey(includeToJson: false, defaultValue: <String>[])
+  final List<String> overridden;
 
   factory InterestsSettings.fromJson(Map<String, dynamic> json) =>
       _$InterestsSettingsFromJson(json);
@@ -66,17 +72,28 @@ class NotificationSettings {
     required this.deliveryByImportance,
     required this.explorationSlot,
     this.updatedAt,
+    this.clusterDailyCap = 1,
+    this.overridden = const <String>[],
   });
 
   final NotifyChannels channels;
   final int dailyPushCap;
   final QuietHours quietHours;
 
-  /// `같은 이슈 하루 1건` (`cluster_daily_cap > 0`).
+  /// `같은 이슈 하루 N건` (`cluster_daily_cap > 0`).
   final bool dedupeSameIssueDaily;
+
+  /// 같은 이슈 하루 상한 N (유효값, 0 = 끔). 읽기 전용.
+  @JsonKey(defaultValue: 1)
+  final int clusterDailyCap;
+
   final DeliveryByImportance deliveryByImportance;
   final ExplorationSlot explorationSlot;
   final DateTime? updatedAt;
+
+  /// 앱 값이 있는 `notify.*` 키. 읽기 전용.
+  @JsonKey(defaultValue: <String>[])
+  final List<String> overridden;
 
   factory NotificationSettings.fromJson(Map<String, dynamic> json) =>
       _$NotificationSettingsFromJson(json);
@@ -216,7 +233,6 @@ class ExplorationSlot {
   Map<String, dynamic> toJson() => _$ExplorationSlotToJson(this);
 }
 
-
 /// `GET /settings` — 모든 설정 키와 출처·주인(계약 4.0). 화면은 #36 에서 붙인다.
 @JsonSerializable()
 class SettingsOverview {
@@ -289,4 +305,68 @@ class SettingItem {
       _$SettingItemFromJson(json);
 
   Map<String, dynamic> toJson() => _$SettingItemToJson(this);
+}
+
+/// 저장 이력 한 건에서 유효값이 바뀐 키 하나. [defaultValue] 는 저장 때의 YAML 값이다.
+@JsonSerializable()
+class SettingChange {
+  const SettingChange({
+    required this.key,
+    required this.old,
+    required this.newValue,
+    required this.defaultValue,
+  });
+
+  final String key;
+  final Object? old;
+
+  @JsonKey(name: 'new')
+  final Object? newValue;
+
+  @JsonKey(name: 'default')
+  final Object? defaultValue;
+
+  factory SettingChange.fromJson(Map<String, dynamic> json) =>
+      _$SettingChangeFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SettingChangeToJson(this);
+}
+
+/// `GET /settings/revisions` 한 줄. 저장마다 한 행이고 지우지 않는다.
+@JsonSerializable()
+class SettingsRevision {
+  const SettingsRevision({
+    required this.id,
+    required this.origin,
+    required this.note,
+    required this.changes,
+    required this.createdAt,
+  });
+
+  final String id;
+
+  /// `app`·`reset`·`restore`·`script`.
+  final String origin;
+  final String? note;
+  final List<SettingChange> changes;
+  final DateTime createdAt;
+
+  factory SettingsRevision.fromJson(Map<String, dynamic> json) =>
+      _$SettingsRevisionFromJson(json);
+
+  Map<String, dynamic> toJson() => _$SettingsRevisionToJson(this);
+}
+
+/// `POST /settings/revisions/{id}/restore` — 되돌린 저장(새 이력 행)과 지금 모델에 맞지 않아 버린 키.
+@JsonSerializable()
+class RevisionRestore {
+  const RevisionRestore({required this.revision, required this.dropped});
+
+  final SettingsRevision revision;
+  final List<String> dropped;
+
+  factory RevisionRestore.fromJson(Map<String, dynamic> json) =>
+      _$RevisionRestoreFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RevisionRestoreToJson(this);
 }

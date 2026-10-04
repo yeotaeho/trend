@@ -40,6 +40,20 @@ abstract interface class SettingsRepository {
   Future<NotificationSettings> updateNotifications(Map<String, Object?> patch);
 }
 
+/// 전체 설정·저장 이력·버전 되돌리기·키 기본값으로 (계약 4.0).
+abstract interface class SettingsHistoryRepository {
+  Future<SettingsOverview> overview();
+
+  /// 최신 저장부터.
+  Future<CursorPage<SettingsRevision>> revisions({String? cursor, int? limit});
+
+  /// 그 저장 뒤 상태로 되돌린다. 이것도 저장 한 번이라 이력이 한 행 늘어난다.
+  Future<RevisionRestore> restoreRevision(String revisionId);
+
+  /// 앱 값 하나를 지워 YAML 값으로 돌린다 (`DELETE /settings/overrides/{key}`).
+  Future<void> resetOverride(String key);
+}
+
 /// 06 수집 소스.
 abstract interface class SourceRepository {
   Future<SourcesResponse> sources();

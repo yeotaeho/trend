@@ -1,12 +1,17 @@
-// 05 알림 설정 화면 — 채널·알림 피로·중요도별 강도·탐색 슬롯. 모든 변경은 즉시 PATCH 한다.
+// 05 알림 설정 화면 — 막힘 상태 줄·채널·알림 피로·중요도별 강도·탐색 슬롯. 변경은 즉시 PATCH 하고 되돌린다.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/api_exception.dart';
+import '../../core/json_merge.dart';
 import '../../core/labels.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../core/widgets/widgets.dart';
 import '../../data/models/models.dart';
+import '../settings/settings_providers.dart';
+import '../settings/settings_sheets.dart';
+import 'delivery_blocked.dart';
 import 'notification_settings_controller.dart';
 import 'pickers.dart';
 
@@ -14,10 +19,6 @@ const EdgeInsets _rowCardPadding = EdgeInsets.symmetric(
   horizontal: 16,
   vertical: 4,
 );
-
-/// 하루 push 상한 범위 (계약 4.4).
-const int _minPushCap = 1;
-const int _maxPushCap = 50;
 
 class NotificationSettingsPage extends ConsumerWidget {
   const NotificationSettingsPage({super.key});
@@ -44,18 +45,66 @@ class _Body extends ConsumerWidget {
 
   final NotificationSettings settings;
 
-  /// 저장하다 실패하면 컨트롤러가 되돌린 뒤 서버 `message` 를 스낵바로 보여 준다.
+  /// 저장 결과가 알림을 새로 막으면 먼저 묻는다. 저장하면 되돌리기 스낵바를 띄우고, 실패하면
+  /// 컨트롤러가 되돌린 뒤 서버 `message` 를 보여 준다. [undo] 는 되돌리기 저장이라 묻지 않는다.
   Future<void> _save(
     BuildContext context,
     WidgetRef ref,
-    Map<String, Object?> patch,
-  ) async {
+    Map<String, Object?> patch, {
+    bool undo = false,
+  }) async {
+    final before = settings;
+    if (!undo) {
+      final after = NotificationSettings.fromJson(
+        deepMerge(before.toJson(), patch),
+      );
+      final now = deliveryBlocked(before);
+      final added = [
+        for (final reason in deliveryBlocked(after))
+          if (confirmBeforeSave.contains(reason) && !now.contains(reason))
+            reason,
+      ];
+      if (added.isNotEmpty) {
+        final ok = await showConfirmDialog(
+          context,
+          title: '이대로 저장할까요?',
+          message: [for (final reason in added) reason.label].join('\n'),
+          confirmLabel: '저장',
+        );
+        if (!ok || !context.mounted) return;
+      }
+    }
     final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(notificationSettingsProvider.notifier).save(patch);
     } on ApiException catch (error) {
-      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error.message)));
+      return;
     }
+    final back = pickLike(before.toJson(), patch);
+    // 같은 이슈 토글은 켜면 서버가 YAML 상한을 쓴다. 이전 상한이 YAML 과 달랐으면 되돌려도
+    // 그 숫자로 돌아오지 않아 되돌리기를 주지 않는다.
+    final undoable = !undo && !patch.containsKey('dedupe_same_issue_daily');
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(undo ? '되돌렸습니다.' : '저장했습니다.'),
+          persist: false,
+          action: !undoable
+              ? null
+              : SnackBarAction(
+                  label: '되돌리기',
+                  textColor: AppColors.primaryMuted,
+                  onPressed: () {
+                    // 화면을 떠났으면 되돌릴 화면 상태가 없다.
+                    if (context.mounted) _save(context, ref, back, undo: true);
+                  },
+                ),
+        ),
+      );
   }
 
   @override
@@ -63,6 +112,8 @@ class _Body extends ConsumerWidget {
     void save(Map<String, Object?> patch) => _save(context, ref, patch);
     final channels = settings.channels;
     final quiet = settings.quietHours;
+    final blocked = deliveryBlocked(settings);
+    final cap = settings.clusterDailyCap;
 
     Widget channelRow(
       NotifyChannel channel, {
@@ -84,6 +135,7 @@ class _Body extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
+        if (blocked.isNotEmpty) _BlockedCard(reasons: blocked),
         const SectionLabel('채널'),
         AppCard(
           padding: _rowCardPadding,
@@ -116,12 +168,16 @@ class _Body extends ConsumerWidget {
               title: '하루 push 상한',
               value: '${settings.dailyPushCap}건',
               onTap: () async {
+                final range = (await ref.read(metaProvider.future))
+                    .limits
+                    .dailyPushCap;
+                if (!context.mounted) return;
                 final value = await showNumberPicker(
                   context,
                   title: '하루 push 상한',
                   initial: settings.dailyPushCap,
-                  min: _minPushCap,
-                  max: _maxPushCap,
+                  min: range.min,
+                  max: range.max,
                   format: (value) => '$value건',
                 );
                 if (!context.mounted) return;
@@ -152,7 +208,7 @@ class _Body extends ConsumerWidget {
               },
             ),
             ToggleRow(
-              title: '같은 이슈 하루 1건',
+              title: cap > 0 ? '같은 이슈 하루 $cap건' : '같은 이슈 하루 상한',
               subtitle: '버전 형제 릴리즈는 제목에 병기',
               value: settings.dedupeSameIssueDaily,
               isLast: true,
@@ -268,6 +324,30 @@ String? discordSubtitle(DiscordChannel discord) {
 
 /// `23:00 – 08:00`. 시작과 끝이 같으면 무음이 없다 (계약 4.4).
 String quietHoursLabel(QuietHours quiet) =>
-    quiet.start == quiet.end ? '없음' : '${quiet.start} – ${quiet.end}';
+    quiet.start == quiet.end ? '무음 끔' : '${quiet.start} – ${quiet.end}';
 
 int _hourOf(String hhmm) => int.tryParse(hhmm.split(':').first) ?? 0;
+
+/// 맨 위 경고 카드 — 지금 설정으로 알림이 막히는 사유 (서버와 같은 규칙).
+class _BlockedCard extends StatelessWidget {
+  const _BlockedCard({required this.reasons});
+
+  final List<DeliveryBlocked> reasons;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: AppCard(
+        children: [
+          for (final reason in reasons)
+            Text(
+              reason.label,
+              key: ValueKey('blocked-${reason.value}'),
+              style: AppText.captionMd.copyWith(color: AppColors.warn),
+            ),
+        ],
+      ),
+    );
+  }
+}

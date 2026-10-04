@@ -125,6 +125,8 @@ class NotificationSettings(BaseModel):
     daily_push_cap: int
     quiet_hours: QuietHours
     dedupe_same_issue_daily: bool
+    # 같은 이슈 하루 상한(유효값, 0 = 끔). 읽기 전용이라 PATCH 로 보내면 422 다.
+    cluster_daily_cap: int
     delivery_by_importance: DeliveryByImportance
     exploration_slot: ExplorationSlot
     updated_at: UtcDateTime | None

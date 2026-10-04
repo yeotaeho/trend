@@ -1,4 +1,4 @@
-// 설정 루트 (디자인 없음) — 하위 화면 세 줄과 요약, 표시 이름 편집(PATCH /profile), 앱 버전.
+// 설정 루트 (디자인 없음) — 하위 화면 세 줄과 요약, 전체 설정·이력, 표시 이름 편집(PATCH /profile), 앱 버전.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -99,8 +99,20 @@ class SettingsPage extends ConsumerWidget {
                     ? null
                     : '활성 소스 ${sources.enabledCount}/${sources.total}',
                 value: '',
-                isLast: true,
                 onTap: () => _open(context, ref, AppRoutes.sources),
+              ),
+              ValueRow(
+                title: '전체 설정',
+                subtitle: '모든 키의 값·출처와 알림 막힘',
+                value: '',
+                onTap: () => _open(context, ref, AppRoutes.allSettings),
+              ),
+              ValueRow(
+                title: '설정 이력',
+                subtitle: '저장 기록과 버전 되돌리기',
+                value: '',
+                isLast: true,
+                onTap: () => _open(context, ref, AppRoutes.settingsHistory),
               ),
             ],
           ),

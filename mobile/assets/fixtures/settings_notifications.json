@@ -23,6 +23,7 @@
     "timezone": "Asia/Seoul"
   },
   "dedupe_same_issue_daily": true,
+  "cluster_daily_cap": 1,
   "delivery_by_importance": {
     "high": "instant",
     "mid": "quiet",

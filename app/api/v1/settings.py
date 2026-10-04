@@ -164,6 +164,7 @@ async def _notifications(
             timezone=notify.timezone,
         ),
         dedupe_same_issue_daily=notify.cluster_daily_cap > 0,
+        cluster_daily_cap=notify.cluster_daily_cap,
         delivery_by_importance=DeliveryByImportance(**notify.delivery_by_importance.model_dump()),
         exploration_slot=ExplorationSlot(
             enabled=notify.explore_enabled, daily_limit=EXPLORATION_DAILY_LIMIT

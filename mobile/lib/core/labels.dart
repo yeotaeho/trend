@@ -150,6 +150,19 @@ enum DeliveryChoice {
   final String label;
 }
 
+/// 설정 조합 때문에 알림이 막히는 사유 (계약 4.0 `delivery_blocked`). 라벨은 05 상태 줄 문장이다.
+@JsonEnum(valueField: 'value')
+enum DeliveryBlocked {
+  noChannel('no_channel', '보낼 수 있는 채널이 없어 알림이 피드에만 남거나 발송이 실패합니다.'),
+  noInstant('no_instant', '즉시 구간이 없어 push 가 오지 않습니다.'),
+  quietLong('quiet_long', '무음 시간이 20시간 이상입니다.'),
+  resurfaceOff('resurface_off', '앱 푸시를 쓸 수 없어 찜 재알림이 멈춥니다.');
+
+  const DeliveryBlocked(this.value, this.label);
+  final String value;
+  final String label;
+}
+
 @JsonEnum(valueField: 'value')
 enum NotifyChannel {
   fcm('fcm', '앱 푸시 (FCM)'),
@@ -204,3 +217,37 @@ enum DevicePlatform {
   const DevicePlatform(this.value);
   final String value;
 }
+
+/// 전체 설정 섹션 — 설정 키의 첫 마디 (계약 4.0 `items[].category`). 이 순서로 보인다.
+enum SettingCategory {
+  policy('policy', '관심사·정책'),
+  exclude('exclude', '제외 규칙'),
+  dedupe('dedupe', '중복 판정'),
+  triage('triage', '선별'),
+  scoring('scoring', '점수'),
+  notify('notify', '알림'),
+  sources('sources', '수집 소스'),
+  app('app', '앱 화면·찜 재알림'),
+  server('server', '서버 (VM .env)');
+
+  const SettingCategory(this.value, this.label);
+  final String value;
+  final String label;
+}
+
+/// 설정을 바꾸면 반영되는 때 (`items[].apply`).
+String settingApplyLabel(String apply) => switch (apply) {
+  'next_job' => '다음 잡부터',
+  'deploy' => '머지·배포 뒤',
+  'restart' => 'VM 재시작 뒤',
+  _ => apply,
+};
+
+/// 설정 이력을 남긴 길 (`origin`).
+String revisionOriginLabel(String origin) => switch (origin) {
+  'app' => '앱 저장',
+  'reset' => '기본값으로',
+  'restore' => '버전 되돌리기',
+  'script' => '스크립트',
+  _ => origin,
+};

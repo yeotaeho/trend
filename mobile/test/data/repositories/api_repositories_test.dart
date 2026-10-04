@@ -214,6 +214,48 @@ void main() {
     });
   });
 
+  group('SettingsHistoryRepository', () {
+    late ApiSettingsHistoryRepository repo;
+    setUp(() => repo = ApiSettingsHistoryRepository(api));
+
+    test('GET /settings', () async {
+      http.body = _fixture('settings');
+      final overview = await repo.overview();
+
+      expectSent('GET', '/settings');
+      expect(overview.items, isNotEmpty);
+    });
+
+    test('GET /settings/revisions — 커서·개수', () async {
+      http.body = _fixture('settings_revisions');
+      final page = await repo.revisions(cursor: 'c1', limit: 5);
+
+      expectSent(
+        'GET',
+        '/settings/revisions',
+        query: {'cursor': 'c1', 'limit': '5'},
+      );
+      expect(page.items.first.changes, isNotEmpty);
+    });
+
+    test('POST /settings/revisions/{id}/restore — 본문 없음', () async {
+      http.body = {
+        'revision': _first('settings_revisions', 'items'),
+        'dropped': ['scoring.threshold'],
+      };
+      final result = await repo.restoreRevision('12');
+
+      expectSent('POST', '/settings/revisions/12/restore');
+      expect(result.dropped, ['scoring.threshold']);
+    });
+
+    test('DELETE /settings/overrides/{key} — 키는 URL 인코딩한다', () async {
+      await repo.resetOverride('sources.rss:openai.enabled');
+
+      expectSent('DELETE', '/settings/overrides/sources.rss%3Aopenai.enabled');
+    });
+  });
+
   group('SourceRepository', () {
     late ApiSourceRepository repo;
     setUp(() => repo = ApiSourceRepository(api));
