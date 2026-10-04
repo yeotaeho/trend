@@ -47,13 +47,9 @@ sources:
     poll_interval_sec: 900
     trust_score: 0.6
 
-  - name: rss:yozm
-    type: rss
-    config:
-      display_name: 요즘IT
-      url: https://yozm.wishket.com/magazine/feed/
-    poll_interval_sec: 1800
-    trust_score: 0.5
+  # 요즘IT(rss:yozm)는 뺐다(#56, 10-04). 운영 VM(싱가포르)에서는 사이트 전체가 CloudFront 405 다.
+  # 한국 PC 에서는 200 이라 처음 붙일 때 몰랐다. 다시 넣기 전에 VM 에서 curl 로 본다.
+  # 그동안은 config/app.yaml 의 planned_sources 에 있어 06 화면 '미착수' 로 보인다.
 
   - name: rss:simonwillison
     type: rss
