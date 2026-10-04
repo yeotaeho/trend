@@ -24,39 +24,45 @@ def test_real_config_files_pass_validation():
 
 
 @pytest.mark.parametrize(
-    ("path", "value"),
+    ("path", "value", "error"),
     [
-        (("notify", "timezone"), "KST"),
-        (("scoring", "threshold"), 5),
-        (("triage", "batch_size"), 0),
-        (("notify", "quiet_start_hour"), 99),
-        (("notify", "daily_push_cap"), 51),
-        (("dedupe", "related_threshold"), 0.99),  # 중복 임계값(0.96)보다 크면 안 된다
-        (("scoring", "kind_weights"), {"promo": -0.9}),
-        (("scoring", "kind_weights"), {"technique": 0.1}),  # 감점 전용(#32)
-        (("policy", "focus_stack"), [f"k{i}" for i in range(51)]),
-        (("notify", "resurface_after_days"), 31),
-        (("scoring", "explore_band"), 0),
-        (("budget", "judge_daily_cap"), -1),
+        (("notify", "timezone"), "KST", "value_error"),
+        (("scoring", "threshold"), 5, "less_than_equal"),
+        (("triage", "batch_size"), 0, "greater_than_equal"),
+        (("notify", "quiet_start_hour"), 99, "less_than_equal"),
+        (("notify", "daily_push_cap"), 51, "less_than_equal"),
+        # 중복 임계값(0.96)보다 크면 안 된다
+        (("dedupe", "related_threshold"), 0.99, "value_error"),
+        (("scoring", "kind_weights"), {"promo": -0.9}, "greater_than_equal"),
+        (("scoring", "kind_weights"), {"technique": 0.1}, "less_than_equal"),  # 감점 전용(#32)
+        (("policy", "focus_stack"), [f"k{i}" for i in range(51)], "value_error"),
+        (("notify", "resurface_after_days"), 31, "less_than_equal"),
+        (("scoring", "explore_band"), 0, "greater_than"),
+        (("budget", "judge_daily_cap"), -1, "greater_than_equal"),
     ],
 )
-def test_out_of_range_values_are_rejected(path: tuple[str, str], value: Any):
+def test_out_of_range_values_are_rejected(path: tuple[str, str], value: Any, error: str):
     data = copy.deepcopy(_rules_yaml())
     section, key = path
     data[section][key] = value
     with pytest.raises(ValidationError) as exc:
         Rules.model_validate(data)
-    # 키 이름이 틀리면 extra=forbid 로도 실패한다. 범위 검사로 실패했는지 본다.
-    assert {e["type"] for e in exc.value.errors()}.isdisjoint({"extra_forbidden"})
+    # 그 제약 하나로만 실패해야 한다. 키 이름이 틀리면 extra_forbidden 으로도 실패한다.
+    assert [e["type"] for e in exc.value.errors()] == [error]
 
 
 @pytest.mark.parametrize(
-    "fields", [{"poll_interval_sec": 60}, {"trust_score": 1.5}, {"trust_score": -0.1}]
+    ("fields", "error"),
+    [
+        ({"poll_interval_sec": 60}, "greater_than_equal"),
+        ({"trust_score": 1.5}, "less_than_equal"),
+        ({"trust_score": -0.1}, "greater_than_equal"),
+    ],
 )
-def test_source_out_of_range_is_rejected(fields: dict[str, Any]):
+def test_source_out_of_range_is_rejected(fields: dict[str, Any], error: str):
     with pytest.raises(ValidationError) as exc:
         SourceConfig.model_validate({"name": "rss:x", "type": "rss", **fields})
-    assert {e["type"] for e in exc.value.errors()}.isdisjoint({"extra_forbidden"})
+    assert [e["type"] for e in exc.value.errors()] == [error]
 
 
 def _leaves(model: type[BaseModel], prefix: str = "") -> Iterator[tuple[str, FieldInfo]]:
