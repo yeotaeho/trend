@@ -109,7 +109,7 @@ void main() {
     expect(find.text('커뮤니티'), findsNothing);
     expect(find.byType(SourceRow), findsNWidgets(7));
     expect(find.text('미착수'), findsOneWidget);
-    for (final name in ['Reddit', 'GitHub Trending', 'X']) {
+    for (final name in ['Reddit', 'GitHub Trending', 'X', '요즘IT']) {
       expect(find.widgetWithText(AppChip, name), findsOneWidget);
     }
   });

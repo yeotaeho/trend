@@ -611,13 +611,13 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
     {"id": "github_release:watchlist", "display_name": "GitHub Releases", "type": "github_release", "group": "paper_release_video", "enabled": true, "poll_interval_min": 30, "trust": 1.0, "trust_base": 1.0, "trust_calibrated": null, "consecutive_failures": 0, "error_hint": null, "last_error": null, "last_polled_at": "2026-09-24T02:30:00Z", "repo_count": 10},
     {"id": "youtube:codingapple", "display_name": "코딩애플", "type": "youtube", "group": "paper_release_video", "enabled": false, "poll_interval_min": 15, "trust": 0.52, "trust_base": 0.6, "trust_calibrated": 0.52, "consecutive_failures": 0, "error_hint": null, "last_error": null, "last_polled_at": "2026-09-22T10:00:00Z", "repo_count": null}
   ],
-  "planned_sources": ["Reddit", "GitHub Trending", "X"]
+  "planned_sources": ["Reddit", "GitHub Trending", "X", "요즘IT"]
 }
 ```
 
 - 목록은 `sources.yaml` 에 있는 소스만 (YAML 에서 빠져 비활성화된 과거 행은 제외). 순서는 YAML 순서, 앱은 `group` 으로 섹션을 나눈다 (`community` 섹션은 디자인에 없으므로 라벨 `커뮤니티` 로 추가).
 - 디자인 Stat `LLM 예산 41 / 60` 은 `llm_budget.triage` 다 (선별 호출 상한). 판정·탐색 예산은 보조 정보. `used` 는 오늘(달력일) `llm_calls` 예약 수이며 상한과 같은 기준으로 센다 — `judge.used` 는 판정 예산 전체(판정 + 탐색 판정), `explore.used` 는 탐색 판정만.
-- `planned_sources` 는 **정적** (`config/app.yaml`). 디자인의 `Hacker News` 는 이미 구현된 소스(`hackernews:front`)라 목록에서 뺐다.
+- `planned_sources` 는 **정적** (`config/app.yaml`). 디자인의 `Hacker News` 는 이미 구현된 소스(`hackernews:front`)라 목록에서 뺐다. `요즘IT` 는 운영 서버 지역에서 사이트가 막혀 수집 소스에서 이리로 옮겼다(#56).
 - 소스 추가(헤더 `+`)는 v1 범위 밖이다. 앱은 `준비 중` 토스트를 띄운다 (사용자 결정).
 
 #### `PATCH /sources/{source_id}` — on/off
@@ -1074,7 +1074,7 @@ onboarding: {done: 8, total: 8}
 personal_model_threshold: 50
 resurface_unread_after_days: 7
 screening_relevance_floor: 0.5
-planned_sources: [Reddit, GitHub Trending, X]
+planned_sources: [Reddit, GitHub Trending, X, 요즘IT]
 # policy.taxonomy slug → 앱 표시 라벨. 선별 어휘는 rules.yaml 이 소유하고 여기는 라벨만 둔다.
 taxonomy_labels:
   llm-model: 새 모델·벤치마크
