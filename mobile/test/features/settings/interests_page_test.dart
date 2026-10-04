@@ -287,4 +287,22 @@ void main() {
     expect(find.text('관심 없음: 채용'), findsOneWidget);
     expect(_saveButton(tester).onTap, isNotNull);
   });
+
+  testWidgets('앱 값 섹션에만 배지가 붙고, 기본값으로를 확인하면 키를 되돌린다', (tester) async {
+    await pumpSettingsApp(tester, at: AppRoutes.interests);
+
+    // fixture 의 overridden 은 policy.categories 하나다.
+    expect(find.byKey(const ValueKey('reset-categories')), findsOneWidget);
+    expect(find.byKey(const ValueKey('reset-profile')), findsNothing);
+    expect(find.text('앱 값'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('reset-categories')));
+    await tester.pumpAndSettle();
+    expect(find.text('카테고리을(를) 기본값으로 되돌릴까요?'), findsOneWidget);
+    await tester.tap(find.text('되돌리기'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('reset-categories')), findsNothing);
+    expect(find.text('기본값으로 되돌렸습니다.'), findsOneWidget);
+  });
 }

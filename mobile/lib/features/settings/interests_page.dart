@@ -1,4 +1,5 @@
 // 04 관심사 — 프로필 문장·카테고리·키워드·kind 가중치를 로컬에서 고치고 헤더 `저장` 한 번으로 PUT 한다.
+// 앱 값이 있는 섹션에는 배지와 `기본값으로`(키 되돌리기)가 붙는다.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -139,6 +140,47 @@ class _InterestsPageState extends ConsumerState<InterestsPage> {
     if (value != null) _edit((d) => d.setWeight(kind, value));
   }
 
+  /// 이 섹션 키 가운데 앱 값이 있는 것 (서버 `overridden`).
+  List<String> _overriddenIn(List<String> prefixes) => [
+    for (final key in _draft!.original.overridden)
+      if (prefixes.any(key.startsWith)) key,
+  ];
+
+  /// 앱 값을 지워 YAML 기본값으로 돌린다. 저장하지 않은 바뀐 내용도 다시 읽은 값으로 바뀐다.
+  Future<void> _reset(String section, List<String> keys) async {
+    final dirty = _draft!.isDirty;
+    final ok = await showConfirmDialog(
+      context,
+      title: '$section을(를) 기본값으로 되돌릴까요?',
+      message: dirty
+          ? 'YAML 기본값을 따르게 됩니다. 저장하지 않은 바뀐 내용도 사라집니다.'
+          : 'YAML 기본값을 따르게 됩니다.',
+      confirmLabel: '되돌리기',
+    );
+    if (!ok || !mounted) return;
+    final repository = ref.read(settingsHistoryRepositoryProvider);
+    try {
+      for (final key in keys) {
+        await repository.resetOverride(key);
+      }
+    } on ApiException catch (e) {
+      if (mounted) _snack(e.message);
+      return;
+    }
+    if (!mounted) return;
+    ref.invalidate(categorySummaryProvider);
+    await _load();
+    if (mounted) _snack('기본값으로 되돌렸습니다.');
+  }
+
+  /// 섹션 제목. 앱 값이 있으면 배지와 `기본값으로` 를 단다.
+  Widget _header(String text, String id, String section, List<String> keys) =>
+      _SectionHeader(
+        text,
+        resetKey: ValueKey('reset-$id'),
+        onReset: keys.isEmpty ? null : () => _reset(section, keys),
+      );
+
   @override
   Widget build(BuildContext context) {
     final draft = _draft;
@@ -175,7 +217,12 @@ class _InterestsPageState extends ConsumerState<InterestsPage> {
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
-        const SectionLabel('나를 한 줄로 (선별 프롬프트에 그대로 들어갑니다)'),
+        _header(
+          '나를 한 줄로 (선별 프롬프트에 그대로 들어갑니다)',
+          'profile',
+          '프로필',
+          _overriddenIn(['policy.interests', 'policy.not_interested']),
+        ),
         GestureDetector(
           onTap: _editProfile,
           behavior: HitTestBehavior.opaque,
@@ -186,13 +233,23 @@ class _InterestsPageState extends ConsumerState<InterestsPage> {
             ],
           ),
         ),
-        SectionLabel('카테고리 · $selected / ${taxonomy.length} 선택'),
+        _header(
+          '카테고리 · $selected / ${taxonomy.length} 선택',
+          'categories',
+          '카테고리',
+          _overriddenIn(['policy.categories']),
+        ),
         _TaxonomyGrid(
           taxonomy: taxonomy,
           isSelected: draft.isSelected,
           onToggle: (slug) => _edit((d) => d.toggleCategory(slug)),
         ),
-        const SectionLabel('주목 스택 · 저장소'),
+        _header(
+          '주목 스택 · 저장소',
+          'keywords',
+          '주목 스택·저장소',
+          _overriddenIn(['policy.focus_stack', 'policy.focus_repos']),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.cardMargin,
@@ -211,7 +268,15 @@ class _InterestsPageState extends ConsumerState<InterestsPage> {
             ],
           ),
         ),
-        const SectionLabel('변화 종류별 가중치 (kind)'),
+        _header(
+          '변화 종류별 가중치 (kind)',
+          'kinds',
+          'kind 가중치',
+          // kind 하나라도 앱 값이면 kind 가중치 전체를 기본값으로 돌린다.
+          _overriddenIn(['scoring.kind_weights.']).isEmpty
+              ? const []
+              : const ['scoring.kind_weights'],
+        ),
         AppCard(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           gap: 0,
@@ -395,6 +460,37 @@ class _KindWeightRow extends StatelessWidget {
             ),
           ),
           const AppIcon('chev', size: 16, color: AppColors.chevron),
+        ],
+      ),
+    );
+  }
+}
+
+/// 섹션 제목 한 줄. [onReset] 이 있으면(앱 값이 있으면) `앱 값` 배지와 `기본값으로` 를 단다.
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.text, {required this.resetKey, this.onReset});
+
+  final String text;
+  final Key resetKey;
+  final VoidCallback? onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    final onReset = this.onReset;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+      child: Row(
+        spacing: 8,
+        children: [
+          Expanded(child: Text(text, style: AppText.sectionLabel)),
+          if (onReset != null) ...[
+            const AppBadge(
+              label: '앱 값',
+              background: AppColors.primarySoft,
+              foreground: AppColors.primary,
+            ),
+            AccentTextButton(key: resetKey, label: '기본값으로', onTap: onReset),
+          ],
         ],
       ),
     );
