@@ -1,4 +1,4 @@
-# 앱 API 의존성 — 베어러 토큰 인증, 요청 사용자(DEFAULT_USER_ID), 요청 단위 DB 세션
+# 앱 API 의존성 — 베어러 토큰 인증, 요청 사용자(DEFAULT_USER_ID), 요청 단위 DB 세션, 목록 검색어
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import hmac
 from collections.abc import AsyncIterator
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +16,8 @@ from app.db.session import session_scope
 from app.db.users import DEFAULT_USER_ID
 
 _bearer = HTTPBearer(auto_error=False)
+
+SEARCH_MAX_LEN = 100
 
 
 async def require_token(
@@ -38,6 +40,12 @@ async def get_session() -> AsyncIterator[AsyncSession]:
         yield session
 
 
+def search_query(q: Annotated[str | None, Query(max_length=SEARCH_MAX_LEN)] = None) -> str | None:
+    """목록 검색어(계약 4.1·4.7). 앞뒤 공백을 떼고, 비면 검색하지 않는다."""
+    return (q or "").strip() or None
+
+
 UserId = Annotated[int, Depends(current_user_id)]
 # scope="function" — 응답을 보내기 전에 커밋한다. 커밋 실패가 200 뒤에 숨지 않는다.
 Session = Annotated[AsyncSession, Depends(get_session, scope="function")]
+Search = Annotated[str | None, Depends(search_query)]

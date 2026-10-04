@@ -1,4 +1,4 @@
-// 03 피드 프로바이더 — 필터별 커서 목록(더 불러오기)과 요약 줄 오늘 통계.
+// 03 피드 프로바이더 — 필터·검색어별 커서 목록(더 불러오기)과 요약 줄 오늘 통계.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/labels.dart';
@@ -15,15 +15,20 @@ class FeedState {
   bool get hasMore => nextCursor != null;
 }
 
-class FeedNotifier extends AsyncNotifier<FeedState> {
-  FeedNotifier(this.filter);
+/// 칩 필터와 검색어(없으면 `null`).
+typedef FeedQuery = ({FeedFilter filter, String? q});
 
-  final FeedFilter filter;
+class FeedNotifier extends AsyncNotifier<FeedState> {
+  FeedNotifier(this.query);
+
+  final FeedQuery query;
   bool _loadingMore = false;
 
   @override
   Future<FeedState> build() async {
-    final page = await ref.watch(feedRepositoryProvider).feed(filter: filter);
+    final page = await ref
+        .watch(feedRepositoryProvider)
+        .feed(filter: query.filter, q: query.q);
     return FeedState(items: page.items, nextCursor: page.nextCursor);
   }
 
@@ -35,7 +40,7 @@ class FeedNotifier extends AsyncNotifier<FeedState> {
     try {
       final page = await ref
           .read(feedRepositoryProvider)
-          .feed(filter: filter, cursor: current.nextCursor);
+          .feed(filter: query.filter, q: query.q, cursor: current.nextCursor);
       // 그사이 새로고침했으면 옛 목록에 붙이지 않는다.
       if (!ref.mounted || !identical(state.value, current)) return;
       state = AsyncData(
@@ -50,9 +55,9 @@ class FeedNotifier extends AsyncNotifier<FeedState> {
   }
 }
 
-/// 칩을 바꾸면 앞 필터 목록은 버리고 새로 읽는다.
+/// 칩이나 검색어를 바꾸면 앞 목록은 버리고 새로 읽는다.
 final feedProvider = AsyncNotifierProvider.autoDispose
-    .family<FeedNotifier, FeedState, FeedFilter>(FeedNotifier.new);
+    .family<FeedNotifier, FeedState, FeedQuery>(FeedNotifier.new);
 
 final todayStatsProvider = FutureProvider.autoDispose<TodayStats>(
   (ref) => ref.watch(feedRepositoryProvider).todayStats(),

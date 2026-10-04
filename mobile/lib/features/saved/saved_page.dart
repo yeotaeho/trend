@@ -1,4 +1,4 @@
-// 11 찜 화면 — 폴더 칩·정렬·안 읽음 토글·SavedCard 목록·안내 카드. 쓰기 실패는 스낵바로 알린다.
+// 11 찜 화면 — 검색 줄·폴더 칩·정렬·안 읽음 토글·SavedCard 목록·안내 카드. 쓰기 실패는 스낵바로 알린다.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -24,6 +24,8 @@ class SavedPage extends ConsumerStatefulWidget {
 }
 
 class _SavedPageState extends ConsumerState<SavedPage> {
+  bool _searching = false;
+
   SavedController get _controller => ref.read(savedControllerProvider.notifier);
 
   SavedState get _state => ref.read(savedControllerProvider).requireValue;
@@ -127,7 +129,9 @@ class _SavedPageState extends ConsumerState<SavedPage> {
           _TopBarIcon(
             icon: 'search',
             label: '검색',
-            onTap: () => _message('준비 중'),
+            onTap: async.hasValue
+                ? () => setState(() => _searching = true)
+                : null,
           ),
           _TopBarIcon(
             icon: 'dots',
@@ -162,6 +166,13 @@ class _SavedPageState extends ConsumerState<SavedPage> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
+            if (_searching)
+              SliverToBoxAdapter(
+                child: SearchField(
+                  onSubmitted: _controller.search,
+                  onCancel: _closeSearch,
+                ),
+              ),
             SliverToBoxAdapter(child: _folderChips(s)),
             SliverToBoxAdapter(child: _sortRow(s)),
             if (s.reloading)
@@ -267,7 +278,13 @@ class _SavedPageState extends ConsumerState<SavedPage> {
     );
   }
 
+  void _closeSearch() {
+    setState(() => _searching = false);
+    _controller.search(null);
+  }
+
   String _emptyMessage(SavedState s) {
+    if (s.query.q != null) return '검색 결과가 없습니다.';
     if (s.query.unreadOnly) return '안 읽은 찜이 없습니다.';
     if (s.query.folderId != null) return '이 폴더에 찜한 알림이 없습니다.';
     return '찜한 알림이 없습니다.\n피드에서 찜하면 여기에 모입니다.';

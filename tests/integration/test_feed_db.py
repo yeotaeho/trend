@@ -253,6 +253,23 @@ async def test_feed_filters(world: World):
         assert len(await _ids(c, world, filter="all")) == 6
 
 
+async def test_feed_search_q(world: World):
+    async with _client(world.me) as c:
+        # 발송 제목(대소문자 무시)·요약 제목·원문 앞부분·원문 제목 어느 쪽이 맞아도 찾는다.
+        assert await _ids(c, world, q="발송 a") == ["a"]
+        assert await _ids(c, world, q="요약 B") == ["b"]
+        assert await _ids(c, world, q="가가가") == ["c"]
+        assert await _ids(c, world, q="원문 D") == ["d"]
+        # 칩 필터와 같이 걸리고, 다른 사용자에게만 간 항목은 나오지 않는다.
+        assert await _ids(c, world, q="요약", filter="instant") == ["h", "a"]
+        assert await _ids(c, world, q="원문 g") == []
+        # % 와 _ 는 와일드카드가 아니라 글자다. 풀리면 모든 "원문 x" 가 걸린다.
+        assert await _ids(c, world, q="%") == []
+        assert await _ids(c, world, q="원문_") == []
+        # 공백뿐이면 검색하지 않는다.
+        assert len(await _ids(c, world, q="  ")) == 6
+
+
 async def test_feed_cursor_pages_have_no_gaps_or_duplicates(world: World):
     seen: list[str] = []
     async with _client(world.me) as c:

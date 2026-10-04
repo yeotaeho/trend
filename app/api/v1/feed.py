@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query
 
-from app.api.v1.deps import Session, UserId
+from app.api.v1.deps import Search, Session, UserId
 from app.api.v1.pagination import Paging
 from app.api.v1.queries.feed import feed_page, today_stats
 from app.api.v1.schemas.alerts import Alert
@@ -28,7 +28,8 @@ async def get_feed(
     session: Session,
     user_id: UserId,
     paging: Paging,
+    q: Search,
     flt: Annotated[FeedFilter, Query(alias="filter")] = FeedFilter.ALL,
 ) -> Page[Alert]:
-    items, next_cursor = await feed_page(session, user_id, flt, paging)
+    items, next_cursor = await feed_page(session, user_id, flt, paging, q)
     return Page[Alert](items=items, next_cursor=next_cursor)

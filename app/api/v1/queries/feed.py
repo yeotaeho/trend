@@ -10,7 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.errors import ApiError
 from app.api.v1.pagination import PageParams, paginate
-from app.api.v1.queries.alerts import INT4_MAX, alert_select, build_alerts, first_delivery
+from app.api.v1.queries.alerts import (
+    INT4_MAX,
+    alert_select,
+    build_alerts,
+    first_delivery,
+    matches_search,
+)
 from app.api.v1.queries.filtered import WINDOW_HOURS, filtered_total
 from app.api.v1.schemas.alerts import Alert
 from app.api.v1.schemas.feed import FeedFilter, TodayStats
@@ -38,7 +44,11 @@ def _after(key: dict[str, Any]) -> tuple[datetime, int]:
 
 
 async def feed_page(
-    session: AsyncSession, user_id: int, flt: FeedFilter, page: PageParams
+    session: AsyncSession,
+    user_id: int,
+    flt: FeedFilter,
+    page: PageParams,
+    q: str | None = None,
 ) -> tuple[list[Alert], str | None]:
     """delivered_at 내림차순, 같으면 id 내림차순. 기간 제한 없이 커서로 내려간다."""
     delivery = first_delivery(user_id)
@@ -47,6 +57,8 @@ async def feed_page(
         stmt = stmt.where(delivery.c.level == FILTER_LEVEL[flt])
     elif flt is FeedFilter.USEFUL:
         stmt = stmt.where(Feedback.verdict == "useful")
+    if q:
+        stmt = stmt.where(matches_search(q, delivery))
     if page.after is not None:
         sent_at, item_id = _after(page.after)
         stmt = stmt.where(

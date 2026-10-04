@@ -10,7 +10,7 @@
 ## 레이아웃 (위 → 아래)
 
 ### 1. 루트 TopBar — `margin-top 44`, 높이 56, `px 20`
-좌 `찜` 22/700. 우 `search` 22 + `dots` 22 (gap 14). 더보기는 폴더 관리·정렬 (디자인 없음).
+좌 `찜` 22/700. 우 `search` 22 + `dots` 22 (gap 14). `search` 는 폴더 칩 위에 피드와 같은 검색 줄을 연다. 더보기는 폴더 관리·정렬 (디자인 없음).
 
 ### 2. 폴더 칩 행 — `padding 4px 16px 12px`, gap 8, `overflow: hidden` (앱은 가로 스크롤)
 FolderChip ([tokens FolderChip](../tokens.md#folderchip-fchip-11-전용)). 단일 선택.

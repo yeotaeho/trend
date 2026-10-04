@@ -23,6 +23,13 @@ ApiException _invalid(String message, String field) => ApiException(
 
 DateTime _now() => DateTime.now().toUtc();
 
+/// 서버 `q` 처럼 대소문자를 무시한 부분 일치. 검색어가 없으면 거르지 않는다.
+bool _hits(String? q, List<String?> texts) {
+  if (q == null || q.isEmpty) return true;
+  final needle = q.toLowerCase();
+  return texts.any((t) => t != null && t.toLowerCase().contains(needle));
+}
+
 /// 오프셋 문자열 커서로 자른다. 기본 20건 (계약 1.3).
 CursorPage<T> _paginate<T>(List<T> all, String? cursor, int? limit) {
   final start = cursor == null ? 0 : int.tryParse(cursor);
@@ -324,16 +331,18 @@ class FixtureFeedRepository implements FeedRepository {
   @override
   Future<CursorPage<Alert>> feed({
     FeedFilter filter = FeedFilter.all,
+    String? q,
     String? cursor,
     int? limit,
   }) => _s._run(() {
-    bool keep(Alert a) => switch (filter) {
+    bool kept(Alert a) => switch (filter) {
       FeedFilter.all => true,
       FeedFilter.instant => a.deliveryMode == DeliveryMode.instant,
       FeedFilter.quiet => a.deliveryMode == DeliveryMode.quiet,
       FeedFilter.experiment => a.deliveryMode == DeliveryMode.experiment,
       FeedFilter.useful => a.feedback == FeedbackVerdict.useful,
     };
+    bool keep(Alert a) => kept(a) && _hits(q, [a.title, a.summary]);
     final items = _s._feed.where(keep).toList()
       ..sort((a, b) => b.deliveredAt!.compareTo(a.deliveredAt!));
     return _paginate(items, cursor, limit);
@@ -624,6 +633,7 @@ class FixtureSavedRepository implements SavedRepository {
     String? folderId,
     bool unreadOnly = false,
     SavedSort sort = SavedSort.savedDesc,
+    String? q,
     String? cursor,
     int? limit,
   }) => _s._run(() {
@@ -632,7 +642,8 @@ class FixtureSavedRepository implements SavedRepository {
             (folderId == SavedRepository.unfiled
                 ? s.folder == null
                 : s.folder?.id == folderId)) &&
-        (!unreadOnly || !s.isRead);
+        (!unreadOnly || !s.isRead) &&
+        _hits(q, [s.title]);
     final epoch = DateTime.utc(0);
     final items = _s._saved.where(keep).toList()
       ..sort(

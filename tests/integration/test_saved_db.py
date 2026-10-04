@@ -256,6 +256,19 @@ async def test_sorts_unread_only_and_cursor(world: World):
         assert bad.status_code == 400
 
 
+async def test_search_q_matches_titles_literally(world: World):
+    ids = world.items
+    async with SessionLocal() as s, s.begin():
+        s.add_all([Bookmark(user_id=world.me, item_id=ids[k]) for k in ("a", "b", "d")])
+        s.add(Bookmark(user_id=world.other, item_id=ids["c"]))
+    async with _client(world.me) as c:
+        assert await _keys(c, world, q="발송 B") == ["b"]  # 발송 제목, 대소문자 무시
+        assert await _keys(c, world, q="원문 d") == ["d"]  # 전달 전 찜은 원문 제목
+        assert await _keys(c, world, q="원문 c") == []  # 다른 사용자의 찜
+        assert await _keys(c, world, q="%") == []
+        assert await _keys(c, world, q="발송_") == []
+
+
 async def test_resurface_claims_only_old_unread_unsent_bookmarks_of_the_user(world: World):
     ids = world.items
     now = datetime.now(UTC)

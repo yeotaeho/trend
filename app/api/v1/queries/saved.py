@@ -7,8 +7,8 @@ from typing import Any, Literal
 
 from sqlalchemy import (
     Boolean,
-    ColumnElement,
     Select,
+    Subquery,
     and_,
     delete,
     func,
@@ -27,6 +27,7 @@ from app.api.v1.queries.alerts import (
     INT4_MAX,
     alert_title,
     first_delivery,
+    matches_search,
     source_display_name,
 )
 from app.api.v1.schemas.saved import Folder, FolderList, FolderRef, SavedItem, SavedSort
@@ -189,8 +190,8 @@ async def delete_folder(session: AsyncSession, user_id: int, folder_id: int) -> 
 # ---------- 찜 ----------
 
 
-def _saved_select(user_id: int) -> tuple[Select[Any], ColumnElement[Any]]:
-    """SavedItem 한 장에 필요한 열과 전달 시각 열. 전달 시각·제목은 피드와 같은 첫 전달 행."""
+def _saved_select(user_id: int) -> tuple[Select[Any], Subquery]:
+    """SavedItem 한 장에 필요한 열과 첫 전달 행. 전달 시각·제목은 피드와 같은 첫 전달 행."""
     delivery = first_delivery(user_id)
     stmt = (
         select(
@@ -217,7 +218,7 @@ def _saved_select(user_id: int) -> tuple[Select[Any], ColumnElement[Any]]:
         .outerjoin(BookmarkFolder, BookmarkFolder.id == Bookmark.folder_id)
         .where(Bookmark.user_id == user_id)
     )
-    return stmt, delivery.c.sent_at
+    return stmt, delivery
 
 
 def _to_saved(row: Any) -> SavedItem:
@@ -268,9 +269,13 @@ async def saved_page(
     unread_only: bool,
     sort: SavedSort,
     page: PageParams,
+    q: str | None = None,
 ) -> tuple[list[SavedItem], str | None]:
     """정렬 키가 같으면 alert_id 내림차순. 알림 시간 순에서 전달 전 찜은 맨 뒤다."""
-    stmt, delivered_at = _saved_select(user_id)
+    stmt, delivery = _saved_select(user_id)
+    delivered_at = delivery.c.sent_at
+    if q:
+        stmt = stmt.where(matches_search(q, delivery))
     if folder == UNFILED:
         stmt = stmt.where(Bookmark.folder_id.is_(None))
     elif folder is not None:

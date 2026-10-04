@@ -6,12 +6,14 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.dialects import postgresql
 
+from app.api.v1 import feed as feed_router
 from app.api.v1.pagination import encode_cursor
-from app.api.v1.queries.alerts import first_delivery, to_alert
-from tests.api.conftest import AUTH
+from app.api.v1.queries.alerts import first_delivery, matches_search, to_alert
+from tests.api.conftest import AUTH, FakeSession
 
 
 def _row(**kw: Any) -> Any:
@@ -114,3 +116,33 @@ def test_card_level_verdict_and_source_mapping():
     assert to_alert(_row(source_config={}), []).source_name == "github_release:watchlist"
     undelivered = to_alert(_row(level=None, sent_at=None), [])
     assert (undelivered.delivered_at, undelivered.delivery_mode) == (None, None)
+
+
+def test_feed_passes_trimmed_search(
+    client: TestClient, session: FakeSession, monkeypatch: pytest.MonkeyPatch
+):
+    seen: list[str | None] = []
+
+    async def fake_page(_session: Any, _user_id: int, _flt: Any, _page: Any, q: str | None) -> Any:
+        seen.append(q)
+        return [], None
+
+    monkeypatch.setattr(feed_router, "feed_page", fake_page)
+    for params in ({}, {"q": "  Claude  "}, {"q": "   "}):
+        assert client.get("/api/v1/feed", params=params, headers=AUTH).status_code == 200
+    # 앞뒤 공백을 떼고, 공백뿐이면 검색하지 않는다.
+    assert seen == [None, "Claude", None]
+
+
+def test_feed_search_over_100_chars_is_422(client: TestClient):
+    res = client.get("/api/v1/feed", params={"q": "가" * 101}, headers=AUTH)
+    assert res.status_code == 422
+    assert res.json()["error"]["code"] == "validation_error"
+
+
+def test_search_treats_like_wildcards_as_literals():
+    compiled = matches_search("50%_off", first_delivery(1)).compile(dialect=postgresql.dialect())
+    sql = str(compiled)
+    # 발송 제목·요약 제목·원문 제목·요약·원문 앞부분 다섯 곳, % 와 _ 는 이스케이프된 글자다.
+    assert sql.count("ILIKE") == 5 and "ESCAPE '/'" in sql
+    assert set(compiled.params.values()) == {"50/%/_off"}

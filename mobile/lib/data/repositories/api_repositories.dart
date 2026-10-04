@@ -29,6 +29,7 @@ class ApiFeedRepository implements FeedRepository {
   @override
   Future<CursorPage<Alert>> feed({
     FeedFilter filter = FeedFilter.all,
+    String? q,
     String? cursor,
     int? limit,
   }) async => _page(
@@ -36,6 +37,7 @@ class ApiFeedRepository implements FeedRepository {
       '/feed',
       query: _withoutNulls({
         'filter': filter.value,
+        'q': q,
         'cursor': cursor,
         'limit': limit,
       }),
@@ -223,6 +225,7 @@ class ApiSavedRepository implements SavedRepository {
     String? folderId,
     bool unreadOnly = false,
     SavedSort sort = SavedSort.savedDesc,
+    String? q,
     String? cursor,
     int? limit,
   }) async => _page(
@@ -232,6 +235,7 @@ class ApiSavedRepository implements SavedRepository {
         'folder_id': folderId,
         'unread_only': unreadOnly,
         'sort': sort.value,
+        'q': q,
         'cursor': cursor,
         'limit': limit,
       }),
