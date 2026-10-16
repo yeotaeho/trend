@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Rules, TriageConfig, get_rules, get_settings
+from app.db import prefs
 from app.db.budget import reserve_call
 from app.db.models import Decision, Item, Source, Summary
 from app.db.session import session_scope
+from app.db.users import DEFAULT_USER_ID
 from app.log import get_logger
 from app.notify.discord import send_ops_alert
 from app.pipeline import llm
@@ -36,9 +39,31 @@ INFRA_FAIL_LIMIT = 2  # 한 잡에서 기반·배치 실패가 연속 이만큼�
 log = get_logger(__name__)
 
 
+# 잡 시작 때 정한 판단 기준(설정 이력 id·배포 커밋). run_pipeline 이 정하고 _record 가 결정 행마다
+# 남긴다(#39). 단계 함수마다 인자로 넘기지 않으려고 컨텍스트 변수로 둔다.
+_criteria: ContextVar[dict[str, object] | None] = ContextVar("decision_criteria", default=None)
+
+
+async def decision_criteria(session: AsyncSession) -> dict[str, object]:
+    """결정 행에 남길 판단 기준 — 지금 설정 이력 id 와 배포 커밋(로컬은 null). 탐색 판정도 쓴다.
+
+    판단에 쓴 rules 와 맞아야 하므로 get_rules() 바로 앞에서 부르고 사이에 await 를 두지 않는다.
+    ponytail: 다른 요청의 설정 저장이 이 조회와 같은 순간(ms)에 커밋되면 한 칸 어긋날 수 있다.
+    정확히 하려면 덮어쓰기 캐시(set_prefs_overlay)가 이력 id 를 같이 든다.
+    """
+    return {
+        "settings_rev": await prefs.latest_revision_id(session, DEFAULT_USER_ID),
+        "git_sha": get_settings().git_sha or None,
+    }
+
+
 def _record(item: Item, stage: Stage, passed: bool, details: dict[str, object]) -> Decision:
     return Decision(
-        item_id=item.id, stage=stage.value, passed=passed, score=item.score, details=details
+        item_id=item.id,
+        stage=stage.value,
+        passed=passed,
+        score=item.score,
+        details={**details, **(_criteria.get() or {})},
     )
 
 
@@ -292,7 +317,12 @@ async def _judge(
             item,
             Stage.SCORE,
             score.passed,
-            {"breakdown": score.breakdown, "triage_reason": tri.reason},
+            {
+                "breakdown": score.breakdown,
+                "triage_reason": tri.reason,
+                # 화면이 옛 점수를 지금 임계값으로 다시 읽지 않게 당시 값을 남긴다(#39).
+                "threshold": rules.scoring.threshold,
+            },
         )
     )
     if not score.passed:
@@ -347,7 +377,6 @@ async def _judge(
 
 async def run_pipeline() -> int:
     """한 배치를 처리하고 SCORED 수를 돌려준다."""
-    rules = get_rules()
     passed = 0
     async with session_scope() as session:
         if await _reembedding_in_progress(session):
@@ -356,6 +385,9 @@ async def run_pipeline() -> int:
         batch = await _claim_batch(session)
         if not batch:
             return 0
+        # 판단 기준과 rules 는 같은 때의 것이어야 한다. 둘 사이에 await 를 두지 않는다(#39).
+        _criteria.set(await decision_criteria(session))
+        rules = get_rules()
         try:
             await embed_pending(session, [item.id for item, _ in batch])
         except EmbeddingDimError as exc:

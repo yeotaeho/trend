@@ -178,7 +178,11 @@ def loop(monkeypatch):
         state.explore_calls += 1
         return False
 
+    async def criteria(_session):
+        return {}
+
     monkeypatch.setattr(job, "session_scope", scope)
+    monkeypatch.setattr(job, "decision_criteria", criteria)
     monkeypatch.setattr(job, "_claim_one", claim_one)
     monkeypatch.setattr(job, "decide", decide)
     monkeypatch.setattr(job, "_send_title", send_title)
@@ -315,8 +319,9 @@ async def test_explore_disabled_reserves_no_llm_call(monkeypatch):
     monkeypatch.setattr(job, "_explore_sent_today", record)
     rules = Rules(notify=NotifyConfig(explore_enabled=False))
 
-    assert await job._explore(None, rules, [FakeNotifier("discord")], now=NOW) is False  # type: ignore[arg-type]
-    assert await job._explore(None, Rules(), [], now=NOW) is False  # type: ignore[arg-type]
+    discord = [FakeNotifier("discord")]
+    assert await job._explore(None, rules, discord, now=NOW, criteria={}) is False  # type: ignore[arg-type]
+    assert await job._explore(None, Rules(), [], now=NOW, criteria={}) is False  # type: ignore[arg-type]
     assert calls == []
 
 

@@ -114,7 +114,7 @@ async def test_judge_without_examples_stores_empty_list(monkeypatch):
     assert session.llm_decision().details["examples"] == []
 
 
-async def test_explore_decision_keeps_examples(monkeypatch):
+async def test_explore_decision_keeps_examples_and_criteria(monkeypatch):
     _patch_judge_path(monkeypatch, notify, EXAMPLES, [])
 
     async def not_sent(*_args):
@@ -126,13 +126,18 @@ async def test_explore_decision_keeps_examples(monkeypatch):
     monkeypatch.setattr(notify, "_explore_sent_today", not_sent)
     monkeypatch.setattr(notify, "_explore_candidate", candidate)
     session = _Session()
+    rules = Rules()
     noon_kst = datetime(2026, 9, 24, 3, tzinfo=UTC)
     sent = await notify._explore(
         session,
-        Rules(),
+        rules,
         SimpleNamespace(channel="discord"),
         now=noon_kst,
+        criteria={"settings_rev": 7, "git_sha": "abc1234"},
     )
     decision = session.llm_decision()
     assert not sent and decision.details["explore"] is True
     assert decision.details["examples"] == examples_details(EXAMPLES)
+    # 탐색 판정 행에도 당시 임계값과 설정 이력 id·배포 커밋을 남긴다(#39).
+    assert decision.details["threshold"] == rules.scoring.threshold
+    assert (decision.details["settings_rev"], decision.details["git_sha"]) == (7, "abc1234")

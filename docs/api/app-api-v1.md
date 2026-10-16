@@ -232,7 +232,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 ```
 
 - `relevance`·`kind`·`topics`·`reason` 은 선별 결정 행 `details` 에서 온다. 선별 전에 떨어진 항목(`exclude`·`dedup`·`stale`)은 `null` (`topics` 는 `[]`). 화면은 `topics` 를 쓰지 않지만 같은 행에서 공짜로 나온다.
-- `score` 는 점수 결정 행의 `breakdown`. 점수 전 탈락이면 `null`.
+- `score` 는 점수 결정 행의 `breakdown`. 점수 전 탈락이면 `null`. `threshold` 는 그 행에 남은 당시 임계값이고, #39 전 행은 지금 `scoring.threshold` 다.
 - `matched_keywords` 는 `exclude` 일 때 걸린 키워드 (`["sponsored"]`).
 - `exploration_candidate` 는 백엔드 탐색 후보 조건과 같다 — 점수 탈락, 점수 ∈ [통과선 − 0.10, 통과선), 발행 24시간 이내, 요약 없음.
 - 사유 줄 조합은 클라이언트 몫이다. 규칙은 아래와 같다.
@@ -612,7 +612,7 @@ DB 값은 바꾸지 않는다. API 계층에서만 `useless ↔ not_useful` 로 
 }
 ```
 
-- `score` 는 마지막 `score` 결정 행의 `breakdown`. 바 채움 폭은 디자인 원본(`bar()`)대로 모든 구성요소에 공통 눈금 0.5 를 쓴다 (채움 = min(값 ÷ 0.5, 1) × 트랙 폭). 클라이언트 상수이며 서버는 눈금을 주지 않는다. 음수(`kind`)는 채움 없이 값만 경고색으로 표시한다.
+- `score` 는 마지막 `score` 결정 행의 `breakdown`. `threshold` 는 그 행에 남은 당시 임계값(#39 전 행은 지금 값)이라, 임계값을 바꾼 뒤에도 옛 알림은 옛 기준으로 보인다. 바 채움 폭은 디자인 원본(`bar()`)대로 모든 구성요소에 공통 눈금 0.5 를 쓴다 (채움 = min(값 ÷ 0.5, 1) × 트랙 폭). 클라이언트 상수이며 서버는 눈금을 주지 않는다. 음수(`kind`)는 채움 없이 값만 경고색으로 표시한다.
 - 디자인은 `src·rel·fresh·kind` 4행이다. 앱은 이 4행을 항상 보여 주고 `hot`·`multi` 는 0 이 아닐 때만 행을 추가한다.
 - `screening` 은 마지막 선별 결정 `details` 의 `relevance`·`kind`·`topics`·`reason` 이다. 선별 전 항목은 `null`, `topics` 가 없는 옛 행은 `[]`. `judgment` 가 없으면(판정 전) `null`.
 - `cluster_dup` 로만 기록된 항목은 `delivered_at`·`delivery_mode` 가 `null` 이고 `routing = cluster_dup` 이다.
