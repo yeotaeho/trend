@@ -9,6 +9,7 @@
 - 이 폴더에 다른 작업 브랜치가 체크아웃돼 있으면 `git worktree add ../trend-<작업> -b <브랜치> origin/main` 으로 분리한다.
 - **worktree 파일은 그 폴더에서 새 세션을 열어 고친다.** 원본 세션에서 고치면 경로별 규칙이 붙지 않는다(Claude Code 는 세션 폴더 기준으로만 맞춘다). 가드 훅이 다른 worktree 파일 편집 전에 확인을 묻는다.
 - worktree 의 `.claude/` 는 그 브랜치 커밋 판이다. main 에서 하네스가 바뀌면 그 브랜치에 origin/main 을 합쳐야 따라오고, 이미 열린 세션은 재시작해야 새 훅을 읽는다. 인수인계(`.claude/handoff/`)와 graphify 는 git 밖이라 폴더마다 따로다.
+- **git 밖 파일(`.env`·`.claude/settings.local.json`·`mobile/env/prod.json`)은 worktree 에 따라오지 않는다.** Orca 작업 폴더는 만들 때 `orca.yaml` setup 이 원본에서 복사하고 그래프를 만든다. 다른 방법으로 만든 worktree 는 그 폴더에서 `python3 .claude/scripts/worktree.py link` 와 `graphify update .` 를 돌린다. `.claude/` 를 원본에 junction 하지 않는다(이유는 스크립트 머리말).
 - worktree 의 브랜치가 머지되면 그 폴더에서도 `git switch -c <새 브랜치> origin/main` 으로 새로 딴다. 에픽이 끝나 `git worktree remove` 로 지울 때는 git 밖 파일(`mobile/env/prod.json`, `.env`)을 먼저 옮긴다.
 
 ## 커밋

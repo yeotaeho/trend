@@ -48,6 +48,7 @@ TEST_DATABASE_URL=<dev> uv run pytest tests/integration             # Neon dev �
 cd mobile && flutter analyze && flutter test                         # 앱 (TEMP 는 ASCII 경로)
 python3 .claude/scripts/github_tasks.py apply .claude/tasks/<계획>.json --dry-run   # 업무 → 이슈 미리보기
 python3 .claude/scripts/github_tasks.py board                                       # 보드 현황·어긋난 칸
+python3 .claude/scripts/worktree.py link && graphify update .                       # 새 worktree 에 git 밖 파일·그래프 (Orca 는 orca.yaml 이 자동)
 ```
 
 ## 문서 지도
