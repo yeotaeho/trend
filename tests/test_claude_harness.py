@@ -397,3 +397,31 @@ def test_board_plan_sync_reopens_epic_when_work_resumes() -> None:
 def test_session_start_points_to_board_before_first_work(source: str, hint: bool) -> None:
     out = run_hook("session_context.py", {"source": source, "session_id": "board-hint"})
     assert ("github_tasks.py board" in out) is hint
+
+
+@pytest.mark.parametrize("orca", [True, False])
+def test_worktree_link_fills_only_missing_ignored_files(
+    committed: Path, tmp_path: Path, orca: bool
+) -> None:
+    # 10-16 Orca 작업 폴더에 .env·settings.local.json 이 없었다. 작업 폴더에 이미 있는 것은 둔다
+    (committed / ".env").write_text("A=root", encoding="utf-8")
+    (committed / ".claude").mkdir()
+    (committed / ".claude/settings.local.json").write_text("{}", encoding="utf-8")
+    wt = add_worktree(committed, tmp_path / "wt", "feat/wt")
+    (wt / ".env").write_text("A=wt", encoding="utf-8")
+    env = {k: v for k, v in os.environ.items() if not k.startswith("ORCA_")}
+    if orca:  # Orca 는 두 폴더를 환경 변수로 준다. 폴더 밖에서 돌려 git 추정을 막는다
+        env.update(ORCA_ROOT_PATH=str(committed), ORCA_WORKTREE_PATH=str(wt))
+    script = ROOT / ".claude" / "scripts" / "worktree.py"
+    r = subprocess.run(
+        [sys.executable, str(script), "link"],
+        cwd=tmp_path if orca else wt,
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",  # 파이썬 자체 오류는 cp949 로 나온다
+    )
+    assert r.returncode == 0, r.stderr
+    assert (wt / ".claude/settings.local.json").read_text(encoding="utf-8") == "{}"
+    assert (wt / ".env").read_text(encoding="utf-8") == "A=wt"
